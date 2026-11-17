@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using SyndicateLauncher.Models;
 
 namespace SyndicateLauncher.Services;
 
@@ -40,6 +41,8 @@ public static class SeasonModes
 
     private static readonly object Gate = new();
     private static Dictionary<string, List<string>> _saved = new(StringComparer.OrdinalIgnoreCase);
+    private static Dictionary<string, SeasonLayout> _layouts = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly JsonSerializerOptions BackendJson = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     /// <summary>The modes a build can offer at all, in lobby order.</summary>
     public static IReadOnlyList<string> Available(string build)
@@ -67,16 +70,48 @@ public static class SeasonModes
     }
 
     /// <summary>Called with the saved settings at startup.</summary>
-    public static void Load(Dictionary<string, List<string>>? saved)
+    public static void Load(Dictionary<string, List<string>>? saved, Dictionary<string, SeasonLayout>? layouts = null)
     {
         lock (Gate)
         {
             _saved = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-            if (saved is null) return;
-            foreach (var (build, modes) in saved)
-                if (!string.IsNullOrWhiteSpace(build) && modes is not null) _saved[build] = Clean(build, modes);
+            _layouts = new Dictionary<string, SeasonLayout>(StringComparer.OrdinalIgnoreCase);
+            if (saved is not null)
+                foreach (var (build, modes) in saved)
+                    if (!string.IsNullOrWhiteSpace(build) && modes is not null) _saved[build] = Clean(build, modes);
+            if (layouts is not null)
+                foreach (var (build, layout) in layouts)
+                    if (!string.IsNullOrWhiteSpace(build) && layout is not null) _layouts[build] = Copy(layout);
         }
     }
+
+    /// <summary>The saved lobby layout for a build (a copy), or an empty one: usual order, first mode default.</summary>
+    public static SeasonLayout Layout(string build)
+    {
+        lock (Gate) return _layouts.TryGetValue(build ?? "", out var layout) ? Copy(layout) : new SeasonLayout();
+    }
+
+    /// <summary>Saves a build's lobby layout and returns the full map to store in settings.json.</summary>
+    public static Dictionary<string, SeasonLayout> SetLayout(string build, SeasonLayout layout)
+    {
+        lock (Gate)
+        {
+            _layouts[build] = Copy(layout);
+            return LayoutSnapshot();
+        }
+    }
+
+    private static SeasonLayout Copy(SeasonLayout layout) => new()
+    {
+        Order = (layout.Order ?? new()).Where(m => !string.IsNullOrEmpty(m)).ToList(),
+        Default = layout.Default ?? "",
+        Badges = (layout.Badges ?? new()).Where(pair => pair.Value is "new" or "limited")
+            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase),
+        Locked = (layout.Locked ?? new()).Where(m => !string.IsNullOrEmpty(m)).ToList()
+    };
+
+    private static Dictionary<string, SeasonLayout> LayoutSnapshot() =>
+        _layouts.ToDictionary(pair => pair.Key, pair => Copy(pair.Value), StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The modes turned on for a build, in lobby order.</summary>
     public static IReadOnlyList<string> Enabled(string build)
@@ -97,13 +132,14 @@ public static class SeasonModes
         }
     }
 
-    /// <summary>Back to the lobby the build had before (no saved choice).</summary>
-    public static Dictionary<string, List<string>> Reset(string build)
+    /// <summary>Back to the lobby the build had before (no saved modes and no saved layout).</summary>
+    public static (Dictionary<string, List<string>> Modes, Dictionary<string, SeasonLayout> Layouts) Reset(string build)
     {
         lock (Gate)
         {
             _saved.Remove(build);
-            return Snapshot();
+            _layouts.Remove(build);
+            return (Snapshot(), LayoutSnapshot());
         }
     }
 
@@ -131,9 +167,11 @@ public static class SeasonModes
             if (string.IsNullOrEmpty(runtime)) return;
             Directory.CreateDirectory(runtime);
             Dictionary<string, List<string>> builds;
-            lock (Gate) builds = Snapshot();
+            Dictionary<string, SeasonLayout> layout;
+            lock (Gate) { builds = Snapshot(); layout = LayoutSnapshot(); }
             string file = Path.Combine(runtime, "season-modes.json");
-            string json = JsonSerializer.Serialize(new { version = 1, builds });
+            // Property names in camelCase (order, default, badges, locked); build and mode keys stay as they are.
+            string json = JsonSerializer.Serialize(new { version = 2, builds, layout }, BackendJson);
             if (File.Exists(file) && File.ReadAllText(file) == json) return;
             File.WriteAllText(file + ".tmp", json);
             File.Move(file + ".tmp", file, overwrite: true);

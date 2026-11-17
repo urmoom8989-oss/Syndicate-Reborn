@@ -39,7 +39,15 @@ export const client = new Client({
   },
 });
 global.discordClient = client;
-global.discordApplication = await Utils.FetchApplication();
+// Syndicate: only with a bot token and never in Offline mode. Every start used to call discord.com here, and
+// without an internet connection the failed call stopped the whole backend from starting.
+global.discordApplication =
+  OFFLINE || !(process.env.DISCORD_TOKEN || process.env.BOT_TOKEN)
+    ? null
+    : await Utils.FetchApplication().catch((error) => {
+        logger.error(`Discord application info unavailable: ${error}`);
+        return null;
+      });
 client.commands = new Collection();
 const basePath = process.cwd();
 const foldersPath = path.join(basePath, "src", "discord", "commands");

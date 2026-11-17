@@ -44,17 +44,23 @@ export function defaultModes(build,env=process.env){
  return list;
 }
 
-let cache={at:0,mtime:-1,builds:{}};
-function saved(){
+let cache={at:0,mtime:-1,builds:{},layout:{}};
+function load(){
  const now=Date.now();
- if(now-cache.at<2000)return cache.builds;
+ if(now-cache.at<2000)return cache;
  cache.at=now;
  try{
   const mtime=fs.statSync(file).mtimeMs;
-  if(mtime!==cache.mtime){const json=JSON.parse(fs.readFileSync(file,'utf8'));cache.mtime=mtime;cache.builds=json&&typeof json.builds==='object'&&json.builds?json.builds:{};}
- }catch{cache.mtime=-1;cache.builds={};}
- return cache.builds;
+  if(mtime!==cache.mtime){
+   const json=JSON.parse(fs.readFileSync(file,'utf8'));cache.mtime=mtime;
+   cache.builds=json&&typeof json.builds==='object'&&json.builds?json.builds:{};
+   cache.layout=json&&typeof json.layout==='object'&&json.layout?json.layout:{};
+  }
+ }catch{cache.mtime=-1;cache.builds={};cache.layout={};}
+ return cache;
 }
+const saved=()=>load().builds;
+const savedLayouts=()=>load().layout;
 // The modes turned on for a build, in lobby order. At least one Battle Royale mode always stays on.
 export function enabledModes(build,{builds=saved(),env=process.env}={}){
  const available=availableModes(build);if(!available.length)return [];
@@ -75,5 +81,26 @@ export function stwEnabledFor(userAgent,options={}){
  if(env.TILTED_DEVKIT==='1')return true;
  const build=clientBuild(userAgent||'');
  return !!build&&enabledModes(build,options).includes('stw');
+}
+// Launcher Settings > Game modes > lobby layout: the tiles Fortnite's mode selector shows, in order. Modes that are on,
+// plus modes the player chose to show locked (greyed out, can't be picked). One tile is the default; a tile can carry
+// a NEW or LIMITED TIME badge. Save the World is a lobby button, not a tile. With no saved layout this is exactly
+// the old list: the modes that are on, in lobby order, the first one default, no badges.
+// layout[build] = {order:[modes], default:mode, badges:{mode:'new'|'limited'}, locked:[modes]}.
+export function lobbyTiles(build,{builds=saved(),layouts=savedLayouts(),env=process.env}={}){
+ const lower=v=>String(v||'').toLowerCase();
+ const available=availableModes(build).filter(m=>MODES[m].playlist);
+ const enabled=enabledModes(build,{builds,env}).filter(m=>MODES[m].playlist);
+ const layout=layouts&&typeof layouts[build]==='object'&&layouts[build]?layouts[build]:{};
+ const locked=new Set((Array.isArray(layout.locked)?layout.locked:[]).map(lower).filter(m=>available.includes(m)&&!enabled.includes(m)));
+ const order=Array.isArray(layout.order)?layout.order.map(lower):[];
+ const rank=m=>{const i=order.indexOf(m);return i<0?order.length+ORDER.indexOf(m):i;};
+ const shown=available.filter(m=>enabled.includes(m)||locked.has(m)).sort((a,b)=>rank(a)-rank(b));
+ const wanted=lower(layout.default);
+ const fallback=shown.find(m=>enabled.includes(m));
+ const def=enabled.includes(wanted)?wanted:fallback;
+ const badges=layout.badges&&typeof layout.badges==='object'?layout.badges:{};
+ return shown.map(m=>({mode:m,playlist:MODES[m].playlist,enabled:enabled.includes(m),isDefault:m===def,
+  badge:['new','limited'].includes(lower(badges[m]))?lower(badges[m]):''}));
 }
 export const modeName = mode => ({solo:'Solo',duo:'Duos',squad:'Squads',arenasolo:'Arena',['50v50']:'50v50',playground:'Playground',creative:'Creative',stw:'Save the World'})[mode]||mode;

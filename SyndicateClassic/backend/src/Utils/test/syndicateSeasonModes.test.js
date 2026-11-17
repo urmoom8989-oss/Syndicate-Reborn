@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { availableModes, defaultModes, enabledModes, modeEnabled, stwEnabledFor } from '../syndicateSeasonModes.js';
+import { availableModes, defaultModes, enabledModes, modeEnabled, stwEnabledFor, lobbyTiles } from '../syndicateSeasonModes.js';
 
 const env = { TILTED_DEVKIT: '' };
 
@@ -68,4 +68,20 @@ test('the lobby lists the saved modes and opens the Creative and Save the World 
     fs.rmSync(file, { force: true });
     try { fs.rmdirSync(fileURLToPath(new URL('../../../../Runtime/Server/', import.meta.url))); fs.rmdirSync(fileURLToPath(new URL('../../../../Runtime/', import.meta.url))); } catch {}
   }
+});
+
+test('lobby layout: order, default, locked tiles and badges', () => {
+  const builds = { '10.40': ['solo', 'duo', 'arenasolo', 'creative', 'stw'] };
+  // No layout: the old list, first one default, no badges.
+  assert.deepEqual(lobbyTiles('10.40', { builds, layouts: {}, env }).map(t => [t.mode, t.enabled, t.isDefault, t.badge]),
+    [['solo', true, true, ''], ['duo', true, false, ''], ['arenasolo', true, false, ''], ['creative', true, false, '']]);
+  const layouts = { '10.40': { order: ['creative', 'arenasolo', 'squad'], default: 'arenasolo', locked: ['squad', 'duo'],
+    badges: { creative: 'new', arenasolo: 'LIMITED', solo: 'bogus' } } };
+  const tiles = lobbyTiles('10.40', { builds, layouts, env });
+  // duo is on, so "locked" is ignored for it; squad is off and shown locked; Save the World is never a tile.
+  assert.deepEqual(tiles.map(t => [t.mode, t.enabled, t.isDefault, t.badge]),
+    [['creative', true, false, 'new'], ['arenasolo', true, true, 'limited'], ['squad', false, false, ''], ['solo', true, false, ''], ['duo', true, false, '']]);
+  // A default that is off or locked falls back to the first tile that is on.
+  const fallback = lobbyTiles('10.40', { builds, layouts: { '10.40': { order: ['squad', 'duo'], default: 'squad', locked: ['squad'] } }, env });
+  assert.equal(fallback.find(t => t.isDefault).mode, 'duo');
 });

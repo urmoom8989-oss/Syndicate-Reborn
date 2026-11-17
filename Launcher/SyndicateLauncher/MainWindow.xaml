@@ -3555,39 +3555,82 @@
                                                         <!-- Game modes per season (ViewModels/MainViewModel.GameModes.cs, Services/SeasonModes.cs) -->
                                                         <TextBlock Text="Game modes" FontSize="13.5" FontWeight="Bold"
                                                                    Foreground="{DynamicResource TextBrush}" />
-                                                        <TextBlock Text="Choose which modes each season shows in Fortnite's lobby. Pick a season, then switch modes on or off. Creative (Season 7 and up) and Save the World are experimental."
+                                                        <TextBlock Text="Choose which modes each season shows in Fortnite's lobby and how its mode selector lays them out. Creative (Season 7 and up) and Save the World are experimental."
                                                                    FontSize="11.5" Foreground="#8A8A8A" TextWrapping="Wrap" Margin="0,4,0,10" />
                                                         <DockPanel Margin="0,0,0,4">
                                                             <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Height="32" Padding="14,0"
-                                                                    Margin="8,0,0,0" Content="Usual modes" FontSize="11" FontWeight="Bold"
+                                                                    Margin="8,0,0,0" Content="Usual layout" FontSize="11" FontWeight="Bold"
                                                                     Command="{Binding ResetGameModesCommand}"
-                                                                    ToolTip="Put this season back to the modes it normally has"
+                                                                    ToolTip="Put this season back to the modes and layout it normally has"
                                                                     AutomationProperties.Name="Put the usual modes back for this season" />
                                                             <ComboBox Style="{StaticResource DarkComboBox}" Height="32" FontSize="12"
                                                                       ItemsSource="{Binding GameModeSeasons}"
                                                                       SelectedItem="{Binding SelectedGameModeSeason, Mode=TwoWay}"
                                                                       AutomationProperties.Name="Season for game modes" />
                                                         </DockPanel>
+                                                        <TextBlock Text="Each mode can be On, Shown locked (greyed out in the lobby) or Off. Use the arrows to set the order of the tiles in Fortnite's mode selector, DEFAULT for the one it opens on, and a NEW or LIMITED TIME badge."
+                                                                   FontSize="11" Foreground="#8A8A8A" TextWrapping="Wrap" Margin="0,8,0,0" />
+                                                        <TextBlock Text="{Binding GameModesLayoutNote}" FontSize="11" Foreground="{DynamicResource WarnBrush}"
+                                                                   TextWrapping="Wrap" Margin="0,6,0,0"
+                                                                   Visibility="{Binding HasGameModesLayoutNote, Converter={StaticResource BoolToVis}}" />
                                                         <ItemsControl ItemsSource="{Binding GameModeToggles}" Focusable="False">
                                                             <ItemsControl.ItemTemplate>
                                                                 <DataTemplate>
-                                                                    <CheckBox Style="{StaticResource SwitchToggle}" Margin="0,12,0,0"
-                                                                              IsChecked="{Binding IsOn, Mode=TwoWay}"
-                                                                              AutomationProperties.Name="{Binding Name}">
-                                                                        <StackPanel>
-                                                                            <StackPanel Orientation="Horizontal">
-                                                                                <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="Bold"
-                                                                                           Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" />
-                                                                                <Border Margin="8,0,0,0" Padding="6,1" CornerRadius="3" VerticalAlignment="Center"
-                                                                                        Background="#33FFB020" BorderBrush="#FFB020" BorderThickness="1"
-                                                                                        Visibility="{Binding Experimental, Converter={StaticResource BoolToVis}}">
-                                                                                    <TextBlock Text="EXPERIMENTAL" FontSize="8.5" FontWeight="Bold" Foreground="#FFC857" />
-                                                                                </Border>
+                                                                    <Border Margin="0,8,0,0" Padding="10,8" CornerRadius="8" Background="#0AFFFFFF"
+                                                                            BorderBrush="#14FFFFFF" BorderThickness="1">
+                                                                        <Grid>
+                                                                            <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="Auto" />
+                                                                                <ColumnDefinition Width="*" />
+                                                                                <ColumnDefinition Width="Auto" />
+                                                                                <ColumnDefinition Width="Auto" />
+                                                                                <ColumnDefinition Width="Auto" />
+                                                                            </Grid.ColumnDefinitions>
+                                                                            <!-- Order in the lobby -->
+                                                                            <StackPanel Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center"
+                                                                                        Visibility="{Binding IsTile, Converter={StaticResource BoolToVis}}">
+                                                                                <Button Style="{StaticResource IconButton}" Width="24" Height="18" Margin="0,0,0,2"
+                                                                                        Command="{Binding MoveUpCommand}" ToolTip="Earlier in the lobby"
+                                                                                        AutomationProperties.Name="Move earlier in the lobby">
+                                                                                    <TextBlock Text="&#xE70E;" FontFamily="{StaticResource IconFont}" FontSize="9" />
+                                                                                </Button>
+                                                                                <Button Style="{StaticResource IconButton}" Width="24" Height="18"
+                                                                                        Command="{Binding MoveDownCommand}" ToolTip="Later in the lobby"
+                                                                                        AutomationProperties.Name="Move later in the lobby">
+                                                                                    <TextBlock Text="&#xE70D;" FontFamily="{StaticResource IconFont}" FontSize="9" />
+                                                                                </Button>
                                                                             </StackPanel>
-                                                                            <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#8A8A8A"
-                                                                                       TextWrapping="Wrap" Margin="0,2,0,0" />
-                                                                        </StackPanel>
-                                                                    </CheckBox>
+                                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                                <StackPanel Orientation="Horizontal">
+                                                                                    <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="Bold"
+                                                                                               Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" />
+                                                                                    <Border Margin="8,0,0,0" Padding="6,1" CornerRadius="3" VerticalAlignment="Center"
+                                                                                            Background="#33FFB020" BorderBrush="#FFB020" BorderThickness="1"
+                                                                                            Visibility="{Binding Experimental, Converter={StaticResource BoolToVis}}">
+                                                                                        <TextBlock Text="EXPERIMENTAL" FontSize="8.5" FontWeight="Bold" Foreground="#FFC857" />
+                                                                                    </Border>
+                                                                                </StackPanel>
+                                                                                <TextBlock Text="{Binding Description}" FontSize="10.5" Foreground="#8A8A8A"
+                                                                                           TextWrapping="Wrap" Margin="0,2,0,0" />
+                                                                            </StackPanel>
+                                                                            <ComboBox Grid.Column="2" Style="{StaticResource DarkComboBox}" Width="124" Height="30" FontSize="11.5"
+                                                                                      Margin="10,0,0,0" VerticalAlignment="Center"
+                                                                                      ItemsSource="{Binding StateOptions}" SelectedIndex="{Binding StateIndex, Mode=TwoWay}"
+                                                                                      AutomationProperties.Name="{Binding Name}" />
+                                                                            <ComboBox Grid.Column="3" Style="{StaticResource DarkComboBox}" Width="118" Height="30" FontSize="11.5"
+                                                                                      Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                                      ItemsSource="{Binding BadgeOptions}" SelectedIndex="{Binding BadgeIndex, Mode=TwoWay}"
+                                                                                      Visibility="{Binding IsTile, Converter={StaticResource BoolToVis}}"
+                                                                                      AutomationProperties.Name="Lobby badge" />
+                                                                            <RadioButton Grid.Column="4" Style="{StaticResource ChipRadio}" Content="DEFAULT" Height="30"
+                                                                                         Padding="10,0" Margin="8,0,0,0" FontSize="10" VerticalAlignment="Center"
+                                                                                         IsChecked="{Binding IsDefault, Mode=OneWay}" Command="{Binding MakeDefaultCommand}"
+                                                                                         IsEnabled="{Binding IsOn}"
+                                                                                         Visibility="{Binding IsTile, Converter={StaticResource BoolToVis}}"
+                                                                                         ToolTip="The mode Fortnite's lobby opens on"
+                                                                                         AutomationProperties.Name="Open the lobby on this mode" />
+                                                                        </Grid>
+                                                                    </Border>
                                                                 </DataTemplate>
                                                             </ItemsControl.ItemTemplate>
                                                         </ItemsControl>

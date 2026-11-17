@@ -1,7 +1,8 @@
 import {clientBuild} from './syndicateBuild.js';
-import {enabledModes,MODES} from './syndicateSeasonModes.js';
+import {enabledModes,lobbyTiles} from './syndicateSeasonModes.js';
 // Launcher Settings > Game modes (syndicateSeasonModes.js): the lobby lists the modes turned on for the build.
 // The Save the World and Creative buttons stay relabelled UNAVAILABLE unless they are turned on.
+const PLAYLIST={solo:'Playlist_DefaultSolo',duo:'Playlist_DefaultDuo',squad:'Playlist_DefaultSquad','50v50':'Playlist_50v50',playground:'Playlist_Playground'};
 const STW_BUTTON='F1B39B41400513DFDBBC39BE41A2AA7A',CREATIVE_BUTTON='85CC70F746437FF312DF528927FD1F52';
 // One +TextReplacements entry by key. "Save The\r\nWorld" spans two lines, so match up to the closing ))).
 const dropText=(text,key)=>text.replace(new RegExp('^\\+TextReplacements=[^\\n]*Key="'+key+'"[\\s\\S]*?\\)\\)\\)[ \\t]*\\r?$\\n?','m'),'');
@@ -10,7 +11,10 @@ function openButtons(text,modes){
  if(modes.includes('creative'))text=dropText(text,CREATIVE_BUTTON);
  return text;
 }
-const lobbyModes=modes=>modes.filter(m=>MODES[m]?.playlist);
+// One FrontEndPlaylistData line per lobby tile (order, default, locked, badges: syndicateSeasonModes.js lobbyTiles).
+const badgeFields=t=>(t.badge==='new'?'bDisplayAsNew=true,':'')+(t.badge==='limited'?'bDisplayAsLimitedTime=true,':'');
+const tileLine=(t,i)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,${badgeFields(t)}${t.mode==='creative'?'bIsTournament=false,':''}CategoryIndex=0,DisplayPriority=${i}))`;
+const legacyTileLine=(t,i)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,bDisplayAsNew=${t.badge==='new'},CategoryIndex=0,bDisplayAsLimitedTime=${t.badge==='limited'},DisplayPriority=${i}))`;
 // Keep Cert 3807424 on its own native lobby/playlist configuration.
 export function cloudTextForClient(file,userAgent,hotfixes){
  const key=file.toLowerCase().replace(/\.ini$/,'');
@@ -39,8 +43,7 @@ export function cloudTextForClient(file,userAgent,hotfixes){
   return g+`
 [/Script/FortniteGame.FortGameInstance]
 !FrontEndPlaylistData=ClearArray
-`+lobbyModes(modes).map((m,i)=>`+FrontEndPlaylistData=(PlaylistName=${MODES[m].playlist},PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=${i===0},bVisibleWhenDisabled=true,${m==='creative'?'bIsTournament=false,':''}CategoryIndex=0,DisplayPriority=${i}))
-`).join('');}
+`+lobbyTiles(build).map((t,i)=>tileLine(t,i)+'\n').join('');}
  // Season 4 exposes PlaylistOverrides (PlaylistName, bEnabled, RegionsDisabled).
  // FrontEndPlaylistData is a legacy field and is absent in the 4.5 client. Solo, Duos and Squads are on in the client
  // already; 50v50 and Playground are switched on here, and anything turned off in the launcher is switched off.
@@ -48,7 +51,7 @@ export function cloudTextForClient(file,userAgent,hotfixes){
   const modes=enabledModes(build),lines=[];
   for(const m of ['solo','duo','squad','50v50','playground']){
    const on=modes.includes(m);
-   if(!on||m==='50v50'||m==='playground')lines.push(`+PlaylistOverrides=(PlaylistName=${MODES[m].playlist},bEnabled=${on})`);
+   if(!on||m==='50v50'||m==='playground')lines.push(`+PlaylistOverrides=(PlaylistName=${PLAYLIST[m]},bEnabled=${on})`);
   }
   return openButtons(normal,modes).replace('[/Script/FortniteGame.FortGameInstance]','[/Script/FortniteGame.FortGameInstance]\n'+lines.join('\n'));
  }
@@ -57,7 +60,7 @@ export function cloudTextForClient(file,userAgent,hotfixes){
 [/Script/FortniteGame.FortGameInstance]
 bBattleRoyaleMatchmakingEnabled=true
 !FrontEndPlaylistData=ClearArray
-${lobbyModes(enabledModes(build)).map((m,i)=>`+FrontEndPlaylistData=(PlaylistName=${MODES[m].playlist},PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=${i===0},bVisibleWhenDisabled=true,bDisplayAsNew=false,CategoryIndex=0,bDisplayAsLimitedTime=false,DisplayPriority=${i}))`).join('\n')}
+${lobbyTiles(build).map(legacyTileLine).join('\n')}
 [/Script/FortniteGame.FortChatManager]
 bShouldRequestGeneralChatRooms=false
 bShouldJoinGlobalChat=false

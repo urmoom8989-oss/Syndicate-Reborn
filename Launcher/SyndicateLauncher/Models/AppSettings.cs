@@ -125,4 +125,21 @@ public sealed class AppSettings
     /// <summary>Settings &gt; Match &amp; bots &gt; Game modes (Services/SeasonModes.cs): the modes each build shows in the
     /// lobby, keyed by build ("7.40"). A build that is not listed keeps its usual lobby.</summary>
     public Dictionary<string, List<string>> SeasonModes { get; set; } = new();
+    /// <summary>Settings &gt; Match &amp; bots &gt; Game modes: how Fortnite's mode selector lays out each build's modes
+    /// (order, default, badges, locked tiles), keyed by build. A build that is not listed keeps its usual layout.</summary>
+    public Dictionary<string, SeasonLayout> SeasonLayouts { get; set; } = new();
+}
+
+/// <summary>
+/// The lobby mode selector for one build (Services/SeasonModes.cs, backend Utils/syndicateSeasonModes.js lobbyTiles):
+/// tile order, the tile picked when Fortnite opens, NEW / LIMITED TIME badges, and modes shown greyed out.
+/// </summary>
+public sealed class SeasonLayout
+{
+    public List<string> Order { get; set; } = new();
+    public string Default { get; set; } = "";
+    /// <summary>Mode id to "new" or "limited".</summary>
+    public Dictionary<string, string> Badges { get; set; } = new();
+    /// <summary>Modes that are off but still shown in the selector, locked.</summary>
+    public List<string> Locked { get; set; } = new();
 }

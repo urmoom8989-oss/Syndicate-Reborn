@@ -8,6 +8,9 @@ const modes={'2':'solo','9':'squad','10':'duo',playlist_defaultsolo:'solo',
 const playlistNames={intro:'Playlist_Intro_Apollo_NewPlayer',solo:'Playlist_DefaultSolo',duo:'Playlist_DefaultDuo',squad:'Playlist_DefaultSquad','50v50':'Playlist_50v50',playground:'Playlist_Playground',arenasolo:'Playlist_ShowdownAlt_Solo',creative:'Playlist_PlaygroundV2'};
 const read=(file)=>{try{return JSON.parse(fs.readFileSync(file,'utf8'));}catch{return null;}};
 function write(file,value){fs.mkdirSync(path.dirname(file),{recursive:true});const temp=file+'.'+crypto.randomUUID()+'.tmp';fs.writeFileSync(temp,JSON.stringify(value));fs.renameSync(temp,file);}
+// Creative is experimental and off unless it is turned on for the build in the launcher (Settings > Game modes writes
+// season-modes.json; src/Utils/syndicateSeasonModes.js). Without a saved choice the Dev Kit keeps it on 11.00 as before.
+function creativeOn(build,dir=runtime){const saved=read(path.join(dir,'season-modes.json'))?.builds?.[build];if(Array.isArray(saved))return saved.map(m=>String(m).toLowerCase()).includes('creative');return process.env.TILTED_DEVKIT==='1'&&build==='11.00';}
 function playlistMode(bucket){const parts=typeof bucket==='string'?bucket.split(':'):[];if(parts.length!==4||!modes[parts[3].toLowerCase()])throw Error('Choose Solo, Duos, Squads, Arena or Creative in Fortnite. This playlist is not supported.');return modes[parts[3].toLowerCase()];}
 function selectedBuild(dir=runtime){return read(path.join(dir,'active-build.json'))?.Build || '4.5';}
 function requireBuild(build,dir=runtime){const allowed=['1.7.2','1.8.2','1.8','1.11','2.5','3.5.1','4.5','5.10','6.20','7.40','8.50','9.40','10.31','10.40','11.00','12.50'];if(process.env.TILTED_DEVKIT==='1')allowed.push('19.00');if(!allowed.includes(build)||build!==selectedBuild(dir))throw Error('Host and player must select the same Fortnite version.');return build;}
@@ -35,9 +38,9 @@ function reserve(mode,accountId,dir=runtime,now=Date.now(),build=selectedBuild(d
  if(mode==='intro' && build!=='11.00')throw Error('The Chapter 2 entrance needs Fortnite 11.00.');
  if(mode.startsWith('arena') && !['8.50','9.40','10.31','10.40','11.00','12.50'].includes(build))throw Error('Arena is available in Season 8 and later.');
  // Creative is off by default: the island never loads on UE4 (LoadPlayset faults; see project doc
- // creative-7.40-2026-10-27). Dev Kit may select it on 11.00 to experiment - expect empty sea / no island
- // until the playset-streaming blocker is solved.
- if(mode==='creative' && !(process.env.TILTED_DEVKIT==='1' && build==='11.00'))throw Error('Creative is turned off for now.');
+ // creative-7.40-2026-10-27). It can be turned on per season in the launcher to experiment - expect empty sea /
+ // no island until the playset-streaming blocker is solved.
+ if(mode==='creative' && !creativeOn(build,dir))throw Error('Creative is turned off for this season. Turn it on in the Syndicate launcher: Settings > Game modes.');
  const live=hostStatus(dir,now),requestFile=path.join(dir,'playlist-request.json');
  let request=read(requestFile);const ticketsDir=path.join(dir,'playlist-tickets');fs.mkdirSync(ticketsDir,{recursive:true});
  let pending=false;
@@ -64,8 +67,11 @@ function reserve(mode,accountId,dir=runtime,now=Date.now(),build=selectedBuild(d
 // playlist right then, so the server is ready (or nearly) by the time Ready is pressed. It never touches a
 // server with players in it or a playlist someone else is waiting for, and reserve() works exactly as before.
 function prewarm(mode,dir=runtime,now=Date.now()){
- if(!playlistNames[mode]||mode==='intro'||mode==='creative')return false;
+ if(!playlistNames[mode]||mode==='intro')return false;
  const build=selectedBuild(dir);
+ // Creative (when turned on for this season): Season X joins its local server straight from the lobby, so the
+ // server has to be switched here or Ready lands in the Solo match that was already running.
+ if(mode==='creative'&&!creativeOn(build,dir))return false;
  if(['50v50','playground'].includes(mode)&&build!=='4.5')return false;
  if(mode.startsWith('arena')&&!['8.50','9.40','10.31','10.40','11.00','12.50'].includes(build))return false;
  const live=hostStatus(dir,now);
