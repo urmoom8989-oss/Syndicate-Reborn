@@ -1,0 +1,19 @@
+Put a PNG in this folder named after the pack, then run BUILD LAUNCHER.
+
+Starter packs:
+  rogue-agent.png  wingman.png  blue-team-leader.png  blue-striker.png
+  trailblazer.png  sun-strider.png  reflex.png  instinct.png
+  frostbite.png  red-strike.png
+
+Exclusives:
+  x-galaxy.png  x-ikonik.png  x-eon.png  x-double-helix.png
+  x-royale-bomber.png  x-carbon-commando.png  x-neo-versa.png
+  x-honor-guard.png  x-glow.png  x-wonder.png  x-paradigm.png
+  x-sub-commander.png  x-warpaint.png  x-og-halloween.png
+
+Tips: a transparent PNG of the character works best (it sits on the
+coloured card). About 600x800 pixels or similar portrait size is fine.
+A picture here replaces the built-in one for that pack.
+
+V-Bucks coin (store prices and the balance chip):
+  vbucks.png  (square, transparent background)

@@ -1,0 +1,282 @@
+{
+  "outfits": [
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_164_Athena_Commando_M_Viking"
+      ],
+      "price": 2000
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_168_Athena_Commando_M_Shark"
+      ],
+      "price": 2000
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_169_Athena_Commando_M_Luchador"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_170_Athena_Commando_F_Luchador"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_171_Athena_Commando_M_SharpDresser"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_172_Athena_Commando_F_SharpDresser"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_176_Athena_Commando_M_Lifeguard"
+      ],
+      "price": 1500
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_177_Athena_Commando_M_StreetRacerCobra"
+      ],
+      "price": 1500
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_178_Athena_Commando_F_StreetRacerCobra"
+      ],
+      "price": 1500
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_179_Athena_Commando_F_Scuba"
+      ],
+      "price": 1500
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_180_Athena_Commando_M_Scuba"
+      ],
+      "price": 1500
+    },
+    {
+      "itemGrants": [
+        "AthenaCharacter:CID_182_Athena_Commando_M_ModernMilitary"
+      ],
+      "price": 1500
+    }
+  ],
+  "accessories": [
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_072_VikingMale"
+      ],
+      "price": 1500
+    },
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_076_Shark"
+      ],
+      "price": 1500
+    },
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_077_WeGame"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_078_StreetRacerCobraFemale"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_079_Penguin"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_080_StreetRacerCobraMale"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_081_ScubaMale"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_082_ScubaFemale"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_083_LifeguardMale"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_084_Birthday2018"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaBackpack:BID_085_ModernMilitary"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaDance:EID_Backflip"
+      ],
+      "price": 500
+    },
+    {
+      "itemGrants": [
+        "AthenaDance:EID_HandSignals"
+      ],
+      "price": 500
+    },
+    {
+      "itemGrants": [
+        "AthenaDance:EID_Hula"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaDance:EID_Intensity"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaDance:EID_LivingLarge"
+      ],
+      "price": 500
+    },
+    {
+      "itemGrants": [
+        "AthenaDance:EID_NotToday"
+      ],
+      "price": 200
+    },
+    {
+      "itemGrants": [
+        "AthenaDance:EID_OnTheHook"
+      ],
+      "price": 500
+    },
+    {
+      "itemGrants": [
+        "AthenaDance:EID_Twist"
+      ],
+      "price": 500
+    },
+    {
+      "itemGrants": [
+        "AthenaGlider:Glider_ID_051_Luchador"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaGlider:Glider_ID_052_Bedazzled"
+      ],
+      "price": 500
+    },
+    {
+      "itemGrants": [
+        "AthenaGlider:Glider_ID_053_Huya"
+      ],
+      "price": 500
+    },
+    {
+      "itemGrants": [
+        "AthenaGlider:Glider_ID_054_Douyu"
+      ],
+      "price": 500
+    },
+    {
+      "itemGrants": [
+        "AthenaGlider:Glider_ID_057_ModernMilitary"
+      ],
+      "price": 1200
+    },
+    {
+      "itemGrants": [
+        "AthenaGlider:Glider_ID_058_Shark"
+      ],
+      "price": 1500
+    },
+    {
+      "itemGrants": [
+        "AthenaPickaxe:Pickaxe_ID_070_Viking"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaPickaxe:Pickaxe_ID_072_Luchador"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaPickaxe:Pickaxe_ID_074_SharpDresser"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaPickaxe:Pickaxe_ID_075_Huya"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaPickaxe:Pickaxe_ID_076_Douyu"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaPickaxe:Pickaxe_ID_078_Lifeguard"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaPickaxe:Pickaxe_ID_079_ModernMilitary"
+      ],
+      "price": 500
+    },
+    {
+      "itemGrants": [
+        "AthenaPickaxe:Pickaxe_ID_080_Scuba"
+      ],
+      "price": 800
+    },
+    {
+      "itemGrants": [
+        "AthenaPickaxe:Pickaxe_ID_081_StreetRacerCobra"
+      ],
+      "price": 800
+    }
+  ]
+}

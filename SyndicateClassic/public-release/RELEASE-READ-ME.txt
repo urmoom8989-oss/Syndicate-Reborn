@@ -1,0 +1,43 @@
+SYNDICATE - PUBLIC RELEASE
+
+This is one self-contained EXE. Share Project-Syndicate-vX.exe (and optionally its
+.sha256 so people can check they got the real file).
+
+What it is
+- Everything needed to run Syndicate is packed and AES-256 encrypted inside the EXE.
+- On first launch it unpacks to %LOCALAPPDATA%\ProjectTiltedStandalone\<version>.
+  Later launches only check those files, so they start much faster.
+- Updates install themselves. When you open Syndicate it does a quick check and, if a newer
+  version is out, downloads and installs it before the launcher opens (a few seconds; if
+  you are offline it just opens your current version). You can also force a check any time
+  with "Check for updates" (under Settings on the left). Accounts, keybinds and settings
+  stay saved across updates.
+- Fortnite itself is NOT included. Each player selects their own extracted Fortnite
+  folder (1.11 / 3.5.1 / 4.5 / 5.10) in the launcher.
+- No accounts, no .env, no tokens, no logs and no source code are included.
+
+How players use it
+1. Close any older Syndicate launcher and Fortnite.
+2. Run Project-Syndicate-vX.exe. The FIRST launch can take a few minutes while it
+   prepares files and Windows Security scans them. The window may look frozen; wait.
+   The first match can also take longer to start - if Ready Up fails, press it again.
+3. Pick a player name, choose their Fortnite folder, press PLAY.
+   Accounts live on each player's own PC under %LOCALAPPDATA%\ProjectTilted\UserData.
+
+About the encryption (please read)
+The bundle is encrypted so the files cannot be casually copied and re-uploaded.
+The decryption key has to live inside the EXE for it to run on its own, so this
+stops casual copying, NOT a determined reverse engineer. The strongest protection
+is releasing only from your official place (Discord / GitHub) with this version
+number, so copies are recognisable.
+
+Credits / licenses
+Syndicate is built on open-source work by other people. Keep these credits:
+- Backend: Helix (author: Sam) - GPL-3.0.
+- Game server: Erbium (universal Fortnite game server) and its contributors.
+Because Helix is GPL-3.0, if you distribute changes you are expected to make the
+corresponding source available to the people you distribute to. Consider offering
+your backend source on request to stay within that license.
+
+This build is unsigned. Antivirus or Windows SmartScreen may warn on first run;
+that is normal for an unsigned self-extracting EXE. Do not turn off antivirus.

@@ -1,0 +1,12 @@
+SYNDICATE - OWNERSHIP NOTICE
+
+This software (the Syndicate launcher and all of its files) was created by the
+Syndicate team: Unkn0wn, Joey, Sact, Trent, and Alfie.
+
+The ONLY official place to download Syndicate is our Discord:
+  https://discord.gg/synfn
+
+If you obtained this software ANYWHERE else, it is a STOLEN / redistributed copy.
+Redistributing, rebranding, or claiming this software as your own is prohibited.
+
+Copyright (c) 2026 Unkn0wn, Joey, Sact, Trent, and Alfie. All rights reserved.

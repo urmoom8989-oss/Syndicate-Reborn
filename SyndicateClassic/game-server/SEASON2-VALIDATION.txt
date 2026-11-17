@@ -1,0 +1,5 @@
+Installed local Season 2 fixes, 2026-10-16.
+300 shop rotations passed: S2 2 featured + 6 daily; S4 3 featured + 6 daily. No placeholder emoticons.
+Native 1.11 host spawned bots, found 44 season-native weapons, and restored Blue Squire (4 parts), HalloweenScythe and Glider_ID_001.
+All 175 component manifest hashes verified. Active and staged DLL hashes match.
+Client rendering/layout still requires gameplay confirmation. Previous DBNO/throwable limitations remain; this is not a public-release validation.

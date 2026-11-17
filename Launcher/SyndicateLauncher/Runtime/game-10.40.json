@@ -1,0 +1,112 @@
+[
+  {
+    "Name": "pakchunk0-WindowsClient.pak",
+    "Length": 736906972,
+    "TailSha256": "8d897545f0fe2000dda299a1f027d5d1a075968d3513b753ecb75433d80fad27"
+  },
+  {
+    "Name": "pakchunk1-WindowsClient.pak",
+    "Length": 1829039,
+    "TailSha256": "e38f3c1fbc0336f16a4b238fc1229bbea09da605f1aa31f0c9e44c6f5ad1a7e5"
+  },
+  {
+    "Name": "pakchunk10-WindowsClient.pak",
+    "Length": 4322906467,
+    "TailSha256": "8cd07749062e2265abdb2d5c9a2674e976fe69e35a6178bdebdef964f765cd4e"
+  },
+  {
+    "Name": "pakchunk10_s1-WindowsClient.pak",
+    "Length": 4358533118,
+    "TailSha256": "33164f571b79c58f1d4e6255b3f67a73b89efad2e1b27ac86663a5e958f197d6"
+  },
+  {
+    "Name": "pakchunk10_s10-WindowsClient.pak",
+    "Length": 4426858380,
+    "TailSha256": "d7dab7a42af74576e964a634a0f45e03f9f5cfa3be5237945cea41607a1cae3c"
+  },
+  {
+    "Name": "pakchunk10_s11-WindowsClient.pak",
+    "Length": 4332047954,
+    "TailSha256": "fb7789978c2126baad557d56fc88b1fe7fd81a24c804eed70a08955e9de57ab3"
+  },
+  {
+    "Name": "pakchunk10_s12-WindowsClient.pak",
+    "Length": 2095509314,
+    "TailSha256": "0c4b53ba7d5d5d7067168cc97c2a58cf5e714d472135e956f0142b22c754ab0d"
+  },
+  {
+    "Name": "pakchunk10_s2-WindowsClient.pak",
+    "Length": 4333040497,
+    "TailSha256": "9375c2107917ddc60d2dba025078411acf471310c16df526e16b8dbaa47808f7"
+  },
+  {
+    "Name": "pakchunk10_s3-WindowsClient.pak",
+    "Length": 4297960265,
+    "TailSha256": "1aee8d05e6f2732726636e6a1d1020d528665577fa7ed7fef2c8aa62d9a96d08"
+  },
+  {
+    "Name": "pakchunk10_s4-WindowsClient.pak",
+    "Length": 4303608594,
+    "TailSha256": "e070fd17931cf47882f65d8a9137c52739b62b6dc68d4b812dc3dbd5fa5bcc25"
+  },
+  {
+    "Name": "pakchunk10_s5-WindowsClient.pak",
+    "Length": 4304122154,
+    "TailSha256": "c4822f7e874e10c5df40072d3dc4af6f15d91a0a5e3bb209f1bfced07720140c"
+  },
+  {
+    "Name": "pakchunk10_s6-WindowsClient.pak",
+    "Length": 4304604530,
+    "TailSha256": "2614dd3f666763eea120aa6b11b3a30644019fb027c8c20d92a4f89430ebca2d"
+  },
+  {
+    "Name": "pakchunk10_s7-WindowsClient.pak",
+    "Length": 4330325876,
+    "TailSha256": "02fecb5b1864d12a866b6583efe645a6c5de536e0ffbec5676536a4c3b54e3e1"
+  },
+  {
+    "Name": "pakchunk10_s8-WindowsClient.pak",
+    "Length": 4309055612,
+    "TailSha256": "2575186becc7c12aee949bb0712ca6f2f34f4a6be550cd957b44ad325a0453d3"
+  },
+  {
+    "Name": "pakchunk10_s9-WindowsClient.pak",
+    "Length": 4304875949,
+    "TailSha256": "fa2107a1531753e4ff2bf967e355a7e7d3bf0c93f6ad395f962ffe8beebea24b"
+  },
+  {
+    "Name": "pakchunk11-WindowsClient.pak",
+    "Length": 4315189430,
+    "TailSha256": "f80ded27cd0b1eee20f7c3c29b7061d3f1886e402c13d9d99fd22f0123f83131"
+  },
+  {
+    "Name": "pakchunk11_s1-WindowsClient.pak",
+    "Length": 1770771403,
+    "TailSha256": "70cf77f45c30a2e19a66ce42533bfb58c4022ff50b051cfa8f4056cb22dbf105"
+  },
+  {
+    "Name": "pakchunk2-WindowsClient.pak",
+    "Length": 543932007,
+    "TailSha256": "5b0a0220d9da2da6bdf9192d794b1f5e4d150de647b2b9e59ab2a318157064ac"
+  },
+  {
+    "Name": "pakchunk5-WindowsClient.pak",
+    "Length": 507861770,
+    "TailSha256": "3c6c70a846762721451adce4dd2f3e0e72f9032e3765ae7977503fe2dbdb1f19"
+  },
+  {
+    "Name": "pakchunk7-WindowsClient.pak",
+    "Length": 557501847,
+    "TailSha256": "6510f6426e7e8683c9a0185b5e7b5627db37bcf6cf2ae6fe0faf6512b1c38c31"
+  },
+  {
+    "Name": "pakchunk8-WindowsClient.pak",
+    "Length": 543643127,
+    "TailSha256": "1710851f4e2306042d2c50bcd79e5e2642a36f0745252adcd0c9d71d4ffa44ef"
+  },
+  {
+    "Name": "pakchunk9-WindowsClient.pak",
+    "Length": 93240726,
+    "TailSha256": "a4139f183678f71fb30f486bd88c1fef73ce56b19f5f94ccbd469efec0bd8573"
+  }
+]

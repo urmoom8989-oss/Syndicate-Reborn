@@ -1,0 +1,136 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>SyndicateLauncher</AssemblyName>
+    <RootNamespace>SyndicateLauncher</RootNamespace>
+    <ApplicationIcon>Assets\syndicate.ico</ApplicationIcon>
+    <Version>1.3.1</Version>
+    <PlatformTarget>x64</PlatformTarget>
+    <Product>Syndicate Launcher</Product>
+    <Company>Syndicate</Company>
+    <Authors>Unkn0wn (d4shyb0i), Joey, Sact, Trent, Alfie</Authors>
+    <Copyright>Copyright (c) 2026 Unkn0wn, Joey, Sact, Trent, and Alfie (Syndicate). All rights reserved.</Copyright>
+    <Trademark>Syndicate</Trademark>
+    <AssemblyTitle>Syndicate Launcher</AssemblyTitle>
+    <Description>Syndicate Launcher. Made by Unkn0wn, Joey, Sact, Trent, and Alfie. Unauthorized redistribution or rebranding is prohibited.</Description>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <!-- UPDATE FROM GIT.cmd builds with -p:SyndicateDevBuild=true: shows the DEV LAUNCHER badge. Release builds (build.bat) don't. -->
+  <PropertyGroup Condition="'$(SyndicateDevBuild)'=='true'">
+    <DefineConstants>$(DefineConstants);DEV_BUILD</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets\ice-bg.jpg" />
+    <!-- Fortnite Lobby Themes: wallpapers and their card thumbnails (Models/LauncherTheme.cs, ThemeCatalog). -->
+    <Resource Include="Assets\Lobby\*.jpg" />
+    <Resource Include="Assets\logo.png" />
+    <Resource Include="Assets\vbucks.png" />
+    <Resource Include="Assets\bot-name-pool.txt" />
+    <Resource Include="Assets\studio-keyart.jpg" />
+    <Resource Include="Assets\og-card.png" />
+    <Resource Include="Assets\season-x-background-image.jpg" />
+    <Resource Include="Assets\Season 0 Wheel page background.png" />
+    <Resource Include="Assets\Season 4 wheel page background.jpg" />
+    <Resource Include="Assets\Season 5 wheel page background.jpg" />
+    <Resource Include="Assets\Season 6 wheel page background.jpg" />
+    <Resource Include="Assets\Season 7 wheel page background.jpg" />
+    <Resource Include="Assets\Season 8 wheel page background.jpg" />
+    <Resource Include="Assets\Season 9 Wheel page background.png" />
+    <Resource Include="Assets\Season x wheel page background.png" />
+    <Resource Include="Assets\BurbankBigCondensedBold.otf" />
+    <Resource Include="Assets\syndicate.ico" />
+    <Resource Include="Assets\chapter-1-bg.png" />
+    <Resource Include="Assets\chapter-2-bg.png" />
+    <Resource Include="Assets\chapter2-season1.png" />
+    <Resource Include="Assets\chapter2-season2.png" />
+    <Resource Include="Assets\chapter2-season3.jpg" />
+    <Resource Include="Assets\chapter2-season4.jpg" />
+    <Resource Include="Assets\chapter2-season5.jpg" />
+    <Resource Include="Assets\chapter2-season6.jpg" />
+    <Resource Include="Assets\chapter2-season7.jpg" />
+    <Resource Include="Assets\chapter2-season8.jpg" />
+    <Resource Include="Assets\chapter1-season0.jpg" />
+    <Resource Include="Assets\chapter1-season1.jpg" />
+    <Resource Include="Assets\chapter1-season4.jpg" />
+    <Resource Include="Assets\chapter1-season6.jpg" />
+    <Resource Include="Assets\chapter1-season7.jpg" />
+    <Resource Include="Assets\chapter1-season8.jpg" />
+    <Resource Include="Assets\chapter1-season9.jpg" />
+    <Resource Include="Assets\chapter1-season10.jpg" />
+    <Resource Include="Assets\chapter1-season2.jpg" />
+    <Resource Include="Assets\chapter1-season3.jpg" />
+    <Resource Include="Assets\chapter1-season5.jpg" />
+    <Resource Include="Assets\season-0.png" />
+    <Resource Include="Assets\season-1.png" />
+    <Resource Include="Assets\season-2.png" />
+    <Resource Include="Assets\season-3.png" />
+    <Resource Include="Assets\season-4.png" />
+    <Resource Include="Assets\season-5.png" />
+    <Resource Include="Assets\season-6.png" />
+    <Resource Include="Assets\season-7.png" />
+    <Resource Include="Assets\season-8.png" />
+    <Resource Include="Assets\season-9.png" />
+    <Resource Include="Assets\season-x.png" />
+    <Resource Include="Assets\Avatars\*.png" />
+    <!-- Controller button hints (Settings > Mods > Controller, MainWindow.Controller.cs). -->
+    <Resource Include="Assets\Controller\*.png" />
+  </ItemGroup>
+  <!-- Controllers: HidSharp reads PS4 / PS5 pads, Nefarius.ViGEm.Client turns them into a virtual Xbox pad
+       (needs the free ViGEmBus driver). Both are bundled into the single-file exe. -->
+  <ItemGroup>
+    <PackageReference Include="HidSharp" Version="2.1.0" />
+    <PackageReference Include="Nefarius.ViGEm.Client" Version="1.21.256" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Runtime\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+  <!--
+    Obfuscation post-build step — Release builds only, never DEV_BUILD.
+    Requires the Obfuscar local tool (run once: cd Launcher && dotnet tool restore).
+    obfuscar.xml uses InPath=. and OutPath=.\obf (relative to WorkingDirectory=TargetDir).
+    After Obfuscar finishes, the obfuscated DLL is copied back over the original
+    and the temp obf\ folder is removed. DEV builds skip this entirely.
+  -->
+  <Target Name="ObfuscateAssembly" AfterTargets="Build"
+          Condition="'$(Configuration)' == 'Release' And '$(SyndicateDevBuild)' != 'true'">
+    <PropertyGroup>
+      <_ObfDir>$(TargetDir)obf\</_ObfDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(_ObfDir)" />
+    <Message Text="[Syndicate] Restoring Obfuscar tool..." Importance="high" />
+    <Exec Command="dotnet tool restore"
+          WorkingDirectory="$(MSBuildThisFileDirectory).."
+          ContinueOnError="true" />
+    <Message Text="[Syndicate] Running Obfuscar on $(TargetName)..." Importance="high" />
+    <Exec Command="dotnet tool run obfuscar.console &quot;$(MSBuildThisFileDirectory)obfuscar.xml&quot;"
+          WorkingDirectory="$(TargetDir)"
+          ContinueOnError="true" />
+    <!-- Fail the Release build if obfuscation did not run, instead of silently shipping a plain DLL. -->
+    <Error Condition="!Exists('$(_ObfDir)SyndicateLauncher.dll')"
+           Text="Obfuscation did not produce $(_ObfDir)SyndicateLauncher.dll. Run 'cd Launcher &amp;&amp; dotnet tool restore' and rebuild. A Release build must not ship an unobfuscated launcher." />
+    <!-- Copy the obfuscated DLL back over the original once MSBuild has released its handle -->
+    <Copy SourceFiles="$(_ObfDir)SyndicateLauncher.dll"
+          DestinationFiles="$(TargetPath)"
+          Condition="Exists('$(_ObfDir)SyndicateLauncher.dll')"
+          OverwriteReadOnlyFiles="true" />
+    <!-- Keep the symbol map next to the DLL for offline crash-trace decoding -->
+    <Copy SourceFiles="$(_ObfDir)Mapping.xml"
+          DestinationFolder="$(TargetDir)"
+          Condition="Exists('$(_ObfDir)Mapping.xml')" />
+    <RemoveDir Directories="$(_ObfDir)" />
+    <Message Text="[Syndicate] Obfuscation applied." Importance="high" />
+  </Target>
+
+  <Target Name="EmbedSyndicateRuntime" BeforeTargets="AssignTargetPaths">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <ZipDirectory SourceDirectory="$(MSBuildProjectDirectory)\Runtime" DestinationFile="$(IntermediateOutputPath)SyndicateRuntime.zip" Overwrite="true" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(IntermediateOutputPath)SyndicateRuntime.zip" LogicalName="SyndicateLauncher.Runtime.zip" />
+    </ItemGroup>
+  </Target>
+</Project>

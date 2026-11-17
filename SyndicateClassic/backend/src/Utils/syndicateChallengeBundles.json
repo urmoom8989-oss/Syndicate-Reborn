@@ -1,0 +1,1702 @@
+{
+  "bundles": [
+    {
+      "id": "QuestBundle_S4_Cumulative",
+      "quests": [
+        {
+          "id": "Quest_BR_S4_Cumulative_CollectTokens_01",
+          "objectives": [
+            {
+              "name": "battlepass_cumulative_token1",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4_Cumulative_CollectTokens_02",
+          "objectives": [
+            {
+              "name": "battlepass_cumulative_token2",
+              "target": 2
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4_Cumulative_CollectTokens_03",
+          "objectives": [
+            {
+              "name": "battlepass_cumulative_token3",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4_Cumulative_CollectTokens_04",
+          "objectives": [
+            {
+              "name": "battlepass_cumulative_token4",
+              "target": 4
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4_Cumulative_CollectTokens_05",
+          "objectives": [
+            {
+              "name": "battlepass_cumulative_token5",
+              "target": 5
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4_Cumulative_CollectTokens_06",
+          "objectives": [
+            {
+              "name": "battlepass_cumulative_token6",
+              "target": 6
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4_Cumulative_CollectTokens_07",
+          "objectives": [
+            {
+              "name": "battlepass_cumulative_token7",
+              "target": 7
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_ProgressiveA",
+      "quests": [
+        {
+          "id": "Quest_BR_LevelUp_SeasonLevel_ProgressiveA_01",
+          "objectives": [
+            {
+              "name": "athena_season_levelup_progressive_a_01",
+              "target": 10
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_LevelUp_SeasonLevel_ProgressiveA_02",
+          "objectives": [
+            {
+              "name": "athena_season_levelup_progressive_a_02",
+              "target": 20
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_LevelUp_SeasonLevel_ProgressiveA_03",
+          "objectives": [
+            {
+              "name": "athena_season_levelup_progressive_a_03",
+              "target": 30
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_LevelUp_SeasonLevel_ProgressiveA_04",
+          "objectives": [
+            {
+              "name": "athena_season_levelup_progressive_a_04",
+              "target": 40
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_LevelUp_SeasonLevel_ProgressiveA_05",
+          "objectives": [
+            {
+              "name": "athena_season_levelup_progressive_a_05",
+              "target": 65
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_ProgressiveB",
+      "quests": [
+        {
+          "id": "Quest_BR_LevelUp_SeasonLevel_ProgressiveB_01",
+          "objectives": [
+            {
+              "name": "athena_season_levelup_progressive_b_01",
+              "target": 25
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_LevelUp_SeasonLevel_ProgressiveB_02",
+          "objectives": [
+            {
+              "name": "athena_season_levelup_progressive_b_02",
+              "target": 35
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_LevelUp_SeasonLevel_ProgressiveB_03",
+          "objectives": [
+            {
+              "name": "athena_season_levelup_progressive_b_03",
+              "target": 45
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_LevelUp_SeasonLevel_ProgressiveB_04",
+          "objectives": [
+            {
+              "name": "athena_season_levelup_progressive_b_04",
+              "target": 55
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_LevelUp_SeasonLevel_ProgressiveB_05",
+          "objectives": [
+            {
+              "name": "athena_season_levelup_progressive_b_05",
+              "target": 80
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Starter",
+      "quests": [
+        {
+          "id": "Quest_BR_Outlive",
+          "objectives": [
+            {
+              "name": "battlepass_athena_outlive_players",
+              "target": 1000
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Play_Min1Friend",
+          "objectives": [
+            {
+              "name": "battlepass_athena_friend",
+              "target": 10
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Damage",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player",
+              "target": 5000
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Land_Locations_Different",
+          "objectives": [
+            {
+              "name": "battlepass_land_athena_location_anarchyacres",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_dustydivot",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_fatalfields",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_flushfactory",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_greasygrove",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_hauntedhills",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_junkjunction",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_lonelylodge",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_lootlake",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_moistymire",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_pleasantpark",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_retailrow",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_shiftyshafts",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_saltysprings",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_snobbyshores",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_tiltedtowers",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_tomatotown",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_wailingwoods",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_luckylanding",
+              "target": 1
+            },
+            {
+              "name": "battlepass_land_athena_location_riskyreels",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Play",
+          "objectives": [
+            {
+              "name": "battlepass_athena_play_matches",
+              "target": 50
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Play_Min1Elimination",
+          "objectives": [
+            {
+              "name": "battlepass_complete_athena_with_killingblow",
+              "target": 10
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Place_Win",
+          "objectives": [
+            {
+              "name": "battlepass_athena_win_match",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Week_001",
+      "quests": [
+        {
+          "id": "Quest_BR_Damage_SniperRifle",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player_sniper",
+              "target": 500
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_Chests_Location_HauntedHills",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest_hauntedhills",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Use_PortaFort",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_portafort",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_FORTNITE",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_01",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_02",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_03",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_04",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_05",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_06",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_07",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_08",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_09",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_10",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_11",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_12",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_13",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_14",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_15",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_16",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_17",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_18",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_19",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_fortnite_letters_20",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ScavengerHunt_TreasureMap_01",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_hidden_star_01",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Weapon_Pistol",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_pistol",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Location_FlushFactory",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_flushfactory",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4W1_Cumulative_CompleteAll",
+          "objectives": [
+            {
+              "name": "battlepass_completed_s4w1_quest1",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w1_quest2",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w1_quest3",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w1_quest4",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w1_quest5",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w1_quest6",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w1_quest7",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Week_002",
+      "quests": [
+        {
+          "id": "Quest_BR_Interact_Chests_Location_GreasyGrove",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest_greasygrove",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_GravityStones",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_gravitystones",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Damage_SuppressedWeapon",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player_suppressed_weapon",
+              "target": 500
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Dance_ScavengerHunt_Cameras",
+          "objectives": [
+            {
+              "name": "battlepass_dance_athena_location_cameras_01",
+              "target": 1
+            },
+            {
+              "name": "battlepass_dance_athena_location_cameras_02",
+              "target": 1
+            },
+            {
+              "name": "battlepass_dance_athena_location_cameras_03",
+              "target": 1
+            },
+            {
+              "name": "battlepass_dance_athena_location_cameras_04",
+              "target": 1
+            },
+            {
+              "name": "battlepass_dance_athena_location_cameras_05",
+              "target": 1
+            },
+            {
+              "name": "battlepass_dance_athena_location_cameras_06",
+              "target": 1
+            },
+            {
+              "name": "battlepass_dance_athena_location_cameras_07",
+              "target": 1
+            },
+            {
+              "name": "battlepass_dance_athena_location_cameras_08",
+              "target": 1
+            },
+            {
+              "name": "battlepass_dance_athena_location_cameras_09",
+              "target": 1
+            },
+            {
+              "name": "battlepass_dance_athena_location_cameras_10",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ScavengerHunt_Triangulate_01",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_hidden_star_02",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_ExplosiveWeapon",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_with_explosives",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Location_TomatoTown",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_tomatotown",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4W2_Cumulative_CompleteAll",
+          "objectives": [
+            {
+              "name": "battlepass_completed_s4w2_quest1",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w2_quest2",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w2_quest3",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w2_quest4",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w2_quest5",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w2_quest6",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w2_quest7",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Week_003",
+      "quests": [
+        {
+          "id": "Quest_BR_Watch_Replay",
+          "objectives": [
+            {
+              "name": "battlepass_athena_watch_replay",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Damage_Pistol",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player_pistol",
+              "target": 500
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_Chests_Location_LonelyLodge",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest_lonelylodge",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_RubberDuckies",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_rubberduckies_01",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_02",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_03",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_04",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_05",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_06",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_07",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_08",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_09",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_10",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_11",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_12",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_13",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_14",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_15",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_16",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_17",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_18",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_19",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_rubberduckies_20",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ScavengerHunt_TreasureMap_02",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_hidden_star_03",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Weapon_SniperRifle",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_sniper",
+              "target": 2
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Location_TiltedTowers",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_tiltedtowers",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4W3_Cumulative_CompleteAll",
+          "objectives": [
+            {
+              "name": "battlepass_completed_s4w3_quest1",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w3_quest2",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w3_quest3",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w3_quest4",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w3_quest5",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w3_quest6",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w3_quest7",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Week_004",
+      "quests": [
+        {
+          "id": "Quest_BR_Damage_AssaultRifle",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player_asssult",
+              "target": 1000
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_Chests_Location_WailingWoods",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest_walingwoods",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Revive",
+          "objectives": [
+            {
+              "name": "battlepass_athena_revive_player",
+              "target": 5
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Visit_ScavengerHunt_StormCircles",
+          "objectives": [
+            {
+              "name": "battlepass_visit_scavengerhunt_stormcircles",
+              "target": 4
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ScavengerHunt_Triangulate_02",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_hidden_star_04",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Trap",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_with_trap",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Location_SnobbyShores",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_snobbyshores",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4W4_Cumulative_CompleteAll",
+          "objectives": [
+            {
+              "name": "battlepass_completed_s4w4_quest1",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w4_quest2",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w4_quest3",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w4_quest4",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w4_quest5",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w4_quest6",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w4_quest7",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Week_005",
+      "quests": [
+        {
+          "id": "Quest_BR_Damage_SMG",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player_smg",
+              "target": 500
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_Chests_Location_DustyDivot",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest_dustydivot",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Use_Jetpack",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_jetpack",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Spray_SpecificTargets",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_gravitystones",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ScavengerHunt_TreasureMap_03",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_hidden_star_05",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Weapon_MinigunLMG",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_minigunlmg",
+              "target": 2
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Location_LuckyLanding",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_luckylanding",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4W5_Cumulative_CompleteAll",
+          "objectives": [
+            {
+              "name": "battlepass_completed_s4w5_quest1",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w5_quest2",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w5_quest3",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w5_quest4",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w5_quest5",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w5_quest6",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w5_quest7",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Week_006",
+      "quests": [
+        {
+          "id": "Quest_BR_Interact_Chests_SingleMatch",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_loot_chest_single_match",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Damage_Shotgun",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player_shotgun",
+              "target": 1000
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_Chests_Location_LootLake",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest_lootlake",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Dance_ScavengerHunt_Platforms",
+          "objectives": [
+            {
+              "name": "battlepass_dance_athena_scavengerhunt_platforms",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ScavengerHunt_Triangulate_03",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_hidden_star_06",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Weapon_SMG",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_smg",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Location_RetailRow",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_retailrow",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4W6_Cumulative_CompleteAll",
+          "objectives": [
+            {
+              "name": "battlepass_completed_s4w6_quest1",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w6_quest2",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w6_quest3",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w6_quest4",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w6_quest5",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w6_quest6",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w6_quest7",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Week_007",
+      "quests": [
+        {
+          "id": "Quest_BR_Damage_Pickaxe",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player_pickaxe",
+              "target": 250
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_Chests_Location_RiskyReels",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest_riskyreels",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Use_Jetpack",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_jetpack",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Score_Goals",
+          "objectives": [
+            {
+              "name": "battlepass_athena_score_goals_01",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ScavengerHunt_TreasureMap_04",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_hidden_star_07",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Weapon_AssaultRifle",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_assault",
+              "target": 5
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Location_ShiftyShafts",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_shiftyshafts",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4W7_Cumulative_CompleteAll",
+          "objectives": [
+            {
+              "name": "battlepass_completed_s4w7_quest1",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w7_quest2",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w7_quest3",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w7_quest4",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w7_quest5",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w7_quest6",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w7_quest7",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Week_008",
+      "quests": [
+        {
+          "id": "Quest_BR_Damage_Headshot",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player_head_shots",
+              "target": 250
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_Chests_Location_SaltySprings",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest_saltysprings",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_SupplyDrops",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_supply_drop",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Destroy_SpecificTargets",
+          "objectives": [
+            {
+              "name": "battlepass_destroy_specifictargets",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ScavengerHunt_Triangulate_04",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_hidden_star_08",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_SuppressedWeapon",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_with_suppressed_weapon",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Location_PleasantPark",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_pleasantpark",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4W8_Cumulative_CompleteAll",
+          "objectives": [
+            {
+              "name": "battlepass_completed_s4w8_quest1",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w8_quest2",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w8_quest3",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w8_quest4",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w8_quest5",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w8_quest6",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w8_quest7",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Week_009",
+      "quests": [
+        {
+          "id": "Quest_BR_Damage_ExplosiveWeapon",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player_explosives",
+              "target": 500
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_Chests_Location_MoistyMire",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest_moistymire",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Use_Jetpack",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_jetpack",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_ScavengerHunt_Weakspots",
+          "objectives": [
+            {
+              "name": "battlepass_scavengerhunt_weakspots_01",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ScavengerHunt_TreasureMap_05",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_hidden_star_09",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Weapon_Shotgun",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_shotgun",
+              "target": 4
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Location_AnarchyAcres",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_anarchyacres",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4W9_Cumulative_CompleteAll",
+          "objectives": [
+            {
+              "name": "battlepass_completed_s4w9_quest1",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w9_quest2",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w9_quest3",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w9_quest4",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w9_quest5",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w9_quest6",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w9_quest7",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    },
+    {
+      "id": "QuestBundle_S4_Week_010",
+      "quests": [
+        {
+          "id": "Quest_BR_Interact_Chests_Location_JunkJunction",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest_junkjunction",
+              "target": 7
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Damage_Enemy_Buildings",
+          "objectives": [
+            {
+              "name": "battlepass_damage_athena_player_buildings",
+              "target": 5000
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ChestAmmoBoxSupplyDrop_SingleMatch",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_treasurechest",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_ammobox",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_supplydrop",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_GniceGnomes",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_01",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_02",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_03",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_04",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_05",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_06",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_07",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_08",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_09",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_10",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_11",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_12",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_13",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_14",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_15",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_16",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_17",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_18",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_19",
+              "target": 1
+            },
+            {
+              "name": "battlepass_interact_athena_gnice_gnome_20",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Interact_ScavengerHunt_Triangulate_05",
+          "objectives": [
+            {
+              "name": "battlepass_interact_athena_hidden_star_10",
+              "target": 1
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_players",
+              "target": 10
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_Eliminate_Location_FatalFields",
+          "objectives": [
+            {
+              "name": "battlepass_killingblow_athena_player_fatalfields",
+              "target": 3
+            }
+          ]
+        },
+        {
+          "id": "Quest_BR_S4W10_Cumulative_CompleteAll",
+          "objectives": [
+            {
+              "name": "battlepass_completed_s4w10_quest1",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w10_quest2",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w10_quest3",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w10_quest4",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w10_quest5",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w10_quest6",
+              "target": 1
+            },
+            {
+              "name": "battlepass_completed_s4w10_quest7",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "entries": []
+    }
+  ],
+  "schedules": [
+    {
+      "id": "Season4_Challenge_Schedule",
+      "quests": [],
+      "entries": [
+        {
+          "bundle": "QuestBundle_S4_Cumulative",
+          "unlockType": 1,
+          "unlockValue": 0
+        },
+        {
+          "bundle": "QuestBundle_S4_ProgressiveA",
+          "unlockType": 1,
+          "unlockValue": 0
+        },
+        {
+          "bundle": "QuestBundle_S4_Week_001",
+          "unlockType": 1,
+          "unlockValue": 0
+        },
+        {
+          "bundle": "QuestBundle_S4_Week_002",
+          "unlockType": 2,
+          "unlockValue": 7
+        },
+        {
+          "bundle": "QuestBundle_S4_Week_003",
+          "unlockType": 2,
+          "unlockValue": 14
+        },
+        {
+          "bundle": "QuestBundle_S4_Week_004",
+          "unlockType": 2,
+          "unlockValue": 21
+        },
+        {
+          "bundle": "QuestBundle_S4_Week_005",
+          "unlockType": 2,
+          "unlockValue": 28
+        },
+        {
+          "bundle": "QuestBundle_S4_Week_006",
+          "unlockType": 2,
+          "unlockValue": 35
+        },
+        {
+          "bundle": "QuestBundle_S4_Week_007",
+          "unlockType": 2,
+          "unlockValue": 42
+        },
+        {
+          "bundle": "QuestBundle_S4_Week_008",
+          "unlockType": 2,
+          "unlockValue": 49
+        },
+        {
+          "bundle": "QuestBundle_S4_Week_009",
+          "unlockType": 2,
+          "unlockValue": 56
+        },
+        {
+          "bundle": "QuestBundle_S4_Week_010",
+          "unlockType": 2,
+          "unlockValue": 63
+        }
+      ]
+    },
+    {
+      "id": "Season4_ProgressiveB_Schedule",
+      "quests": [],
+      "entries": [
+        {
+          "bundle": "QuestBundle_S4_ProgressiveB",
+          "unlockType": 1,
+          "unlockValue": 0
+        }
+      ]
+    },
+    {
+      "id": "Season4_StarterChallenge_Schedule",
+      "quests": [],
+      "entries": [
+        {
+          "bundle": "QuestBundle_S4_Starter",
+          "unlockType": 1,
+          "unlockValue": 2
+        }
+      ]
+    }
+  ]
+}

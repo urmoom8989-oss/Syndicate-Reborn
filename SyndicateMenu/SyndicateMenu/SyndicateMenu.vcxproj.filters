@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Core">
+      <UniqueIdentifier>{1a2b3c4d-5e6f-7081-92a3-b4c5d6e7f801}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SDK">
+      <UniqueIdentifier>{2b3c4d5e-6f70-8192-a3b4-c5d6e7f80192}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Features">
+      <UniqueIdentifier>{3c4d5e6f-7081-92a3-b4c5-d6e7f80192a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Menu">
+      <UniqueIdentifier>{4d5e6f70-8192-a3b4-c5d6-e7f80192a3b4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="Core\Memory.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\Types.cpp">
+      <Filter>SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\Objects.cpp">
+      <Filter>SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\Init.cpp">
+      <Filter>SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="Features\Game.cpp">
+      <Filter>Features</Filter>
+    </ClCompile>
+    <ClCompile Include="Features\ESP.cpp">
+      <Filter>Features</Filter>
+    </ClCompile>
+    <ClCompile Include="Features\Aim.cpp">
+      <Filter>Features</Filter>
+    </ClCompile>
+    <ClCompile Include="Features\Exploits.cpp">
+      <Filter>Features</Filter>
+    </ClCompile>
+    <ClCompile Include="Features\CustomOutfits.cpp">
+      <Filter>Features</Filter>
+    </ClCompile>
+    <ClCompile Include="Features\IconServer.cpp">
+      <Filter>Features</Filter>
+    </ClCompile>
+    <ClCompile Include="Features\Crosshair.cpp">
+      <Filter>Features</Filter>
+    </ClCompile>
+    <ClCompile Include="Menu\Config.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="Menu\Overlay.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="Menu\Menu.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\ogfn_memory.cpp" />
+    <ClCompile Include="Menu\Hooks.cpp" />
+    <ClCompile Include="framework\gui.cpp" />
+    <ClCompile Include="framework\helpers\config.cpp" />
+    <ClCompile Include="framework\helpers\draw.cpp" />
+    <ClCompile Include="framework\helpers\fonts.cpp" />
+    <ClCompile Include="framework\helpers\search.cpp" />
+    <ClCompile Include="framework\widgets\button.cpp" />
+    <ClCompile Include="framework\widgets\checkbox.cpp" />
+    <ClCompile Include="framework\widgets\child.cpp" />
+    <ClCompile Include="framework\widgets\color_edit.cpp" />
+    <ClCompile Include="framework\widgets\dropdown.cpp" />
+    <ClCompile Include="framework\widgets\helpers.cpp" />
+    <ClCompile Include="framework\widgets\keybind.cpp" />
+    <ClCompile Include="framework\widgets\notify.cpp" />
+    <ClCompile Include="framework\widgets\range.cpp" />
+    <ClCompile Include="framework\widgets\section.cpp" />
+    <ClCompile Include="framework\widgets\slider.cpp" />
+    <ClCompile Include="framework\widgets\text_field.cpp" />
+    <ClCompile Include="framework\widgets\window.cpp" />
+    <ClCompile Include="External\imgui\imgui.cpp" />
+    <ClCompile Include="External\imgui\imgui_draw.cpp" />
+    <ClCompile Include="External\imgui\imgui_tables.cpp" />
+    <ClCompile Include="External\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="External\imgui\imgui_freetype.cpp" />
+    <ClCompile Include="External\imgui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="External\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="External\minhook\src\buffer.c" />
+    <ClCompile Include="External\minhook\src\hook.c" />
+    <ClCompile Include="External\minhook\src\trampoline.c" />
+    <ClCompile Include="External\minhook\src\hde\hde64.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Core\Math.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Memory.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\Types.h">
+      <Filter>SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\Objects.h">
+      <Filter>SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\Offsets.h">
+      <Filter>SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\Init.h">
+      <Filter>SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\Game.h">
+      <Filter>Features</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\ESP.h">
+      <Filter>Features</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\Aim.h">
+      <Filter>Features</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\Exploits.h">
+      <Filter>Features</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\CustomOutfits.h">
+      <Filter>Features</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\IconServer.h">
+      <Filter>Features</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\Crosshair.h">
+      <Filter>Features</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\Config.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\Overlay.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\Menu.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\log.h" />
+    <ClInclude Include="Utils\memory.h" />
+    <ClInclude Include="Utils\memory.inl" />
+    <ClInclude Include="SDK\ObjectArray.h" />
+    <ClInclude Include="Menu\Hooks.h" />
+  </ItemGroup>
+</Project>

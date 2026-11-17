@@ -1,0 +1,28 @@
+{
+  "Format": "Syndicate.FNP",
+  "Version": 1,
+  "Name": "Easy",
+  "Mixed": false,
+  "Values": {
+    "aimAccuracy": 25,
+    "aimTracking": 25,
+    "reactionSpeed": 25,
+    "firingFrequency": 25,
+    "aggression": 25,
+    "pursuit": 25,
+    "buildFrequency": 25,
+    "buildSpeed": 25,
+    "heightSeeking": 25,
+    "defensiveBuilding": 25,
+    "editFrequency": 25,
+    "editSpeed": 25,
+    "strafing": 25,
+    "jumping": 25,
+    "awareness": 25,
+    "prediction": 25,
+    "looting": 25,
+    "harvesting": 25,
+    "healing": 25,
+    "rotation": 25
+  }
+}

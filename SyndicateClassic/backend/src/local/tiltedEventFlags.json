@@ -1,0 +1,4 @@
+{
+  "_comment": "Extra calendar event flags per Fortnite build, e.g. \"10.31\": [\"EventFlag.SomeEvent\"]. Names must match the game's own flags exactly; a wrong name does nothing. 10.31: LTE_BlackMonday is the Fortnite x Batman crossover (Gotham City). Gotham City is turned off: add \"EventFlag.LTE_BlackMonday\" to 10.31 to switch the client back to the Batman event.",
+  "10.31": []
+}

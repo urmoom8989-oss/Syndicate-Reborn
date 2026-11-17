@@ -1,0 +1,278 @@
+{
+ "dump": 6,
+ "version": "authored-s2",
+ "season": 2,
+ "schedules": [],
+ "bundles": [],
+ "loose": [],
+ "daily": [
+  "AthenaDailyQuest_PlayerElimination",
+  "AthenaDailyQuest_InteractTreasureChest",
+  "AthenaDailyQuest_InteractAmmoCrate",
+  "AthenaDaily_Solo_Top25",
+  "AthenaDaily_Squad_Top6",
+  "AthenaDaily_Squad_Top12",
+  "AthenaDailyQuest_PlayerEliminationShotguns",
+  "AthenaDailyQuest_PlayerEliminationAssaultRifles"
+ ],
+ "quests": {
+  "AthenaDailyQuest_PlayerElimination": {
+   "objectives": [
+    {
+     "name": "athena_daily_kill_players_v2",
+     "count": 10,
+     "stats": [
+      {
+       "type": 0,
+       "target": [
+        "homebase.Class"
+       ],
+       "source": [
+        "homebase.Class"
+       ],
+       "context": [
+        "Athena.Playlist"
+       ],
+       "cond": ""
+      }
+     ]
+    }
+   ],
+   "rewards": [
+    {
+     "type": "Quest",
+     "name": "AthenaSeasonalXP",
+     "qty": 5000
+    }
+   ],
+   "next": [],
+   "needed": 0,
+   "oncePerMatch": false,
+   "singleMatch": false
+  },
+  "AthenaDailyQuest_InteractTreasureChest": {
+   "objectives": [
+    {
+     "name": "daily_athena_loot_chest_v2",
+     "count": 7,
+     "stats": [
+      {
+       "type": 17,
+       "target": [
+        "Building.Type.Container.TreasureChest"
+       ],
+       "source": [],
+       "context": [
+        "Athena.Playlist"
+       ],
+       "cond": ""
+      }
+     ]
+    }
+   ],
+   "rewards": [
+    {
+     "type": "Quest",
+     "name": "AthenaSeasonalXP",
+     "qty": 5000
+    }
+   ],
+   "next": [],
+   "needed": 0,
+   "oncePerMatch": false,
+   "singleMatch": false
+  },
+  "AthenaDailyQuest_InteractAmmoCrate": {
+   "objectives": [
+    {
+     "name": "athena_daily_loot_ammobox_v2",
+     "count": 7,
+     "stats": [
+      {
+       "type": 17,
+       "target": [
+        "Building.Type.Container.Ammobox"
+       ],
+       "source": [],
+       "context": [
+        "Athena.Playlist"
+       ],
+       "cond": ""
+      }
+     ]
+    }
+   ],
+   "rewards": [
+    {
+     "type": "Quest",
+     "name": "AthenaSeasonalXP",
+     "qty": 5000
+    }
+   ],
+   "next": [],
+   "needed": 0,
+   "oncePerMatch": false,
+   "singleMatch": false
+  },
+  "AthenaDaily_Solo_Top25": {
+   "objectives": [
+    {
+     "name": "daily_athena_solo_top25_v2",
+     "count": 1,
+     "stats": [
+      {
+       "type": 23,
+       "target": [],
+       "source": [],
+       "context": [
+        "Athena.Playlist.Solo"
+       ],
+       "cond": "Athena.Rank <=25"
+      }
+     ]
+    }
+   ],
+   "rewards": [
+    {
+     "type": "Quest",
+     "name": "AthenaSeasonalXP",
+     "qty": 5000
+    }
+   ],
+   "next": [],
+   "needed": 0,
+   "oncePerMatch": false,
+   "singleMatch": false
+  },
+  "AthenaDaily_Squad_Top6": {
+   "objectives": [
+    {
+     "name": "daily_athena_squad_top6_v2",
+     "count": 1,
+     "stats": [
+      {
+       "type": 23,
+       "target": [],
+       "source": [],
+       "context": [
+        "Athena.Playlist.Squad"
+       ],
+       "cond": "Athena.Rank <=6 && Athena.MaxTeamSize <5"
+      }
+     ]
+    }
+   ],
+   "rewards": [
+    {
+     "type": "Quest",
+     "name": "AthenaSeasonalXP",
+     "qty": 5000
+    }
+   ],
+   "next": [],
+   "needed": 0,
+   "oncePerMatch": false,
+   "singleMatch": false
+  },
+  "AthenaDaily_Squad_Top12": {
+   "objectives": [
+    {
+     "name": "daily_athena_squad_top12",
+     "count": 5,
+     "stats": [
+      {
+       "type": 23,
+       "target": [],
+       "source": [],
+       "context": [
+        "Athena.Playlist.Squad"
+       ],
+       "cond": "Athena.Rank <=12 && Athena.MaxTeamSize <5"
+      }
+     ]
+    }
+   ],
+   "rewards": [
+    {
+     "type": "Quest",
+     "name": "AthenaSeasonalXP",
+     "qty": 5000
+    }
+   ],
+   "next": [],
+   "needed": 0,
+   "oncePerMatch": false,
+   "singleMatch": false
+  },
+  "AthenaDailyQuest_PlayerEliminationShotguns": {
+   "objectives": [
+    {
+     "name": "athena_daily_kill_players_shotgun_v2",
+     "count": 4,
+     "stats": [
+      {
+       "type": 0,
+       "target": [
+        "homebase.Class"
+       ],
+       "source": [
+        "homebase.Class",
+        "weapon.ranged.shotgun"
+       ],
+       "context": [
+        "Athena.Playlist"
+       ],
+       "cond": ""
+      }
+     ]
+    }
+   ],
+   "rewards": [
+    {
+     "type": "Quest",
+     "name": "AthenaSeasonalXP",
+     "qty": 5000
+    }
+   ],
+   "next": [],
+   "needed": 0,
+   "oncePerMatch": false,
+   "singleMatch": false
+  },
+  "AthenaDailyQuest_PlayerEliminationAssaultRifles": {
+   "objectives": [
+    {
+     "name": "athena_daily_kill_players_assault_rifles",
+     "count": 5,
+     "stats": [
+      {
+       "type": 0,
+       "target": [
+        "homebase.Class"
+       ],
+       "source": [
+        "homebase.Class",
+        "weapon.ranged.assault"
+       ],
+       "context": [
+        "Athena.Playlist"
+       ],
+       "cond": ""
+      }
+     ]
+    }
+   ],
+   "rewards": [
+    {
+     "type": "Quest",
+     "name": "AthenaSeasonalXP",
+     "qty": 5000
+    }
+   ],
+   "next": [],
+   "needed": 0,
+   "oncePerMatch": false,
+   "singleMatch": false
+  }
+ }
+}

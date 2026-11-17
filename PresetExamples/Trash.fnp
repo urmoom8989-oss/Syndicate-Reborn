@@ -1,0 +1,28 @@
+{
+  "Format": "Syndicate.FNP",
+  "Version": 1,
+  "Name": "Trash",
+  "Mixed": false,
+  "Values": {
+    "aimAccuracy": 5,
+    "aimTracking": 5,
+    "reactionSpeed": 5,
+    "firingFrequency": 5,
+    "aggression": 5,
+    "pursuit": 5,
+    "buildFrequency": 5,
+    "buildSpeed": 5,
+    "heightSeeking": 5,
+    "defensiveBuilding": 5,
+    "editFrequency": 5,
+    "editSpeed": 5,
+    "strafing": 5,
+    "jumping": 5,
+    "awareness": 5,
+    "prediction": 5,
+    "looting": 5,
+    "harvesting": 5,
+    "healing": 5,
+    "rotation": 5
+  }
+}

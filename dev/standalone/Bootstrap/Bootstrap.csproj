@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Syndicate</AssemblyName>
+    <RootNamespace>SyndicateStandalone</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- WPF text layout asks for the "en" culture; with invariant globalization that throws unless predefined-only
+         cultures are off, and the start window silently never appears. -->
+    <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <!-- PayloadDir (the packer's output) and a 4-part numeric version are supplied by make-standalone-release.ps1.
+         AssemblyVersion drives Assembly.GetName().Version, which the updater compares against the GitHub tag. -->
+    <AssemblyVersion Condition="'$(SyndicateVersion)' != ''">$(SyndicateVersion)</AssemblyVersion>
+    <FileVersion Condition="'$(SyndicateVersion)' != ''">$(SyndicateVersion)</FileVersion>
+  </PropertyGroup>
+  <!-- Splash logo and exe icon come from the launcher's own assets. -->
+  <PropertyGroup>
+    <ApplicationIcon>..\..\..\Launcher\SyndicateLauncher\Assets\syndicate.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\Launcher\SyndicateLauncher\Assets\logo.png" LogicalName="Syndicate.Logo" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PayloadDir)' != ''">
+    <Compile Include="$(PayloadDir)\PayloadKey.cs" />
+    <EmbeddedResource Include="$(PayloadDir)\payload.enc" LogicalName="Syndicate.Payload" />
+  </ItemGroup>
+</Project>

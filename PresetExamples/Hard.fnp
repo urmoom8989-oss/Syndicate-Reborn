@@ -1,0 +1,28 @@
+{
+  "Format": "Syndicate.FNP",
+  "Version": 1,
+  "Name": "Hard",
+  "Mixed": false,
+  "Values": {
+    "aimAccuracy": 75,
+    "aimTracking": 75,
+    "reactionSpeed": 75,
+    "firingFrequency": 75,
+    "aggression": 75,
+    "pursuit": 75,
+    "buildFrequency": 75,
+    "buildSpeed": 75,
+    "heightSeeking": 75,
+    "defensiveBuilding": 75,
+    "editFrequency": 75,
+    "editSpeed": 75,
+    "strafing": 75,
+    "jumping": 75,
+    "awareness": 75,
+    "prediction": 75,
+    "looting": 75,
+    "harvesting": 75,
+    "healing": 75,
+    "rotation": 75
+  }
+}

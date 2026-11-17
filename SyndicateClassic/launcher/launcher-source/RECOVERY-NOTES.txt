@@ -1,0 +1,11 @@
+RECOVERED MODERN SYNDICATE LAUNCHER — 2026-10-12
+
+Recovered from the launcher DLL in your original Project-Syndicate-Runtime-2026-10-12.zip, with dependency references resolved. This is recovered C# source, not the missing original authoring project. The original compiled WPF resource is preserved byte-for-byte as SyndicateLauncher.g.resources, keeping the gamemode selector, settings, LAN controls and pass shop. The XAML authoring source was not recovered.
+
+Build: .NET SDK 8.0.425 (global.json), Windows Desktop support; dotnet build SyndicateLauncher.original.csproj -c Release. Output: bin/Release/net8.0-windows/SyndicateLauncher.dll. Use the existing portable launcher's executable/runtime files. This project is not a full standalone distribution by itself.
+
+Installed changes: OpenSSL compatibility environment on both game processes; native client-only skip-patch-check; checked DLL loading; configuration-aware database startup; explicit bundled Node resolution; original settings retained; updater allows hash-verified Node runtime components in addition to backend/server files.
+
+Validation: C# build passes; WPF MainWindow constructs without being shown; original UI resource hash matches; Solo/Duo/Squad controls and settings persistence pass; database selection and component path tests pass; real game host startup reaches ready using this build. Recovered code has nullable warnings, so a successful build is not a claim of zero defects.
+
+No release was published. The assembly version remains 0.1.1.0, inherited from the recovered original. A future GitHub release must intentionally set a newer matching assembly version and release tag. The old updater expects SyndicateLauncher-win-x64.zip and SyndicateLauncher-win-x64.zip.sha256. Full updates also need components/manifest.json and the corresponding payloads; do not upload the obsolete Syndicate-Update-Failsafe package.

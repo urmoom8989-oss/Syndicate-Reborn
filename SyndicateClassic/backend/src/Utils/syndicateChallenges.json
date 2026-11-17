@@ -1,0 +1,116 @@
+[
+  {
+    "id": "AthenaDailyQuest_PlayerEliminationSniperRifles",
+    "objective": "athena_daily_kill_players_sniper_v2",
+    "target": 1,
+    "daily": true
+  },
+  {
+    "id": "AthenaDailyQuest_PlayerEliminationSMGs",
+    "objective": "athena_daily_kill_players_smg_v2",
+    "target": 2,
+    "daily": true
+  },
+  {
+    "id": "AthenaDailyQuest_PlayerEliminationPistols",
+    "objective": "athena_daily_kill_players_pistol_v3",
+    "target": 2,
+    "daily": true
+  },
+  {
+    "id": "AthenaDailyQuest_PlayerEliminationShotguns",
+    "objective": "athena_daily_kill_players_shotgun_v2",
+    "target": 4,
+    "daily": true
+  },
+  {
+    "id": "AthenaDailyQuest_PlayerElimination",
+    "objective": "athena_daily_kill_players_v2",
+    "target": 10,
+    "daily": true
+  },
+  {
+    "id": "AthenaDailyQuest_InteractTreasureChest",
+    "objective": "daily_athena_loot_chest_v2",
+    "target": 7,
+    "daily": true
+  },
+  {
+    "id": "AthenaDailyQuest_PlayerEliminationAssaultRifles",
+    "objective": "athena_daily_kill_players_assault_rifles",
+    "target": 5,
+    "daily": true
+  },
+  {
+    "id": "AthenaDailyQuest_InteractAmmoCrate",
+    "objective": "athena_daily_loot_ammobox_v2",
+    "target": 7,
+    "daily": true
+  },
+  {
+    "id": "AthenaDaily_Squad_Top6",
+    "objective": "daily_athena_squad_top6_v2",
+    "target": 1,
+    "daily": true
+  },
+  {
+    "id": "AthenaDaily_Squad_Top12",
+    "objective": "daily_athena_squad_top12",
+    "target": 5,
+    "daily": true
+  },
+  {
+    "id": "AthenaDaily_Solo_Top50",
+    "objective": "daily_athena_solo_top50",
+    "target": 5,
+    "daily": true
+  },
+  {
+    "id": "AthenaDaily_Solo_Top25",
+    "objective": "daily_athena_solo_top25_v2",
+    "target": 1,
+    "daily": true
+  },
+  {
+    "id": "AthenaDaily_PlayMatches",
+    "objective": "daily_athena_play_matches_v3",
+    "target": 7,
+    "daily": true
+  },
+  {
+    "id": "AthenaDaily_Outlive_Squad",
+    "objective": "daily_athena_outlive_squad_players_v2",
+    "target": 150,
+    "daily": true
+  },
+  {
+    "id": "AthenaDaily_Outlive_Solo",
+    "objective": "daily_athena_outlive_solo_players",
+    "target": 150,
+    "daily": true
+  },
+  {
+    "id": "AthenaDaily_Outlive",
+    "objective": "daily_athena_outlive_players_v3",
+    "target": 300,
+    "daily": true
+  },
+  {
+    "id": "Quest_BR_Build_Structures",
+    "objective": "battlepass_build_athena_structures_any",
+    "target": 250,
+    "daily": false
+  },
+  {
+    "id": "Quest_BR_Damage",
+    "objective": "battlepass_damage_athena_player",
+    "target": 5000,
+    "daily": false
+  },
+  {
+    "id": "Quest_BR_Eliminate",
+    "objective": "battlepass_killingblow_athena_players",
+    "target": 10,
+    "daily": false
+  }
+]

@@ -1,0 +1,218 @@
+{
+  "friends": [
+    {
+      "accountId": "Player123",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-23T13:38:39.614Z"
+    },
+    {
+      "accountId": "Player857",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-23T13:38:45.823Z"
+    },
+    {
+      "accountId": "Player955",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-23T13:42:38.200Z"
+    },
+    {
+      "accountId": "Player444",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-23T13:47:15.982Z"
+    },
+    {
+      "accountId": "Player742",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-23T13:57:03.026Z"
+    },
+    {
+      "accountId": "abc",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-23T13:57:32.044Z"
+    },
+    {
+      "accountId": "Player",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-23T14:35:00.802Z"
+    },
+    {
+      "accountId": "Player260",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-23T18:41:47.035Z"
+    },
+    {
+      "accountId": "abce1",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-23T19:36:22.635Z"
+    },
+    {
+      "accountId": "Player809",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-31T19:09:47.089Z"
+    },
+    {
+      "accountId": "Player153",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-05-31T19:50:04.738Z"
+    },
+    {
+      "accountId": "Player724",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2024-06-24T20:15:48.062Z"
+    },
+    {
+      "accountId": "Host",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-13T17:56:31.678Z"
+    },
+    {
+      "accountId": "energoid",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-13T17:56:37.072Z"
+    },
+    {
+      "accountId": "SyndicateHarness",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-14T04:21:05.700Z"
+    },
+    {
+      "accountId": "SyndicateHarnessClient",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-14T05:44:04.088Z"
+    },
+    {
+      "accountId": "SyndicateHarnessHost",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-14T05:45:32.215Z"
+    },
+    {
+      "accountId": "SyndicateHarnessHost7908",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-14T07:03:09.182Z"
+    },
+    {
+      "accountId": "SyndicateHarnessHost7898",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-14T07:03:11.081Z"
+    },
+    {
+      "accountId": "SyndicateHarnessClient7908",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-14T07:05:55.295Z"
+    },
+    {
+      "accountId": "SyndicateHarnessClient7898",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-14T07:05:56.806Z"
+    },
+    {
+      "accountId": "SyndicateHarnessHost7918",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-14T07:18:46.335Z"
+    },
+    {
+      "accountId": "SyndicateHarnessClient7918",
+      "groups": [],
+      "mutual": 0,
+      "alias": "",
+      "note": "",
+      "favorite": false,
+      "created": "2026-10-14T07:19:56.428Z"
+    }
+  ],
+  "incoming": [],
+  "outgoing": [],
+  "suggested": [],
+  "blocklist": [],
+  "settings": {
+    "acceptInvites": "public"
+  }
+}

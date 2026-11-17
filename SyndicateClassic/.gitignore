@@ -1,0 +1,58 @@
+# ------------------------------------------------------------------
+# Secrets - never commit. These must never reach the repo OR a public
+# build. (The public EXE strips them separately in public-release/Packer.)
+# ------------------------------------------------------------------
+.env
+*.env
+jwt.secret
+tokens.json
+hwid.json
+backend/src/local/tiltedPartyBots.json
+
+# Key / certificate material (private keys, keystores, signing certs).
+# Nothing like this is tracked today; this keeps it that way.
+*.key
+*.pem
+*.pfx
+*.p12
+*.keystore
+*.secret
+secrets.json
+*.tilted-original
+
+# Per-user saves that must never be shared
+**/ClientSettings/
+launcher.config.json
+remember-login.dat
+updater.json
+
+# Runtime data (accounts, logs, locker saves, direct-play host state)
+Runtime/
+*.log
+
+# Dependencies and build output
+node_modules/
+bin/
+obj/
+x64/
+*.pdb
+*.dll
+*.exe
+*.previous-*
+*.before-*
+
+# Fortnite game builds
+FortniteGame/Binaries/
+*.pak
+*.sig
+*.ucas
+*.utoc
+
+# Plain redeem codes (MAKE REDEEM CODES writes them to the Desktop; never commit them)
+Syndicate redeem codes*.txt
+
+# Build-signing private key (tamper detection) — must never be committed. Lives only on the release machine.
+public-release/signing/
+tilted-sign.key
+*.sign.key
+build-provenance.json

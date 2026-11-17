@@ -1,0 +1,1 @@
+These standalone regression cases exercise extracted gameplay rules with mock engine types. They are not a live Fortnite gameplay test. Compile each .cpp separately from an x64 Visual Studio developer prompt, for example: cl /EHsc /std:c++17 knock-test.cpp /Feknock-test.exe. Keep the extracted production snippets synchronized when changing the corresponding source functions.

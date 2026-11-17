@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><AssemblyName>SyndicateLauncher</AssemblyName><ApplicationIcon>SyndicateClassic.ico</ApplicationIcon><GenerateAssemblyInfo>false</GenerateAssemblyInfo><OutputType>WinExe</OutputType><UseWPF>true</UseWPF><TargetFramework>net8.0-windows</TargetFramework><LangVersion>12.0</LangVersion><AllowUnsafeBlocks>true</AllowUnsafeBlocks><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup><EmbeddedResource Include="SyndicateLauncher.g.resources" LogicalName="SyndicateLauncher.g.resources" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="SyndicateClassic.ico" LogicalName="SyndicateClassic.Icon.ico" /></ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets/season1pass.png" LogicalName="SyndicateClassic.SeasonCard1" />
+    <EmbeddedResource Include="Assets/season3pass.jpg" LogicalName="SyndicateClassic.SeasonCard3" />
+    <EmbeddedResource Include="Assets/season5.jpg" LogicalName="SyndicateClassic.SeasonCard5" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="season-art/chapter2-season3.jpg" LogicalName="SyndicateClassic.Chapter2Season3" />
+    <EmbeddedResource Include="season-art/chapter2-season4.jpg" LogicalName="SyndicateClassic.Chapter2Season4" />
+    <EmbeddedResource Include="season-art/chapter2-season5.jpg" LogicalName="SyndicateClassic.Chapter2Season5" />
+    <EmbeddedResource Include="season-art/chapter2-season6.jpg" LogicalName="SyndicateClassic.Chapter2Season6" />
+    <EmbeddedResource Include="season-art/chapter2-season7.jpg" LogicalName="SyndicateClassic.Chapter2Season7" />
+    <EmbeddedResource Include="season-art/chapter2-season8.jpg" LogicalName="SyndicateClassic.Chapter2Season8" />
+  </ItemGroup>
+<ItemGroup><EmbeddedResource Include="Assets/season4reference.png" LogicalName="SyndicateClassic.SeasonCard4" /></ItemGroup><ItemGroup><EmbeddedResource Include="assets/blue-striker.png" LogicalName="SyndicateClassic.Pack.blue-striker" /><EmbeddedResource Include="assets/blue-team-leader.png" LogicalName="SyndicateClassic.Pack.blue-team-leader" /><EmbeddedResource Include="assets/rogue-agent.png" LogicalName="SyndicateClassic.Pack.rogue-agent" /><EmbeddedResource Include="assets/wingman.png" LogicalName="SyndicateClassic.Pack.wingman" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="assets/menu-theme.mp3" LogicalName="SyndicateClassic.MenuTheme" /></ItemGroup></Project>

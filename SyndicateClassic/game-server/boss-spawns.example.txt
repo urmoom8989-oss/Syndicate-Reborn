@@ -1,0 +1,42 @@
+# Chapter 2 Season 2 (12.50) boss + henchman spawns.
+#
+# Copy this file to  Runtime\Server\boss-spawns.txt  on the host. The 12.50
+# match server reads it once at match start and spawns each boss (a tough
+# guard bot in the boss outfit, carrying its Mythic, which it drops on death)
+# with a ring of henchmen around it. It is read ONLY on build 12.50, so it can
+# never affect any other season. A line with zero/blank coordinates is skipped,
+# so you can fill the POIs in one at a time.
+#
+# One boss per line, fields separated by | :
+#
+#   name | outfitCID | mythicWID | mythicCount | henchmanCID | henchmanCount | X | Y | Z | radius
+#
+#   name          a label for logs (Midas, Brutus, ...)
+#   outfitCID     the boss outfit, e.g. CID_494_Athena_Commando_M_Rogue
+#   mythicWID     the weapon the boss carries and drops (e.g. its Mythic)
+#   mythicCount   how many of that weapon drop on death (usually 1)
+#   henchmanCID   the outfit for this POI's henchmen (Shadow or Ghost)
+#   henchmanCount how many henchmen guard the POI (0 for none)
+#   X Y Z         the boss spawn location, in game units
+#   radius        how far henchmen spread around the boss (e.g. 2500)
+#
+# HOW TO GET X Y Z:  launch 12.50, open Syndicate Studio / the map editor, fly to
+# the POI, and read your position from mapeditor-live.json (it logs {"x","y","z"}).
+# Stand where you want the boss and copy those three numbers in.
+#
+# HOW TO GET THE RIGHT IDs:  the outfit/Mythic/henchman strings below are my
+# best guess for 12.50 and may need correcting. Your build's real asset names
+# are exported to Runtime\Server\map-assets.json by the map asset probe; search
+# it for the henchman/boss character parts and the Mythic weapon definitions,
+# and paste the exact names here. A wrong ID just means that one thing doesn't
+# load — fix it here and restart, no rebuild needed.
+#
+# Lines starting with # are comments. Delete these once you have real values,
+# or leave them — the server ignores # lines and blank coordinates.
+#
+# name     | outfitCID                          | mythicWID                              | mythicCount | henchmanCID                         | henchmanCount | X | Y | Z | radius
+Midas      | CID_494_Athena_Commando_M_Rogue    | WID_Pistol_AutoHeavy_Athena_UC_Ore_T03 | 1           | CID_Henchman_Shadow_M                | 6             | 0 | 0 | 0 | 2500
+Brutus     | CID_495_Athena_Commando_M_HenchmanBossIntelligent | WID_Heavy_Minigun_Athena_C_Ore_T03 | 1 | CID_Henchman_Shadow_M | 6             | 0 | 0 | 0 | 2500
+Meowscles  | CID_496_Athena_Commando_M_FishStick | WID_Assault_Heavy_Athena_SR_Ore_T03    | 1           | CID_Henchman_Ghost_M                 | 6             | 0 | 0 | 0 | 2500
+Skye       | CID_497_Athena_Commando_F_RebirthScuba | WID_Assault_Surgical_Athena_SR_Ore_T03 | 1         | CID_Henchman_Ghost_F                 | 6             | 0 | 0 | 0 | 2500
+TNTina     | CID_498_Athena_Commando_F_RebirthSoldier | WID_Blunt_Explosive_Athena_SR_Ore_T03 | 1          | CID_Henchman_Shadow_F                | 6             | 0 | 0 | 0 | 2500

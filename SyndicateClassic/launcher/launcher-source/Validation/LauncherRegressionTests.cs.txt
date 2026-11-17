@@ -1,0 +1,89 @@
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Controls;
+using SyndicateClassic;
+
+class Program
+{
+    [STAThread]
+    static void Main()
+    {
+        try
+        {
+            var assembly = typeof(MainWindow).Assembly;
+            using var resource = assembly.GetManifestResourceStream("SyndicateLauncher.g.resources")!;
+            var original = File.ReadAllBytes(@"C:\Users\dev\Documents\Codex\2026-10-12\new-chat\outputs\Recovered-Modern-Launcher\SyndicateLauncher.g.resources");
+            if (!SHA256.HashData(resource).SequenceEqual(SHA256.HashData(original))) throw new Exception("UI resource mismatch");
+            var app = new Application();
+            var window = new MainWindow(); // Never shown: no Loaded callbacks, auth or network calls.
+            var field = typeof(MainWindow).GetField("ModeSelector", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)!;
+            var selector = (ComboBox)field.GetValue(window)!;
+            var items = selector.Items.Cast<ComboBoxItem>().Select(i => i.Tag?.ToString()).ToArray();
+            if (!new[]{"solo","duo","squad"}.SequenceEqual(items)) throw new Exception("Missing game modes: " + string.Join(",", items));
+            foreach (var name in new[]{"SettingsPanel","PassShop","LaunchButton","RadminHostBox"})
+                if (typeof(MainWindow).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)?.GetValue(window) == null) throw new Exception("Missing control: " + name);
+            var native = assembly.GetType("SyndicateClassic.NativeMethods")!;
+            var info = new ProcessStartInfo();
+            native.GetMethod("ConfigureSyndicateCompatibility")!.Invoke(null, new object[]{info});
+            if (info.Environment["OPENSSL_ia32cap"] != ":~0x20000000") throw new Exception("Compatibility env missing");
+            var portable = assembly.GetType("SyndicateClassic.PortableServices")!;
+            var useDb = portable.GetMethod("UsesBundledDatabase", BindingFlags.Static | BindingFlags.NonPublic)!;
+            foreach (var sample in new (string Text, bool Bundled)[]{
+                ("MONGO_URI=mongodb://127.0.0.1:27028/project_tilted",true),
+                ("MONGO_URI=\"mongodb://localhost:27028/project_tilted\"",true),
+                ("MONGO_URI=mongodb://127.0.0.1:27017/project_tilted",false),
+                ("MONGO_URI=mongodb://localhost/project_tilted",false),
+                ("MONGO_URI=mongodb+srv://example.invalid/database",false),
+                ("MONGO_URI=mongodb://192.0.2.1:27028/database",false),
+                ("# MONGO_URI=mongodb://localhost:27028/database\nPORT=3551",false),
+                ("MONGO_URI=not-a-uri",false)
+            }) if ((bool)useDb.Invoke(null,new object[]{sample.Text})! != sample.Bundled) throw new Exception("Database selection failed");
+            var fixture = @"C:\Users\dev\Documents\Codex\2026-10-12\new-chat\work\launcher-test-fixture";
+            var paths = new LauncherPaths{Root=fixture};
+            foreach (var mode in new[]{"solo","duo","squad"}) { GameServer.SaveMode(paths,mode); if(GameServer.ReadMode(paths)!=mode)throw new Exception("Mode round-trip failed"); }
+            try { GameServer.SaveMode(paths,"invalid"); throw new Exception("Invalid mode accepted"); } catch(ArgumentException){}
+            if(GameServer.ReadMode(paths)!="squad")throw new Exception("Invalid mode changed settings");
+            var destination = assembly.GetType("SyndicateClassic.ComponentUpdates")!.GetMethod("Destination",BindingFlags.NonPublic|BindingFlags.Static)!;
+            foreach(var relative in new[]{"Dependencies/Node/node.exe","Dependencies/Node/LICENSE","Helix-backend-main/src/routes/version.js","Helix-backend-main/Matchmaker/readiness.cjs","Erbium-Quality-of-life-changes-main/Erbium/x64/Release/Erbium.dll.pending"})
+                if(!((string)destination.Invoke(null,new object[]{fixture,relative})!).StartsWith(fixture))throw new Exception("Component destination escaped runtime");
+            foreach(var relative in new[]{"../node.exe","Dependencies/Node/../node.exe","Dependencies/Other/node.exe","Helix-backend-main/.env","Runtime/Database/data.json","Helix-backend-main/src/ClientSettings/user.json","C:/node.exe"})
+            {
+                try{destination.Invoke(null,new object[]{fixture,relative});throw new Exception("Forbidden update destination accepted");}
+                catch(TargetInvocationException ex) when(ex.InnerException is IOException){}
+            }
+            Console.WriteLine("PASS: original UI bytes; Solo/Duo/Squad; settings, passes, launch, LAN controls; compatibility environment.");
+            Console.WriteLine("PASS: 8 database configuration cases; 3 mode round-trips; invalid mode rejection preserves settings.");
+            Console.WriteLine("PASS: 5 supported component destinations; 7 forbidden configuration/data/path destinations rejected.");
+            var transactionRoot = Path.Combine(fixture,"transaction-"+Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.Combine(transactionRoot,"Helix-backend-main","src","routes"));
+            File.WriteAllText(Path.Combine(transactionRoot,"Helix-backend-main","start.bat"),"");
+            File.WriteAllText(Path.Combine(transactionRoot,"Helix-backend-main","src","index.js"),"// isolated test fixture");
+            File.WriteAllText(Path.Combine(AppContext.BaseDirectory,"launcher.config.json"),JsonSerializer.Serialize(new{Root=transactionRoot}));
+            var components=Path.Combine(AppContext.BaseDirectory,"components");
+            var first="Helix-backend-main/src/routes/test.js";
+            var second="Dependencies/Node/node.exe";
+            string Payload(string relative,string text){var p=Path.Combine(components,relative);Directory.CreateDirectory(Path.GetDirectoryName(p)!);File.WriteAllText(p,text);return Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(p)));}
+            var firstHash=Payload(first,"new backend fixture");var secondHash=Payload(second,"inert Node fixture - never executed");
+            var originalFile=Path.Combine(transactionRoot,first);File.WriteAllText(originalFile,"original fixture");
+            void Manifest(string aHash,string bPath,string bHash)=>File.WriteAllText(Path.Combine(components,"manifest.json"),JsonSerializer.Serialize(new[]{new{Path=first,Sha256=aHash},new{Path=bPath,Sha256=bHash}}));
+            var apply=assembly.GetType("SyndicateClassic.ComponentUpdates")!.GetMethod("Apply")!;
+            Manifest(firstHash,second,secondHash);apply.Invoke(null,null);
+            if(File.ReadAllText(originalFile)!="new backend fixture" || File.ReadAllText(Path.Combine(transactionRoot,second))!="inert Node fixture - never executed")throw new Exception("Combined component apply failed");
+            Manifest(new string('0',64),second,secondHash);
+            try{apply.Invoke(null,null);throw new Exception("Bad checksum accepted");}catch(TargetInvocationException ex)when(ex.InnerException is IOException){}
+            if(File.ReadAllText(originalFile)!="new backend fixture")throw new Exception("Checksum failure changed data");
+            var blocked="Helix-backend-main/src/routes/blocked.js";var blockedHash=Payload(blocked,"blocked fixture");Directory.CreateDirectory(Path.Combine(transactionRoot,blocked));
+            firstHash=Payload(first,"must be rolled back");Manifest(firstHash,blocked,blockedHash);
+            try{apply.Invoke(null,null);throw new Exception("Copy failure unexpectedly succeeded");}catch(TargetInvocationException ex)when(ex.InnerException is IOException || ex.InnerException is UnauthorizedAccessException){}
+            if(File.ReadAllText(originalFile)!="new backend fixture")throw new Exception("Component rollback failed");
+            Console.WriteLine("PASS: isolated combined backend/Node update; checksum failure changes nothing; mid-copy failure rolls back prior file.");
+            window.Close();
+            app.Shutdown();
+        }
+        catch (Exception ex) { Console.Error.WriteLine(ex); Environment.Exit(1); }
+    }
+}

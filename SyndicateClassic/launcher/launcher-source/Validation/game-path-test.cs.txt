@@ -1,0 +1,35 @@
+using SyndicateClassic;
+using System.IO;
+using System.Reflection;
+using System.Text.Json;
+void Check(bool ok,string message){if(!ok)throw new Exception(message);}
+var runtime=AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+var game=Path.Combine(runtime,"external drive fixture","Fortnite 4.00");
+Directory.CreateDirectory(Path.Combine(runtime,"Helix-backend-main","src"));
+File.WriteAllText(Path.Combine(runtime,"Helix-backend-main","start.bat"),"");
+File.WriteAllText(Path.Combine(runtime,"Helix-backend-main","src","index.js"),"");
+Directory.CreateDirectory(Path.Combine(game,"FortniteGame","Binaries","Win64"));
+Directory.CreateDirectory(Path.Combine(game,"Engine"));
+var exe=Path.Combine(game,"FortniteGame","Binaries","Win64","FortniteClient-Win64-Shipping.exe");
+File.WriteAllText(exe,"fixture only; never executed");
+var ready=typeof(Launcher).Assembly.GetType("SyndicateClassic.GameDownload")!.GetMethod("Ready",BindingFlags.Static|BindingFlags.NonPublic)!;
+bool Ready(LauncherPaths p)=>(bool)ready.Invoke(null,new object[]{p})!;
+foreach(var folder in new[]{game,Path.Combine(game,"FortniteGame"),Path.Combine(game,"Engine")}){
+ Check(Launcher.TryLocateRoot(folder,out var p,out var message),message);
+ Check(Path.TrimEndingDirectorySeparator(p.Root)==runtime && Path.TrimEndingDirectorySeparator(p.GameInstallRoot)==game,"Game selection changed runtime location");
+ Check(p.GameExe==exe && p.BackendDir==Path.Combine(runtime,"Helix-backend-main"),"Paths mixed");
+ Check(Ready(p),"External install not ready");
+ Check(Launcher.TryAutoLocate(out var saved,out _) && saved.GameExe==exe,"Saved game path not reloaded");
+}
+var config=Path.Combine(runtime,"launcher.config.json");var before=File.ReadAllText(config);
+Check(!Launcher.TryLocateRoot(Path.Combine(game,"missing"),out _,out _),"Invalid folder accepted");
+Check(before==File.ReadAllText(config),"Invalid selection overwrote config");
+File.WriteAllText(Path.Combine(runtime,"Runtime-install-unrelated.txt"),"");
+File.WriteAllText(Path.Combine(game,".tilted-install.pending"),"");
+Launcher.TryAutoLocate(out var p1,out _);Check(!Ready(p1),"Partial external install accepted");
+File.Delete(Path.Combine(game,".tilted-install.pending"));
+File.Delete(exe);Check(!Ready(p1),"Missing external executable accepted");
+File.WriteAllText(config,JsonSerializer.Serialize(new {Root=runtime}));
+Check(Launcher.TryAutoLocate(out var legacy,out _) && Path.TrimEndingDirectorySeparator(legacy.GameInstallRoot)==runtime,"Legacy config broken");
+Check(!Ready(legacy),"No-game runtime reported ready");
+Console.WriteLine("External game selection, parent normalization, persistence, invalid selection, partial/missing game, runtime independence and legacy config passed.");

@@ -1,0 +1,28 @@
+{
+  "Format": "Syndicate.FNP",
+  "Version": 1,
+  "Name": "Mixed",
+  "Mixed": true,
+  "Values": {
+    "aimAccuracy": 50,
+    "aimTracking": 50,
+    "reactionSpeed": 50,
+    "firingFrequency": 50,
+    "aggression": 50,
+    "pursuit": 50,
+    "buildFrequency": 50,
+    "buildSpeed": 50,
+    "heightSeeking": 50,
+    "defensiveBuilding": 50,
+    "editFrequency": 50,
+    "editSpeed": 50,
+    "strafing": 50,
+    "jumping": 50,
+    "awareness": 50,
+    "prediction": 50,
+    "looting": 50,
+    "harvesting": 50,
+    "healing": 50,
+    "rotation": 50
+  }
+}

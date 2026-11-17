@@ -1,0 +1,338 @@
+{
+    "_title": "Fortnite Game",
+    "_activeDate": "2017-08-30T03:20:48.050Z",
+    "lastModified": "2019-11-01T17:33:35.346Z",
+    "_locale": "en-US",
+    "loginmessage": {
+        "_title": "LoginMessage",
+        "loginmessage": {
+            "_type": "CommonUI Simple Message",
+            "message": {
+                "_type": "CommonUI Simple Message Base",
+                "title": "",
+                "body": ""
+            }
+        },
+        "_activeDate": "2017-07-19T13:14:04.490Z",
+        "lastModified": "2018-03-15T07:10:22.222Z",
+        "_locale": "en-US"
+    },
+    "subgameselectdata": {
+        "saveTheWorldUnowned": {
+            "_type": "CommonUI Simple Message",
+            "message": {
+                "image": "",
+                "hidden": false,
+                "messagetype": "normal",
+                "_type": "CommonUI Simple Message Base",
+                "title": {
+                    "de": "Koop-PvE",
+                    "ru": "\u0421\u044e\u0436\u0435\u0442\u043d\u0430\u044f PvE-\u043a\u0430\u043c\u043f\u0430\u043d\u0438\u044f",
+                    "ko": "\ud300\uacfc \ud568\uaed8 \ud50c\ub808\uc774\ud558\ub294 PvE",
+                    "en": "Co-op PvE",
+                    "it": "PvE co-op",
+                    "fr": "JcE coop\u00e9ratif",
+                    "es": "JcE cooperativo",
+                    "ar": "Co-op PvE",
+                    "ja": "\u5354\u529bPvE",
+                    "pl": "Kooperacyjny tryb PvE",
+                    "es-419": "JcE cooperativo",
+                    "tr": "Oyuncularla Birlikte PvE"
+                },
+                "body": {
+                    "de": "PVE-Modus, in dem du den Sturm kooperativ bek\u00e4mpfst!",
+                    "ru": "\u0421\u043e\u0432\u043c\u0435\u0441\u0442\u043d\u043e\u0435 \u0441\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0441 \u0411\u0443\u0440\u0435\u0439!",
+                    "ko": "\ubc30\ud2c0\ub85c\uc584\uc744 \ud50c\ub808\uc774\ud558\ub824\uba74 \uc0c1\ub2e8\uc758 \"\ubc30\ud2c0\ub85c\uc584\" \ubc84\ud2bc\uc744 \ud074\ub9ad\ud558\uc138\uc694.\n\n\ud300\uacfc \ud568\uaed8\ud558\ub294 PvE \ubaa8\ub4dc, \ud3ed\ud48d\uacfc \uc2f8\uc6b0\ub294 \uc5b4\ub4dc\ubca4\ucc98!",
+                    "en": "Cooperative PvE storm-fighting adventure!",
+                    "it": "Avventura tempestosa cooperativa PvE!",
+                    "fr": "Une aventure en JcE coop\u00e9ratif pour combattre la temp\u00eate !",
+                    "es": "\u00a1Aventura cooperativa JcE de lucha contra la tormenta!",
+                    "ar": "Cooperative PvE storm-fighting adventure!",
+                    "ja": "PvE\u5354\u529b\u30d7\u30ec\u30a4\u3067\u30b9\u30c8\u30fc\u30e0\u306b\u7acb\u3061\u5411\u304b\u3048\uff01",
+                    "pl": "Kooperacyjne zmagania PvE z burz\u0105 i pustakami!",
+                    "es-419": "\u00a1Aventura de lucha contra la tormenta en un JcE cooperativo!",
+                    "tr": "Di\u011fer oyuncularla birlikte PvE f\u0131rt\u0131nayla sava\u015fma maceras\u0131!"
+                },
+                "spotlight": false
+            }
+        },
+        "_title": "subgameselectdata",
+        "battleRoyale": {
+            "_type": "CommonUI Simple Message",
+            "message": {
+                "image": "",
+                "hidden": false,
+                "messagetype": "normal",
+                "_type": "CommonUI Simple Message Base",
+                "title": {
+                    "de": "100-Spieler-PvP",
+                    "ru": "PvP-\u0440\u0435\u0436\u0438\u043c \u043d\u0430 100 \u0438\u0433\u0440\u043e\u043a\u043e\u0432",
+                    "ko": "100\uba85\uc758 \ud50c\ub808\uc774\uc5b4\uc640 \ud568\uaed8\ud558\ub294 PvP",
+                    "en": "100 Player PvP",
+                    "it": "PvP a 100 giocatori",
+                    "fr": "JcJ \u00e0 100 joueurs",
+                    "es": "JcJ de 100 jugadores",
+                    "ar": "100 Player PvP",
+                    "ja": "100\u4eba\u53c2\u52a0\u306ePvP",
+                    "pl": "PvP dla 100 graczy",
+                    "es-419": "JcJ de 100 jugadores",
+                    "tr": "100 Oyunculu PvP"
+                },
+                "body": {
+                    "de": "Battle Royale, 100-Spieler-PvP.\n\nFortschritte im PvE haben keinen Einfluss auf Battle Royale.",
+                    "ru": "PvP-\u0440\u0435\u0436\u0438\u043c \u043d\u0430 100 \u0438\u0433\u0440\u043e\u043a\u043e\u0432 \u00ab\u041a\u043e\u0440\u043e\u043b\u0435\u0432\u0441\u043a\u0430\u044f \u0431\u0438\u0442\u0432\u0430\u00bb.\n\n\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0432 \u043a\u0430\u043c\u043f\u0430\u043d\u0438\u0438 \u043d\u0435 \u0437\u0430\u0442\u0440\u0430\u0433\u0438\u0432\u0430\u0435\u0442 \u00ab\u041a\u043e\u0440\u043e\u043b\u0435\u0432\u0441\u043a\u0443\u044e \u0431\u0438\u0442\u0432\u0443\u00bb.",
+                    "ko": "100\uba85\uc758 \ud50c\ub808\uc774\uc5b4\uc640 \ud568\uaed8\ud558\ub294 PvP \ubaa8\ub4dc, \ubc30\ud2c0\ub85c\uc584.\n\nPvE \ubaa8\ub4dc\uc758 \uc9c4\ud589 \uc0c1\ud669\uc740 \ubc30\ud2c0\ub85c\uc584 \ud50c\ub808\uc774\uc5d0 \uc601\ud5a5\uc744 \uc8fc\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                    "en": "100 Player PvP Battle Royale.\n\nPvE progress does not affect Battle Royale.",
+                    "it": "Battaglia reale PvP a 100 giocatori.\n\nI progressi in PvE non sono trasferiti nella Battaglia reale.",
+                    "fr": "Un Battle Royale \u00e0 100 en JcJ.\n\nLa progression du mode JcE n'affecte pas Battle Royale.",
+                    "es": "Battle Royale JcJ de 100 jugadores.\n\nEl progreso JcE no afecta a Battle Royale.",
+                    "ar": "100 Player PvP Battle Royale.\n\nPvE progress does not affect Battle Royale.",
+                    "ja": "100\u4eba\u53c2\u52a0\u306ePvP\u30d0\u30c8\u30eb\u30ed\u30a4\u30e4\u30eb\u3002\n\nPvE\u30e2\u30fc\u30c9\u306e\u9032\u884c\u72b6\u6cc1\u306f\u30d0\u30c8\u30eb\u30ed\u30a4\u30e4\u30eb\u306b\u5f71\u97ff\u3057\u307e\u305b\u3093\u3002",
+                    "pl": "Battle Royale: PvP dla 100 graczy\n\nPost\u0119py w kampanii nie wp\u0142ywaj\u0105 na gr\u0119 w Battle Royale.",
+                    "es-419": "Batalla campal JcJ de 100 jugadores.\n\nEl progreso de JcE no afecta Batalla campal.",
+                    "tr": "100 Oyunculu PvP Battle Royale. PvE ilerlemesi Battle Royale'i etkilemez."
+                },
+                "spotlight": false
+            }
+        }
+    },
+    "playlistinformation": {
+        "frontend_matchmaking_header_style": "None",
+        "_title": "playlistinformation",
+        "frontend_matchmaking_header_text": "",
+        "playlist_info": {
+            "_type": "Playlist Information",
+            "playlists": [
+                {
+                    "image": "https://i.imgur.com/zr4Fnnp.jpg",
+                    "playlist_name": "Playlist_DefaultSolo",
+                    "hidden": false,
+                    "special_border": "None",
+                    "_type": "FortPlaylistInfo"
+                },
+                {
+                    "image": "https://i.imgur.com/99n3n0m.jpg",
+                    "playlist_name": "Playlist_DefaultDuo",
+                    "hidden": true,
+                    "special_border": "None",
+                    "_type": "FortPlaylistInfo"
+                },
+                {
+                    "image": "",
+                    "playlist_name": "Playlist_Trios",
+                    "hidden": true,
+                    "_type": "FortPlaylistInfo"
+                },
+                {
+                    "image": "https://i.imgur.com/YA4ssMv.jpg",
+                    "playlist_name": "Playlist_DefaultSquad",
+                    "hidden": true,
+                    "special_border": "None",
+                    "_type": "FortPlaylistInfo"
+                }
+            ]
+        },
+        "_noIndex": false,
+        "_activeDate": "2018-04-25T15:05:39.956Z",
+        "lastModified": "2019-10-29T14:05:17.030Z",
+        "_locale": "en-US"
+    },
+    "sparkTracks": {
+        "_title": "spark-tracks",
+        "_noIndex": false,
+        "_activeDate": "2023-10-06T04:15:09.015Z",
+        "lastModified": "2023-10-06T04:15:55.135Z",
+        "_locale": "en-US",
+        "_templateName": "blank"
+    },
+    "tournamentinformation": {
+        "tournament_info": {
+            "tournaments": [
+                {
+                    "title_color": "FFFFFF",
+                    "loading_screen_image": "https://i.imgur.com/6U4DSZm.png",
+                    "background_text_color": "1B1B1B",
+                    "background_right_color": "DD091A",
+                    "poster_back_image": "https://i.imgur.com/6U4DSZm.png",
+                    "_type": "Tournament Display Info",
+                    "pin_earned_text": "Sam is the winner!",
+                    "tournament_display_id": "LG_ARENA_SOLO",
+                    "highlight_color": "FFFFFF",
+                    "schedule_info": "November 2nd & 3rd: 2pm - 5pm JST",
+                    "primary_color": "FFFFFF",
+                    "flavor_description": "cool",
+                    "poster_front_image": "https://i.imgur.com/6U4DSZm.png",
+                    "short_format_title": "Event Sessions",
+                    "title_line_2": "",
+                    "title_line_1": "Arena",
+                    "shadow_color": "1B1B1B",
+                    "details_description": "ok",
+                    "background_left_color": "F81B2D",
+                    "long_format_title": "nice",
+                    "poster_fade_color": "DD091A",
+                    "secondary_color": "1B1B1B",
+                    "playlist_tile_image": "https://i.imgur.com/6U4DSZm.png",
+                    "base_color": "FFFFFF"
+                }
+            ],
+            "_type": "Tournaments Info"
+        },
+        "_title": "tournamentinformation",
+        "_noIndex": false,
+        "_activeDate": "2018-11-13T22:32:47.734Z",
+        "lastModified": "2019-11-01T17:33:35.346Z",
+        "_locale": "en-US"
+    },
+    "emergencynotice": {
+        "news": {
+            "_type": "Battle Royale News",
+            "messages": []
+        },
+        "_title": "emergencynotice",
+        "_noIndex": false,
+        "alwaysShow": false,
+        "_activeDate": "2018-08-06T19:00:26.217Z",
+        "lastModified": "2019-10-29T22:32:52.686Z",
+        "_locale": "en-US"
+    },
+    "emergencynoticev2": {
+        "jcr:isCheckedOut": true,
+        "_title": "emergencynoticev2",
+        "_noIndex": false,
+        "jcr:baseVersion": "a7ca237317f1e771e921e2-7f15-4485-b2e2-553b809fa363",
+        "emergencynotices": {
+            "_type": "Emergency Notices",
+            "emergencynotices": []
+        },
+        "_activeDate": "2018-08-06T19:00:26.217Z",
+        "lastModified": "2021-12-01T15:55:56.012Z",
+        "_locale": "en-US"
+    },
+    "subgameinfo": {
+        "battleroyale": {
+            "image": "",
+            "color": "1164c1",
+            "_type": "Subgame Info",
+            "description": {
+                "de": "100 Spieler PvP",
+                "ru": "PVP-\u0440\u0435\u0436\u0438\u043c \u043d\u0430 100 \u0438\u0433\u0440\u043e\u043a\u043e\u0432",
+                "ko": "100\uc778 \ud50c\ub808\uc774\uc5b4 PvP",
+                "en": "100 Player PvP",
+                "it": "PvP a 100 giocatori",
+                "fr": "JcJ \u00e0 100 joueurs",
+                "es": "JcJ de 100 jugadores",
+                "ar": "100 \u0644\u0627\u0639\u0628 \u0636\u062f \u0644\u0627\u0639\u0628",
+                "ja": "\u30d7\u30ec\u30a4\u30e4\u30fc100\u4eba\u306b\u3088\u308bPvP",
+                "pl": "PvP dla 100 graczy",
+                "es-419": "JcJ de 100 jugadores",
+                "tr": "100 Oyunculu PVP"
+            },
+            "subgame": "battleroyale",
+            "standardMessageLine2": "",
+            "title": {
+                "de": "Battle Royale",
+                "ru": "Battle Royale",
+                "ko": "Battle Royale",
+                "en": "Battle Royale",
+                "it": "Battaglia reale",
+                "fr": "Battle Royale",
+                "es": "Battle Royale",
+                "ar": "Battle Royale",
+                "ja": "Battle Royale",
+                "pl": "Battle Royale",
+                "es-419": "Batalla campal",
+                "tr": "Battle Royale"
+            },
+            "standardMessageLine1": ""
+        },
+        "_title": "SubgameInfo",
+        "_noIndex": false,
+        "creative": {
+            "image": "",
+            "color": "13BDA1FF",
+            "_type": "Subgame Info",
+            "description": {
+                "de": "Deine Inseln. Deine Freunde. Deine Regeln.",
+                "ru": "\u0412\u0430\u0448\u0438 \u043e\u0441\u0442\u0440\u043e\u0432\u0430. \u0412\u0430\u0448\u0438 \u0434\u0440\u0443\u0437\u044c\u044f. \u0412\u0430\u0448\u0438 \u043f\u0440\u0430\u0432\u0438\u043b\u0430.",
+                "ko": "\ub098\uc758 \uc12c. \ub098\uc758 \uce5c\uad6c. \ub098\uc758 \uaddc\uce59.",
+                "en": "Your Islands. Your Friends. Your Rules.",
+                "it": "Le tue isole. I tuoi amici. Le tue regole.",
+                "fr": "Vos \u00eeles, vos amis, vos r\u00e8gles.",
+                "es": "Tus islas. Tus amigos. Tus reglas.",
+                "ar": "\u062c\u0632\u0631\u0643. \u0623\u0635\u062f\u0642\u0627\u0624\u0643. \u0642\u0648\u0627\u0639\u062f\u0643.",
+                "ja": "\u81ea\u5206\u306e\u5cf6\u3002\u81ea\u5206\u306e\u30d5\u30ec\u30f3\u30c9\u3002\u81ea\u5206\u306e\u30eb\u30fc\u30eb\u3002",
+                "pl": "Twoje wyspa, twoi znajomi, twoje zasady.",
+                "es-419": "Tus islas. Tus amigos. Tus reglas.",
+                "tr": "Senin Adalar\u0131n. Senin Dostlar\u0131n. Senin Kurallar\u0131n."
+            },
+            "subgame": "creative",
+            "title": {
+                "de": "Kreativmodus",
+                "ru": "\u0422\u0432\u043e\u0440\u0447\u0435\u0441\u043a\u0438\u0439\u0440\u0435\u0436\u0438\u043c",
+                "ko": "\ud3ec\ud06c\ub9ac",
+                "en": "Creative",
+                "it": "Modalit\u00e0 creativa",
+                "fr": "Mode Cr\u00e9atif",
+                "es": "Modo Creativo",
+                "ar": "Creative",
+                "ja": "\u30af\u30ea\u30a8\u30a4\u30c6\u30a3\u30d6",
+                "pl": "Tryb kreatywny",
+                "es-419": "Modo Creativo",
+                "tr": "Kreatif"
+            },
+            "standardMessageLine1": ""
+        },
+        "_activeDate": "2019-05-02T16:48:47.429Z",
+        "lastModified": "2019-10-29T12:44:06.577Z",
+        "_locale": "en-US"
+    },
+    "dynamicbackgrounds": {
+        "backgrounds": {
+            "backgrounds": [
+                {
+                    "stage": "season11",
+                    "_type": "DynamicBackground",
+                    "key": "lobby"
+                }
+            ],
+            "_type": "DynamicBackgroundList"
+        },
+        "_title": "dynamicbackgrounds",
+        "_noIndex": false,
+        "_activeDate": "2019-08-21T15:59:59.342Z",
+        "lastModified": "2019-10-29T13:07:27.936Z",
+        "_locale": "en-US",
+        "_templateName": "FortniteGameDynamicBackgrounds"
+    },
+    "shopSections": {
+        "_title": "shop-sections",
+        "sectionList": {
+            "_type": "ShopSectionList",
+            "sections": [
+                {
+                    "bSortOffersByOwnership": false,
+                    "bShowIneligibleOffersIfGiftable": false,
+                    "bEnableToastNotification": true,
+                    "background": {
+                        "stage": "default",
+                        "_type": "DynamicBackground",
+                        "key": "vault"
+                    },
+                    "_type": "ShopSection",
+                    "landingPriority": 70,
+                    "bHidden": false,
+                    "sectionId": "Featured",
+                    "bShowTimer": true,
+                    "sectionDisplayName": "Item Shop",
+                    "bShowIneligibleOffers": true
+                }
+            ]
+        },
+        "_noIndex": false,
+        "_activeDate": "2022-12-01T23:45:00.000Z",
+        "lastModified": "2022-12-01T21:50:44.089Z",
+        "_locale": "en-US",
+        "_templateName": "FortniteGameShopSections"
+    },
+    "_suggestedPrefetch": []
+}

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Obfuscator>
+
+  <!-- Paths injected by the MSBuild target as command-line /var: switches.
+       InPath  = build output dir  (e.g. bin\Release\net8.0-windows)
+       OutPath = obfuscated output (e.g. bin\Release\net8.0-windows\obf)
+       The MSBuild target copies the obfuscated DLL back over InPath. -->
+  <Var name="InPath"  value="." />
+  <Var name="OutPath" value=".\obf" />
+
+  <!-- WPF and .NET 8 framework assembly resolution. The build target
+       overrides FrameworkPath with the real dotnet shared-framework
+       path so Obfuscar can resolve PresentationFramework, etc. -->
+  <Var name="ExtraFrameworkFolders" value="C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.32" />
+
+  <!-- Rename private/internal members to short unicode identifiers. -->
+  <Var name="HidePrivateApi"   value="true" />
+  <!-- Launcher is not a library; do not preserve any public API names. -->
+  <Var name="KeepPublicApi"    value="false" />
+  <!-- Reuse short names across unrelated types to maximise confusion. -->
+  <Var name="ReuseNames"       value="true" />
+  <!-- Encrypt string literals; they are decrypted at runtime only. -->
+  <Var name="HideStrings"      value="true" />
+  <!-- Rename fields, properties and events where safe. -->
+  <Var name="RenameFields"     value="true" />
+  <Var name="RenameProperties" value="true" />
+  <Var name="RenameEvents"     value="true" />
+  <!-- Add the SuppressIldasm attribute to the assembly. -->
+  <Var name="SuppressIldasm"   value="true" />
+  <!-- Emit a symbol map next to the DLL for offline crash-trace decoding. -->
+  <Var name="XmlMapping"       value="true" />
+
+  <Module file="$(InPath)\SyndicateLauncher.dll">
+
+    <!-- WPF entry points: App and MainWindow are referenced by BAML and the
+         WPF bootstrapper. Renaming them breaks startup. -->
+    <SkipType name="SyndicateLauncher.App" />
+    <SkipType name="SyndicateLauncher.MainWindow" />
+    <SkipType name="SyndicateLauncher.LaunchSplash" />
+    <SkipType name="SyndicateLauncher.StartupTrace" />
+    <SkipType name="SyndicateLauncher.DiagnosticsBar" />
+    <SkipType name="SyndicateLauncher.FrameMonitor" />
+    <SkipType name="SyndicateLauncher.WindowPerformance" />
+    <SkipType name="SyndicateLauncher.Ui" />
+
+    <!-- ViewModels: XAML binds to property names by string at runtime.
+         Renaming any ViewModel property silently breaks the UI. -->
+    <SkipNamespace name="SyndicateLauncher.ViewModels" />
+
+    <!-- Models: serialised to/from JSON by property name and data-bound in
+         several XAML templates. -->
+    <SkipNamespace name="SyndicateLauncher.Models" />
+
+    <!-- Custom controls and converters: XAML instantiates these by type name
+         inside compiled BAML. -->
+    <SkipNamespace name="SyndicateLauncher.Controls" />
+    <SkipNamespace name="SyndicateLauncher.Converters" />
+
+    <!-- Services and Studio namespaces are NOT skipped: only called from C#
+         by compiled reference, never by XAML string binding. Full rename and
+         string encryption is applied automatically. -->
+
+  </Module>
+
+</Obfuscator>

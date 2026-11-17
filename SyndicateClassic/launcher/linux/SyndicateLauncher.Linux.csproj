@@ -1,0 +1,35 @@
+<!-- Syndicate © 2026 Syndicate. All rights reserved. Proprietary — see LICENSE. -->
+<!-- Linux port (proof-of-life). Avalonia replaces WPF; WPF cannot run on Linux.    -->
+<!-- The Windows launcher (../launcher-source/SyndicateLauncher.original.csproj) is      -->
+<!-- untouched; this is a separate, additive project while we port screen by screen.  -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>            <!-- WinExe = no console window; harmless on Linux -->
+    <TargetFramework>net8.0</TargetFramework>  <!-- note: NOT net8.0-windows -->
+    <Nullable>enable</Nullable>
+    <LangVersion>12.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>SyndicateLauncher</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Self-contained single-file publish so the Deck needs NO .NET installed. -->
+    <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Bundled assets (logo, season art later) loaded via avares:// URIs. -->
+    <AvaloniaResource Include="assets/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Bump to the latest 11.x on first restore if you like; 11.2.x is the stable line. -->
+    <PackageReference Include="Avalonia" Version="11.2.1" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.1" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.1" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.1" />
+    <!-- Diagnostics only in Debug builds. -->
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.1" />
+  </ItemGroup>
+
+</Project>

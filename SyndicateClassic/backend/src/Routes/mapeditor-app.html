@@ -1,0 +1,687 @@
+<title>Syndicate Map Editor 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+<style>
+/* Deliberate single dark theme: a UE-style editor viewport with floating panels. */
+:root{
+  --bg:#13161c; --view:#0b0d12; --panel:#1b1f27; --panel-2:#23272f; --border:#2f3540; --fg:#e6eaf0;
+  --muted:#8b93a3; --accent:#3fa7ff; --accent-fg:#06121c;
+  --poi:#3fa7ff; --rift-no_build:#ec6a60; --rift-forced_dance:#e6b24a; --rift-low_gravity:#9681ff;
+  --rift-no_fall_damage:#3fc0ad; --rift-fast_siphon:#dd6ad9; --landing:#38c172; --drop:#d47a3f;
+  --actor:#f2c14e; --me:#ff5d8f; --bad:#ec6a60;
+  --shadow:0 2px 6px rgba(0,0,0,.5),0 12px 36px rgba(0,0,0,.5);
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --disp:"Oxanium",system-ui,sans-serif; --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidden}
+*{box-sizing:border-box}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border-bottom:1px solid var(--border);
+  padding-block:8px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.brand{font-family:var(--disp);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:15px;display:flex;align-items:center;gap:8px;margin-right:4px}
+.brand .dot{width:11px;height:11px;border-radius:2px;background:var(--accent);transform:rotate(45deg)}
+.spacer{flex:1 1 auto;min-width:0}
+button,.filebtn{font-family:var(--body);font-size:13px;border:1px solid var(--border);background:var(--panel-2);color:var(--fg);border-radius:7px;padding:7px 11px;cursor:pointer;line-height:1;white-space:nowrap}
+button:hover,.filebtn:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+button:focus-visible,.filebtn:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.filebtn input{display:none}
+.main{display:flex;min-height:0;overflow:hidden}
+.viewport{position:relative;flex:1 1 auto;min-width:0;background:var(--view)}
+#gl{display:block;width:100%;height:100%;touch-action:none}
+.hint{position:absolute;left:12px;top:12px;font-size:12px;color:var(--muted);background:rgba(12,14,20,.78);border:1px solid var(--border);border-radius:7px;padding:6px 9px;max-width:62%;pointer-events:none;box-shadow:var(--shadow)}
+.gizmo{position:absolute;right:12px;top:12px;display:flex;gap:6px}
+.gizmo button{padding:6px 9px;font-family:var(--mono);font-size:12px}
+.gizmo button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.side{width:300px;flex:0 0 300px;background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;padding-bottom:10px}
+.group{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:9px}
+.group h2{font-family:var(--disp);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:11px;color:var(--muted);margin:0}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tool{display:flex;align-items:center;gap:7px;justify-content:flex-start;font-size:13px}
+.tool .sw{width:11px;height:11px;border-radius:3px;flex:0 0 auto}
+.tool[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;color:var(--muted);letter-spacing:.03em}
+input,select{font-family:var(--body);font-size:13px;background:var(--panel-2);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:7px 8px;width:100%}
+input[type=number]{font-family:var(--mono)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row4{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.props .empty{font-size:12px;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:3px;max-height:30vh;overflow-y:auto}
+.item{display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--border);border-radius:6px;background:var(--panel-2);cursor:pointer;font-size:12.5px}
+.item[aria-selected="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.item .sw{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+.item .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .co{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.del{border:none;background:none;color:var(--muted);padding:2px 5px;cursor:pointer;font-size:14px}
+.del:hover{color:var(--rift-no_build)}
+.status{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--panel);border-top:1px solid var(--border);font-family:var(--mono);font-size:11.5px;color:var(--muted);padding-block:6px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.status b{color:var(--fg);font-weight:500}.status .tag{color:var(--accent)}
+.scrim{position:fixed;inset:0;background:rgba(5,8,13,.6);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}
+.scrim.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);width:min(640px,100%);max-height:86vh;display:flex;flex-direction:column;overflow:hidden}
+.modal header{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border)}
+.modal header h2{font-family:var(--disp);font-size:15px;margin:0;flex:1}
+.modal .body{padding:14px 16px;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.modal textarea{width:100%;min-height:230px;font-family:var(--mono);font-size:12px;line-height:1.45;background:var(--panel-2);color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:10px;resize:vertical}
+.modal .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--mono);font-size:13px}
+@media (max-width:720px){.side{width:244px;flex-basis:244px}}
+@media (max-width:560px){.main{flex-direction:column}.side{width:auto;flex:0 0 auto;max-height:46%;border-left:none;border-top:1px solid var(--border)}.viewport{flex:1 1 auto;min-height:220px}}
+/* Panel mode (embedded as the Level Editor's side column): the real game IS the viewport, so hide the dead 3D grid
+   and the viewport-only controls, and let the control column fill the width. */
+body.panel .viewport{display:none}
+body.panel .side{width:auto;flex:1 1 auto;border-left:none}
+body.panel .filebtn,body.panel #islandBtn,body.panel #fitBtn,body.panel #topBtn,body.panel #imgRead,body.panel #webglRead{display:none}
+</style>
+
+<div class="app">
+  <header class="bar">
+    <span class="brand"><span class="dot"></span>Syndicate Map Editor 3D</span>
+    <label class="filebtn">Load map image<input type="file" id="imgInput" accept="image/*"></label>
+    <button id="islandBtn" title="Show the Battle Royale island (landmass + named POIs) as the ground reference, matched to the base build's chapter">BR island</button>
+    <button id="fitBtn">Frame</button>
+    <button id="topBtn">Top view</button>
+    <span class="spacer"></span>
+    <button id="importBtn">Import JSON</button>
+    <button id="openBtn" hidden>Saved maps</button>
+    <button id="checkBtn" hidden>Check map</button>
+    <button id="saveBtn" class="pri" hidden>Save to Syndicate</button>
+    <button id="exportBtn">Export JSON</button>
+  </header>
+  <div class="main">
+    <div class="viewport">
+      <canvas id="gl"></canvas>
+      <div class="loading" id="loading">Loading 3D viewport…</div>
+      <div class="hint" id="hint">Orbit: drag · Pan: right-drag · Zoom: scroll. Pick a tool, then click the ground to place. Drag the gizmo to move a selected marker.</div>
+      <div class="gizmo">
+        <button id="gT" aria-pressed="true" title="Move">Move</button>
+        <button id="gS" title="Scale (POI radius / zone size)">Scale</button>
+        <button id="gR" title="Rotate an actor (yaw)">Rotate</button>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="group" id="liveGroup" hidden>
+        <h2>Live match</h2>
+        <div class="props"><div class="empty" id="liveStatus">Looking for a Dev Kit match…</div></div>
+        <div class="row2">
+          <button id="liveHere" title="Place the selected actor class on the ground in front of you, in the match">Drop in front of me</button>
+          <button id="liveFollow" aria-pressed="false" title="Keep the camera on you">Follow me</button>
+        </div>
+        <div class="row2">
+          <button id="livePush" title="Clear what the editor placed in the match, then place every actor of this map">Push map to match</button>
+          <button id="liveClear" title="Remove everything the editor placed in this match">Clear match</button>
+        </div>
+        <button id="igToggle" aria-pressed="false" title="Place the selected class from inside Fortnite with a key">In-game placing: off</button>
+        <div id="igPanel" class="field" hidden>
+          <label>Keys (work while Fortnite is in front)</label>
+          <div class="row4" style="grid-template-columns:1fr 1fr 1fr">
+            <select id="igPlace" aria-label="Place key"></select><select id="igTurn" aria-label="Turn key"></select><select id="igRemove" aria-label="Remove key"></select>
+          </div>
+          <label style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fg)"><input id="igSnap" type="checkbox" checked style="width:auto"> Snap build pieces to the 512 grid and 90°</label>
+          <div class="note" id="igNote">Aim with your crosshair and press Place. Turn rotates the next piece 90°. Remove deletes an editor piece you look at.</div>
+        </div>
+      </div>
+      <div class="group" id="actorGroup" hidden>
+        <h2>Actor classes</h2>
+        <div class="row2">
+          <select id="actorCat" aria-label="Category"><option value="build">Build pieces</option><option value="containers">Containers &amp; loot</option><option value="props">Props</option></select>
+          <input id="actorFilter" type="text" placeholder="filter…" aria-label="Filter classes">
+        </div>
+        <div id="actorNote" class="props"><div class="empty">Real classes from your build. Pick one, then use the Actor tool or Drop in front of me.</div></div>
+        <div class="list" id="actorList"></div>
+      </div>
+      <div class="group">
+        <h2>Tools</h2>
+        <div class="tools" id="tools">
+          <button class="tool" data-tool="select" aria-pressed="true"><span class="sw" style="background:var(--muted)"></span>Select</button>
+          <button class="tool" data-tool="poi"><span class="sw" style="background:var(--poi)"></span>POI</button>
+          <button class="tool" data-tool="rift"><span class="sw" style="background:var(--rift-no_build)"></span>Rift zone</button>
+          <button class="tool" data-tool="landing"><span class="sw" style="background:var(--landing)"></span>Landing</button>
+          <button class="tool" data-tool="drop"><span class="sw" style="background:var(--drop)"></span>Bot drop</button>
+          <button class="tool" data-tool="prop"><span class="sw" style="background:var(--accent)"></span>Prop</button>
+          <button class="tool" data-tool="actor"><span class="sw" style="background:var(--actor)"></span>Actor</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>Prefab / prop palette</h2>
+        <div id="paletteNote" class="props"><div class="empty">Connect from the launcher to load your build's live prefabs. Pick one, then the Prop tool places it.</div></div>
+        <input id="paletteFilter" type="text" placeholder="filter…" hidden>
+        <div class="list" id="palette"></div>
+      </div>
+      <div class="group">
+        <h2>Map settings</h2>
+        <div class="field"><label for="mapName">Season / map name</label><input id="mapName" type="text" placeholder="e.g. Syndicate Season One"></div>
+        <div class="field"><label for="baseSeason">Base build</label><select id="baseSeason"></select></div>
+        <div class="field"><label>World bounds (Fortnite units the image covers)</label>
+          <div class="row4">
+            <input id="minX" type="number" placeholder="min X" aria-label="min X">
+            <input id="maxX" type="number" placeholder="max X" aria-label="max X">
+            <input id="minY" type="number" placeholder="min Y" aria-label="min Y">
+            <input id="maxY" type="number" placeholder="max Y" aria-label="max Y">
+          </div>
+        </div>
+      </div>
+      <div class="group props"><h2>Selected</h2><div id="props"><div class="empty">Nothing selected. Pick a tool and click the ground, or click a marker.</div></div></div>
+      <div class="group"><h2>Markers (<span id="count">0</span>)</h2><div class="list" id="list"></div></div>
+    </aside>
+  </div>
+  <div class="status">
+    <span>cursor <b id="curWorld">—</b></span>
+    <span class="tag" id="toolRead">select</span>
+    <span id="imgRead">no map image · grid</span>
+    <span id="webglRead"></span>
+  </div>
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="modal"><header><h2 id="modalTitle">Export</h2><button id="modalClose">Close</button></header>
+    <div class="body"><p class="note" id="modalNote"></p><textarea id="json" spellcheck="false"></textarea><div class="acts" id="modalActs"></div></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const BUILDS=[["1.7.2","Pre-Season (1.7.2)"],["1.8.2","Season 1 (1.8.2)"],["1.11","Season 2 (1.11)"],["3.5.1","Season 3 (3.5.1)"],["4.5","Season 4 (4.5)"],["5.10","Season 5 (5.10)"],["6.20","Season 6 (6.20)"],["7.40","Season 7 (7.40)"],["8.50","Season 8 (8.50)"],["9.40","Season 9 (9.40)"],["10.31","Season X (10.31)"],["11.00","Chapter 2 S1 (11.00)"]];
+const EFFECTS=[["no_build","No build (Tilted Town)"],["forced_dance","Forced dance (Taco Time)"],["low_gravity","Low gravity"],["no_fall_damage","No fall damage"],["fast_siphon","Fast siphon"]];
+const EFFECT_LABEL=Object.fromEntries(EFFECTS);
+const DEFAULT_BOUNDS={minX:-130000,maxX:130000,minY:-130000,maxY:130000};
+const STORE="tilted-map-editor-3d-v1", WS=0.01, RIFT_H=4; // WS: world units -> scene units; rift box height (scene)
+const cvar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim()||"#888";
+const hex=n=>new THREE.Color(cvar(n));
+
+let state={ name:"", baseSeason:"11.00", bounds:{...DEFAULT_BOUNDS}, elements:[], imgData:null };
+let tool="select", selId=null, uid=1, img=null, imgAspect=1, selectedAsset=null, selectedClass=null;
+const ACTOR_SCALE=512*WS/120; // actor proxies at real size: the 120-unit floor proxy becomes a 512-unit piece
+const LIVE={on:false,season:null,host:null,follow:false,mapCount:0};
+const actorHeight=el=>el.z!=null?el.z*WS:(el.live&&el.live.ok?el.live.z*WS:0);
+let scene,camera,renderer,orbit,gizmo,raycaster,ground,gridHelp,ndc;
+const objById=new Map();
+
+/* ---- persistence ---- */
+const save=()=>{try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}};
+function load(){try{const s=localStorage.getItem(STORE);if(s){const d=JSON.parse(s);if(d&&typeof d==="object"){state={name:d.name||"",baseSeason:d.baseSeason||"11.00",bounds:{...DEFAULT_BOUNDS,...(d.bounds||{})},elements:Array.isArray(d.elements)?d.elements:[],imgData:d.imgData||null};uid=state.elements.reduce((m,e)=>Math.max(m,(e.id||0)+1),1);}}}catch(e){}}
+
+/* ---- world <-> scene ---- */
+const b=()=>state.bounds;
+function worldToScene(x,y){ return [x*WS, -y*WS]; }           // returns [sceneX, sceneZ]
+function sceneToWorld(sx,sz){ return [sx/WS, -sz/WS]; }
+function groundSize(){ const bb=b(); return [Math.abs(bb.maxX-bb.minX)*WS, Math.abs(bb.maxY-bb.minY)*WS]; }
+function groundCenterScene(){ const bb=b(); return worldToScene((bb.minX+bb.maxX)/2,(bb.minY+bb.maxY)/2); }
+
+/* ---- three setup ---- */
+function initGL(){
+  const cv=document.getElementById("gl");
+  renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  scene=new THREE.Scene(); scene.background=hex("--view");
+  scene.fog=new THREE.Fog(hex("--view"),2200,6000);
+  camera=new THREE.PerspectiveCamera(55,1,0.1,20000);
+  camera.position.set(1400,1500,1700); camera.lookAt(0,0,0);
+  scene.add(new THREE.HemisphereLight(0x9fb4d0,0x0b0d12,1.05));
+  const dir=new THREE.DirectionalLight(0xffffff,0.55); dir.position.set(1200,2200,800); scene.add(dir);
+  gridHelp=new THREE.GridHelper(2600,52,new THREE.Color(cvar("--border")),new THREE.Color(cvar("--panel-2")));
+  gridHelp.position.y=0.02; scene.add(gridHelp);
+  ground=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshStandardMaterial({color:hex("--panel-2"),roughness:1,metalness:0,transparent:true,opacity:.96}));
+  ground.rotation.x=-Math.PI/2; scene.add(ground);
+  orbit=new THREE.OrbitControls(camera,renderer.domElement); orbit.enableDamping=true; orbit.dampingFactor=.08; orbit.maxPolarAngle=Math.PI*0.495;
+  gizmo=new THREE.TransformControls(camera,renderer.domElement); gizmo.setSize(0.8); scene.add(gizmo);
+  gizmo.addEventListener("dragging-changed",e=>{ orbit.enabled=!e.value; });
+  gizmo.addEventListener("objectChange",onGizmo);
+  raycaster=new THREE.Raycaster(); ndc=new THREE.Vector2();
+  cv.addEventListener("pointerdown",onDown);
+  cv.addEventListener("pointermove",onMove);
+  resizeGL(); layoutGround();
+  document.getElementById("loading").style.display="none";
+  document.getElementById("webglRead").textContent="WebGL ready";
+  animate();
+}
+function resizeGL(){ const r=renderer.domElement.parentElement.getBoundingClientRect();
+  if(r.width<2||r.height<2)return; // panel mode hides the viewport; don't feed a 0-size (NaN aspect) to the camera
+  renderer.setSize(r.width,r.height,false); camera.aspect=r.width/Math.max(1,r.height); camera.updateProjectionMatrix(); }
+function layoutGround(){ const [w,d]=groundSize(); ground.geometry.dispose(); ground.geometry=new THREE.PlaneGeometry(w,d);
+  const c=groundCenterScene(); ground.position.set(c[0],0,c[1]);
+  const span=Math.max(w,d); gridHelp.scale.setScalar(span/2600*1.1||1);
+  if(img){ const tex=new THREE.CanvasTexture(imgCanvas()); tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
+    ground.material.map=tex; ground.material.color.set(0xffffff); ground.material.opacity=1; ground.material.needsUpdate=true; }
+}
+function imgCanvas(){ const c=document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight; const g=c.getContext("2d"); g.drawImage(img,0,0); return c; }
+function animate(){ requestAnimationFrame(animate); orbit.update(); renderer.render(scene,camera); }
+
+/* ---- object builders ---- */
+// Shaped placeholders for props, keyed off the asset name. These are still proxies, not the real Fortnite
+// meshes (a browser can't load those from the game's .pak files) - but a wall reads as a wall, a tree as a
+// tree, so the layout is legible instead of a field of identical cubes. The real models appear in-game.
+function propGeom(name){
+  const n=(name||"").toLowerCase(); const has=k=>n.indexOf(k)>=0;
+  if(has("floor")||has("roof")||has("ceiling")||has("platform")) return {shape:"slab", w:120,h:10,d:120, color:"#5cd38a"};
+  if(has("stair")||has("ramp")) return {shape:"ramp", w:110,h:84,d:110, color:"#ff9a3d"};
+  if(has("wall")||has("fence")||has("door")||n==="solid"||has("_solid")) return {shape:"box", w:120,h:120,d:12, color:"#6fa8ff"};
+  if(has("chest")||has("ammo")||has("container")||has("loot")||has("vending")||has("supply")) return {shape:"box", w:40,h:28,d:26, color:"#f2c14e"};
+  if(has("tree")||has("leaf")||has("branch")||has("bush")||has("palm")||has("pine")) return {shape:"tree", color:"#4fb477"};
+  if(has("rock")||has("stone")||has("boulder")||has("cliff")) return {shape:"rock", color:"#9aa3b2"};
+  if(has("prefab")||has("gallery")||has("building")||has("house")||has("cabin")||has("tower")||has("ruin")||has("bridge")||has("structure")) return {shape:"structure", w:170,h:150,d:170, color:"#b98cff"};
+  return {shape:"box", w:70,h:70,d:70, color:"#7aa8ff"};
+}
+function propProxy(name){
+  const spec=propGeom(name); const color=new THREE.Color(spec.color); const meshes=[];
+  const mat=o=>new THREE.MeshStandardMaterial({color,transparent:true,opacity:o,roughness:.9,metalness:0});
+  const addEdges=m=>{ const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),new THREE.LineBasicMaterial({color})); e.position.copy(m.position); e.rotation.copy(m.rotation); e.scale.copy(m.scale); meshes.push(e); };
+  if(spec.shape==="tree"){
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(6,8,60,8),mat(.6)); trunk.position.y=30; meshes.push(trunk);
+    const canopy=new THREE.Mesh(new THREE.ConeGeometry(34,72,10),mat(.5)); canopy.position.y=92; meshes.push(canopy); addEdges(canopy);
+  } else if(spec.shape==="rock"){
+    const rock=new THREE.Mesh(new THREE.IcosahedronGeometry(38,0),mat(.6)); rock.position.y=24; rock.scale.set(1,.6,1); meshes.push(rock); addEdges(rock);
+  } else if(spec.shape==="ramp"){
+    const box=new THREE.Mesh(new THREE.BoxGeometry(spec.w,14,spec.d),mat(.5)); box.position.y=spec.h/2; box.rotation.x=-Math.PI/7; meshes.push(box); addEdges(box);
+  } else {
+    const box=new THREE.Mesh(new THREE.BoxGeometry(spec.w,spec.h,spec.d),mat(spec.shape==="structure"?.28:.45)); box.position.y=spec.h/2; meshes.push(box); addEdges(box);
+  }
+  return {meshes,color};
+}
+function makeObject(el){
+  const g=new THREE.Group(); g.userData={id:el.id,kind:el.kind};
+  const color=el.kind==="rift"?hex("--rift-"+(el.effect||"no_build")):hex(el.kind==="poi"?"--poi":el.kind==="landing"?"--landing":el.kind==="drop"?"--drop":"--poi");
+  if(el.kind==="rift"){
+    const w=Math.max(1,Math.abs(el.maxX-el.minX)*WS), d=Math.max(1,Math.abs(el.maxY-el.minY)*WS);
+    const box=new THREE.Mesh(new THREE.BoxGeometry(w,RIFT_H*40,d),new THREE.MeshStandardMaterial({color,transparent:true,opacity:.18,depthWrite:false}));
+    box.name="box"; g.add(box);
+    const edges=new THREE.LineSegments(new THREE.EdgesGeometry(box.geometry),new THREE.LineBasicMaterial({color})); g.add(edges);
+    const c=worldToScene((el.minX+el.maxX)/2,(el.minY+el.maxY)/2); g.position.set(c[0],RIFT_H*20,c[1]);
+  } else if(el.kind==="actor"){
+    // Real-scale proxies (a build piece is 512 units wide), at the height the match reports for it.
+    const [sx,sz]=worldToScene(el.x,el.y); const h=actorHeight(el); g.position.set(sx,h,sz); g.userData.baseY=h;
+    g.rotation.y=(el.yaw||0)*Math.PI/180; g.scale.setScalar(ACTOR_SCALE);
+    const parts=propProxy(el.class||""); for(const m of parts.meshes) g.add(m);
+    if(el.live&&!el.live.ok){ const bad=new THREE.Mesh(new THREE.TorusGeometry(70,4,8,32),new THREE.MeshBasicMaterial({color:hex("--bad")})); bad.rotation.x=Math.PI/2; bad.position.y=2; g.add(bad); }
+    g.userData.color=parts.color; return g;
+  } else if(el.kind==="prop"){
+    const [sx,sz]=worldToScene(el.x,el.y); g.position.set(sx,0,sz);
+    const parts=propProxy(el.asset||el.name||"");
+    for(const m of parts.meshes) g.add(m);
+    g.userData.color=parts.color; return g;
+  } else {
+    const [sx,sz]=worldToScene(el.x,el.y); g.position.set(sx,0,sz);
+    if(el.kind==="poi"){ const r=Math.max(2,(el.radius||5000)*WS);
+      const ring=new THREE.Mesh(new THREE.CylinderGeometry(r,r,1.5,40,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.5,side:THREE.DoubleSide})); ring.name="ring"; ring.position.y=0.75; g.add(ring);
+      const disc=new THREE.Mesh(new THREE.CircleGeometry(r,40),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.12,side:THREE.DoubleSide})); disc.rotation.x=-Math.PI/2; disc.position.y=0.1; g.add(disc);
+    }
+    const poleH=el.kind==="poi"?70:48;
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,poleH,8),new THREE.MeshStandardMaterial({color})); pole.position.y=poleH/2; g.add(pole);
+    const head=el.kind==="landing"||el.kind==="drop"
+      ? new THREE.Mesh(new THREE.ConeGeometry(11,22,16),new THREE.MeshStandardMaterial({color}))
+      : new THREE.Mesh(new THREE.SphereGeometry(10,20,16),new THREE.MeshStandardMaterial({color}));
+    head.position.y=poleH+(el.kind==="poi"?0:6); if(head.geometry.type==="ConeGeometry")head.rotation.x=Math.PI; g.add(head);
+  }
+  g.userData.color=color; return g;
+}
+function rebuild(){ for(const o of objById.values()){ scene.remove(o); disposeObj(o); } objById.clear();
+  for(const el of state.elements){ const o=makeObject(el); objById.set(el.id,o); scene.add(o); }
+  applyGizmo(); }
+function disposeObj(o){ o.traverse(c=>{ if(c.geometry)c.geometry.dispose(); if(c.material){ if(c.material.map)c.material.map.dispose(); c.material.dispose(); } }); }
+function refreshOne(el){ const old=objById.get(el.id); if(old){scene.remove(old);disposeObj(old);} const o=makeObject(el); objById.set(el.id,o); scene.add(o); applyGizmo(); }
+
+/* ---- selection / gizmo ---- */
+function applyGizmo(){ const o=selId!=null?objById.get(selId):null; if(o){ gizmo.attach(o); } else { gizmo.detach(); } }
+function onGizmo(){ const el=state.elements.find(e=>e.id===selId); if(!el)return; const o=objById.get(selId); if(!o)return;
+  if(el.kind==="actor"){
+    const w=sceneToWorld(o.position.x,o.position.z); el.x=Math.round(w[0]); el.y=Math.round(w[1]);
+    if(Math.abs(o.position.y-(o.userData.baseY||0))>0.001){ el.z=Math.round(o.position.y/WS); o.userData.baseY=o.position.y; }
+    el.yaw=Math.round(o.rotation.y*180/Math.PI); o.scale.setScalar(ACTOR_SCALE);
+    liveMoveSoon(el); renderSide(); renderList(); save(); return;
+  }
+  if(el.kind==="rift"){
+    const w=sceneToWorld(o.position.x,o.position.z);
+    const halfW=Math.abs(el.maxX-el.minX)/2*(o.scale.x||1), halfD=Math.abs(el.maxY-el.minY)/2*(o.scale.z||1);
+    el.minX=Math.round(w[0]-halfW); el.maxX=Math.round(w[0]+halfW); el.minY=Math.round(w[1]-halfD); el.maxY=Math.round(w[1]+halfD);
+    if(o.scale.x!==1||o.scale.z!==1){ o.scale.set(1,1,1); refreshOne(el); }
+  } else {
+    const w=sceneToWorld(o.position.x,o.position.z); el.x=Math.round(w[0]); el.y=Math.round(w[1]);
+    if(el.kind==="poi" && o.scale.x!==1){ el.radius=Math.max(0,Math.round((el.radius||5000)*o.scale.x)); o.scale.set(1,1,1); refreshOne(el); }
+  }
+  renderSide(); renderList(); save();
+}
+function setGizmoMode(m){ gizmo.setMode(m==="scale"?"scale":m==="rotate"?"rotate":"translate");
+  gizmo.showX=gizmo.showZ=(m!=="rotate"); // rotate: yaw only
+  document.getElementById("gT").setAttribute("aria-pressed",m==="translate"); document.getElementById("gS").setAttribute("aria-pressed",m==="scale"); document.getElementById("gR").setAttribute("aria-pressed",m==="rotate"); }
+
+/* ---- pointer ---- */
+function setNDC(e){ const r=renderer.domElement.getBoundingClientRect(); ndc.x=(e.clientX-r.left)/r.width*2-1; ndc.y=-((e.clientY-r.top)/r.height)*2+1; }
+function groundHit(){ raycaster.setFromCamera(ndc,camera); const hits=raycaster.intersectObject(ground,false); return hits.length?hits[0].point:null; }
+function objHit(){ raycaster.setFromCamera(ndc,camera); const list=[...objById.values()]; const hits=raycaster.intersectObjects(list,true);
+  if(!hits.length)return null; let o=hits[0].object; while(o&&o.userData.id===undefined)o=o.parent; return o; }
+let downAt=null;
+function onDown(e){ if(gizmo.dragging)return; setNDC(e); downAt={x:e.clientX,y:e.clientY};
+  if(tool==="select"){ const o=objHit(); if(o){ selId=o.userData.id; applyGizmo(); renderSide(); renderList(); } else { selId=null; applyGizmo(); renderSide(); renderList(); } return; }
+  const p=groundHit(); if(!p)return; const w=sceneToWorld(p.x,p.z);
+  if(tool==="rift"){ const el={id:uid++,kind:"rift",name:"Rift "+(state.elements.filter(x=>x.kind==="rift").length+1),effect:"no_build",minX:Math.round(w[0]-6000),maxX:Math.round(w[0]+6000),minY:Math.round(w[1]-6000),maxY:Math.round(w[1]+6000)}; state.elements.push(el); refreshOne(el); selId=el.id; }
+  else if(tool==="actor"){ if(!selectedClass){ document.getElementById("hint").textContent="Pick an actor class from the Actor classes list first, then click the ground."; return; }
+    const el={id:uid++,kind:"actor",name:selectedClass,class:selectedClass,x:Math.round(w[0]),y:Math.round(w[1]),z:null,yaw:0}; state.elements.push(el); refreshOne(el); selId=el.id; liveSpawn(el); }
+  else if(tool==="prop"){ if(!selectedAsset){ document.getElementById("hint").textContent="Pick a prefab/prop from the palette on the right first, then click the ground."; return; } const el={id:uid++,kind:"prop",name:selectedAsset,asset:selectedAsset,x:Math.round(w[0]),y:Math.round(w[1])}; state.elements.push(el); refreshOne(el); selId=el.id; }
+  else { const n=state.elements.filter(x=>x.kind===tool).length+1; const nm=tool==="poi"?"POI "+n:tool==="landing"?"Landing "+n:"Drop "+n; const el={id:uid++,kind:tool,name:nm,x:Math.round(w[0]),y:Math.round(w[1])}; if(tool==="poi")el.radius=5000; state.elements.push(el); refreshOne(el); selId=el.id; }
+  applyGizmo(); renderSide(); renderList(); save();
+}
+function onMove(e){ setNDC(e); const p=groundHit(); if(p){ const w=sceneToWorld(p.x,p.z); document.getElementById("curWorld").textContent=Math.round(w[0])+", "+Math.round(w[1]); } }
+
+/* ---- side panel ---- */
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const KIND_SW=el=>el.kind==="actor"?"--actor":el.kind==="rift"?("--rift-"+(el.effect||"no_build")):el.kind==="poi"?"--poi":el.kind==="landing"?"--landing":el.kind==="prop"?"--accent":"--drop";
+function renderSide(){ const host=document.getElementById("props"); const el=state.elements.find(e=>e.id===selId);
+  if(!el){ host.innerHTML='<div class="empty">Nothing selected. Pick a tool and click the ground, or click a marker.</div>'; return; }
+  let h='<div class="field"><label>Name</label><input id="pName" type="text" value="'+esc(el.name||"")+'"></div>';
+  if(el.kind==="actor"){
+    const st=!el.live?(LIVE.on?"sending…":"not in a match"):el.live.ok?("in the match at "+el.live.x+", "+el.live.y+", "+el.live.z):("not placed: "+el.live.e);
+    h+='<div class="field"><label>Class</label><input type="text" value="'+esc(el.class)+'" readonly></div>';
+    h+='<div class="field"><label>Position (world X, Y)</label><div class="row2"><input id="pX" type="number" value="'+el.x+'"><input id="pY" type="number" value="'+el.y+'"></div></div>';
+    h+='<div class="field"><label>Height (blank = on the ground) · Yaw (°)</label><div class="row2"><input id="pZ" type="number" placeholder="ground" value="'+(el.z==null?"":el.z)+'"><input id="pYaw" type="number" value="'+(el.yaw||0)+'"></div></div>';
+    h+='<div class="note" style="color:'+(el.live&&!el.live.ok?"var(--bad)":"var(--muted)")+'">'+esc(st)+'</div>';
+  } else if(el.kind==="rift"){ h+='<div class="field"><label>Effect</label><select id="pEffect">'+EFFECTS.map(([v,l])=>'<option value="'+v+'"'+(el.effect===v?' selected':'')+'>'+l+'</option>').join("")+'</select></div>';
+    h+='<div class="field"><label>Bounds (world units)</label><div class="row4"><input id="pMinX" type="number" value="'+el.minX+'" aria-label="min X"><input id="pMaxX" type="number" value="'+el.maxX+'" aria-label="max X"><input id="pMinY" type="number" value="'+el.minY+'" aria-label="min Y"><input id="pMaxY" type="number" value="'+el.maxY+'" aria-label="max Y"></div></div>';
+  } else { h+='<div class="field"><label>Center (world X, Y)</label><div class="row2"><input id="pX" type="number" value="'+el.x+'"><input id="pY" type="number" value="'+el.y+'"></div></div>';
+    if(el.kind==="poi") h+='<div class="field"><label>Radius (world units)</label><input id="pR" type="number" value="'+(el.radius||5000)+'"></div>'; }
+  h+='<div><button id="pDel" style="color:var(--rift-no_build)">Delete marker</button></div>';
+  host.innerHTML=h;
+  const bind=(id,fn)=>{const n=document.getElementById(id);if(n)n.addEventListener("input",()=>{fn(n.value);refreshOne(el);renderList();save();if(el.kind==="actor"&&id!=="pName")liveMoveSoon(el);});};
+  bind("pName",v=>el.name=v); bind("pEffect",v=>el.effect=v);
+  bind("pZ",v=>el.z=(String(v).trim()===""?null:Math.round(+v||0))); bind("pYaw",v=>el.yaw=Math.round(+v||0));
+  bind("pX",v=>el.x=Math.round(+v||0)); bind("pY",v=>el.y=Math.round(+v||0)); bind("pR",v=>el.radius=Math.max(0,Math.round(+v||0)));
+  bind("pMinX",v=>el.minX=Math.round(+v||0)); bind("pMaxX",v=>el.maxX=Math.round(+v||0)); bind("pMinY",v=>el.minY=Math.round(+v||0)); bind("pMaxY",v=>el.maxY=Math.round(+v||0));
+  const d=document.getElementById("pDel"); if(d)d.addEventListener("click",()=>removeEl(el.id));
+}
+function removeEl(id){ const gone=state.elements.find(e=>e.id===id); if(gone&&gone.kind==="actor")liveSend([{op:"delete",id}]);
+  const o=objById.get(id); if(o){scene.remove(o);disposeObj(o);objById.delete(id);} state.elements=state.elements.filter(e=>e.id!==id); if(selId===id){selId=null;applyGizmo();} renderSide(); renderList(); save(); }
+function renderList(){ const host=document.getElementById("list"); document.getElementById("count").textContent=state.elements.length;
+  host.innerHTML=state.elements.map(el=>{ const co=(el.kind==="actor"&&el.live?(el.live.ok?"✓ ":"! "):"")+(el.kind==="rift"?(el.minX+","+el.maxY):(el.x+","+el.y));
+    return '<div class="item" data-id="'+el.id+'" aria-selected="'+(el.id===selId)+'"><span class="sw" style="background:var('+KIND_SW(el)+')"></span><span class="nm">'+esc(el.name||el.kind)+'</span><span class="co">'+co+'</span><button class="del" data-del="'+el.id+'" title="Delete">×</button></div>'; }).join("");
+  host.querySelectorAll(".item").forEach(n=>n.addEventListener("click",e=>{ if(e.target.dataset.del)return; selId=+n.dataset.id; applyGizmo(); renderSide(); renderList(); }));
+  host.querySelectorAll("[data-del]").forEach(n=>n.addEventListener("click",e=>{e.stopPropagation();removeEl(+n.dataset.del);}));
+}
+
+/* ---- settings / tools ---- */
+document.getElementById("tools").addEventListener("click",e=>{const btn=e.target.closest(".tool");if(!btn)return;tool=btn.dataset.tool;document.querySelectorAll(".tool").forEach(t=>t.setAttribute("aria-pressed",t===btn));document.getElementById("toolRead").textContent=tool;});
+function initSettings(){ const bs=document.getElementById("baseSeason"); bs.innerHTML=BUILDS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join(""); bs.value=state.baseSeason;
+  document.getElementById("mapName").value=state.name; for(const k of ["minX","maxX","minY","maxY"])document.getElementById(k).value=state.bounds[k];
+  bs.addEventListener("change",()=>{state.baseSeason=bs.value;save();});
+  document.getElementById("mapName").addEventListener("input",e=>{state.name=e.target.value;save();});
+  for(const k of ["minX","maxX","minY","maxY"])document.getElementById(k).addEventListener("input",e=>{state.bounds[k]=Math.round(+e.target.value||0);layoutGround();rebuild();save();});
+}
+
+/* ---- image ---- */
+function applyImage(dataUrl){ const im=new Image(); im.onload=()=>{ img=im; imgAspect=im.naturalWidth/im.naturalHeight; state.imgData=dataUrl; try{save();}catch(e){state.imgData=null;} layoutGround(); frame(); document.getElementById("imgRead").textContent="map image "+im.naturalWidth+"×"+im.naturalHeight; }; im.src=dataUrl; }
+document.getElementById("imgInput").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>applyImage(rd.result);rd.readAsDataURL(f);});
+
+/* ---- built-in Battle Royale island backdrop ----
+   An ORIGINAL, schematic top-down reference of the BR island - landmass, roads and the named POIs at
+   their approximate canonical positions, drawn here in a canvas. It is NOT Epic's minimap texture and
+   NOT extracted game geometry (a browser cannot load those from the .pak files); it is a locator map so
+   markers you place land near the right spot. If you have the exact in-game minimap PNG, Load map image
+   still overlays it - the world bounds are already set to the island. nx,ny are 0..1 over the world
+   bounds: (0,0) = NW corner (minX,maxY), (1,1) = SE corner (maxX,minY), north up - the same convention
+   the ground texture uses, so the labels sit where the editor places a marker at the same world X,Y. */
+const BR_ISLANDS={
+  1:{label:"Chapter 1 island",
+     shape:[[.12,.10],[.34,.05],[.55,.08],[.74,.06],[.92,.20],[.95,.46],[.90,.70],[.80,.90],[.58,.95],[.36,.92],[.16,.82],[.06,.60],[.05,.32]],
+     roads:[[[.30,.30],[.46,.44],[.60,.42],[.72,.55],[.60,.74]],[[.46,.44],[.44,.62],[.56,.80]],[[.20,.52],[.44,.62]]],
+     pois:[["Junk Junction",.20,.12],["Haunted Hills",.28,.20],["Pleasant Park",.30,.33],["Snobby Shores",.08,.46],
+       ["Loot Lake",.47,.34],["Tilted Towers",.42,.45],["Lazy Lagoon",.66,.22],["Risky Reels",.70,.31],
+       ["Dusty Divot",.56,.47],["Retail Row",.71,.52],["Lonely Lodge",.85,.53],["Wailing Woods",.79,.39],
+       ["Salty Springs",.52,.60],["Shifty Shafts",.36,.61],["Fatal Fields",.60,.75],["Flush Factory",.40,.83],
+       ["Paradise Palms",.81,.77],["Lucky Landing",.54,.92]]},
+  2:{label:"Chapter 2 island",
+     shape:[[.14,.12],[.40,.06],[.66,.08],[.88,.18],[.94,.42],[.88,.66],[.78,.88],[.54,.94],[.30,.90],[.12,.74],[.06,.46],[.07,.26]],
+     roads:[[[.30,.26],[.46,.42],[.60,.44],[.66,.62],[.52,.78]],[[.46,.42],[.40,.60]],[[.60,.44],[.80,.52]]],
+     pois:[["Sweaty Sands",.16,.22],["Craggy Cliffs",.46,.12],["Steamy Stacks",.75,.16],["Pleasant Park",.34,.33],
+       ["Frenzy Farm",.75,.34],["Salty Springs",.50,.46],["Weeping Woods",.30,.53],["Holly Hedges",.16,.51],
+       ["Retail Row",.70,.48],["Lazy Lake",.60,.56],["Dirty Docks",.83,.56],["Misty Meadows",.52,.77],
+       ["Slurpy Swamp",.30,.73],["The Rig",.16,.85]]}};
+function islandForSeason(s){ return s==="11.00"?2:1; }
+function drawBRIsland(ch){
+  const D=BR_ISLANDS[ch]||BR_ISLANDS[1]; const S=2000, c=document.createElement("canvas"); c.width=c.height=S; const g=c.getContext("2d");
+  const grd=g.createRadialGradient(S*.5,S*.5,S*.18,S*.5,S*.5,S*.72); grd.addColorStop(0,"#13384a"); grd.addColorStop(1,"#081c28"); g.fillStyle=grd; g.fillRect(0,0,S,S);
+  const P=D.shape.map(([x,y])=>[x*S,y*S]);
+  g.beginPath(); g.moveTo((P[P.length-1][0]+P[0][0])/2,(P[P.length-1][1]+P[0][1])/2);
+  for(let i=0;i<P.length;i++){ const a=P[i],b=P[(i+1)%P.length]; g.quadraticCurveTo(a[0],a[1],(a[0]+b[0])/2,(a[1]+b[1])/2); }
+  g.closePath(); g.shadowColor="rgba(0,0,0,.55)"; g.shadowBlur=46; g.fillStyle="#24402b"; g.fill(); g.shadowBlur=0;
+  g.lineWidth=6; g.strokeStyle="#3d6f47"; g.stroke();
+  g.strokeStyle="rgba(214,196,156,.45)"; g.lineWidth=5; g.lineCap="round"; g.lineJoin="round";
+  (D.roads||[]).forEach(r=>{ g.beginPath(); r.forEach(([x,y],i)=> i?g.lineTo(x*S,y*S):g.moveTo(x*S,y*S)); g.stroke(); });
+  g.strokeStyle="rgba(255,255,255,.055)"; g.lineWidth=1; for(let i=1;i<10;i++){ g.beginPath(); g.moveTo(S*i/10,0); g.lineTo(S*i/10,S); g.moveTo(0,S*i/10); g.lineTo(S,S*i/10); g.stroke(); }
+  g.textAlign="center"; g.textBaseline="middle";
+  D.pois.forEach(([nm,x,y])=>{ const px=x*S,py=y*S;
+    g.fillStyle="#ffd36a"; g.strokeStyle="rgba(0,0,0,.65)"; g.lineWidth=3;
+    g.beginPath(); g.arc(px,py,9,0,Math.PI*2); g.fill(); g.stroke();
+    g.font="700 26px Oxanium, system-ui, sans-serif"; const w=g.measureText(nm).width;
+    g.fillStyle="rgba(8,14,20,.74)"; g.fillRect(px-w/2-8,py+13,w+16,34);
+    g.fillStyle="#eef3f8"; g.fillText(nm,px,py+30); });
+  g.strokeStyle="rgba(63,167,255,.5)"; g.lineWidth=8; g.strokeRect(4,4,S-8,S-8);
+  g.textAlign="left"; g.font="700 30px Oxanium, system-ui, sans-serif"; g.fillStyle="rgba(63,167,255,.92)";
+  g.fillText("N ↑   "+D.label+"  · approximate locator reference",28,42);
+  return c;
+}
+function paintSchematic(ch){ const c=drawBRIsland(ch); applyImage(c.toDataURL("image/png")); rebuild();
+  document.getElementById("imgRead").textContent=BR_ISLANDS[ch].label+" (built-in reference)"; }
+function showIsland(){ const ch=islandForSeason(state.baseSeason); state.bounds={...DEFAULT_BOUNDS};
+  for(const k of ["minX","maxX","minY","maxY"]){ const n=document.getElementById(k); if(n)n.value=state.bounds[k]; }
+  // Prefer a real minimap you dropped at Runtime/Server/island/chapterN.* (served by the backend); if there
+  // is none the fetch 404s and we fall back to the drawn schematic. Only possible when opened from the launcher.
+  if(HOSTED){ fetch(api("/tilted/mapeditor/island?chapter="+ch)).then(r=>r.ok?r.blob():Promise.reject()).then(bl=>{
+      const rd=new FileReader(); rd.onload=()=>{ applyImage(rd.result); rebuild();
+        document.getElementById("imgRead").textContent=BR_ISLANDS[ch].label+" (real minimap)"; }; rd.readAsDataURL(bl);
+    }).catch(()=>paintSchematic(ch)); }
+  else paintSchematic(ch); }
+document.getElementById("islandBtn").addEventListener("click",showIsland);
+
+/* ---- camera framing ---- */
+function frame(){ const [w,d]=groundSize(); const c=groundCenterScene(); const span=Math.max(w,d,200);
+  orbit.target.set(c[0],0,c[1]); camera.position.set(c[0]+span*0.55,span*0.75,c[1]+span*0.75); camera.near=0.1; camera.far=span*20; camera.updateProjectionMatrix(); orbit.update(); }
+function topView(){ const [w,d]=groundSize(); const c=groundCenterScene(); const span=Math.max(w,d,200);
+  orbit.target.set(c[0],0,c[1]); camera.position.set(c[0],span*1.1,c[1]+0.01); orbit.update(); }
+
+/* ---- export / import ---- */
+function buildJSON(){ const out={schema:"tilted-custom-map-v1",name:state.name||"Untitled custom map",baseSeason:state.baseSeason,worldBounds:{...state.bounds},pois:[],riftZones:[],landingZones:[],dropRegions:[],props:[],actors:[]};
+  for(const el of state.elements){ if(el.kind==="poi")out.pois.push({name:el.name,x:el.x,y:el.y,radius:el.radius||5000});
+    else if(el.kind==="rift")out.riftZones.push({name:el.name,effect:el.effect||"no_build",minX:el.minX,maxX:el.maxX,minY:el.minY,maxY:el.maxY});
+    else if(el.kind==="landing")out.landingZones.push({name:el.name,x:el.x,y:el.y});
+    else if(el.kind==="drop")out.dropRegions.push({name:el.name,x:el.x,y:el.y});
+    else if(el.kind==="prop")out.props.push({asset:el.asset||el.name,x:el.x,y:el.y});
+    else if(el.kind==="actor")out.actors.push({class:el.class,x:el.x,y:el.y,z:el.z==null?null:el.z,yaw:el.yaw||0}); }
+  return out; }
+const scrim=document.getElementById("scrim"), ta=document.getElementById("json");
+function openModal(title,note,text,acts){ document.querySelectorAll(".savedList").forEach(n=>n.remove()); ta.style.display=""; document.getElementById("modalTitle").textContent=title; document.getElementById("modalNote").textContent=note; ta.value=text; ta.readOnly=(title==="Export");
+  const host=document.getElementById("modalActs"); host.innerHTML=""; acts.forEach(a=>{const btn=document.createElement("button");btn.textContent=a.label;if(a.pri)btn.className="pri";btn.addEventListener("click",a.fn);host.appendChild(btn);}); scrim.classList.add("show"); }
+document.getElementById("modalClose").addEventListener("click",()=>scrim.classList.remove("show"));
+scrim.addEventListener("click",e=>{if(e.target===scrim)scrim.classList.remove("show");});
+document.getElementById("exportBtn").addEventListener("click",()=>openModal("Export","Copy this and save it as custom-map.json, then load it in the launcher. (In the browser, copy is the only way out — the desktop .exe build saves a real file instead.)",JSON.stringify(buildJSON(),null,2),[{label:"Copy & close",pri:true,fn:()=>{copyText(ta.value);setTimeout(()=>scrim.classList.remove("show"),650);}},{label:"Close",fn:()=>scrim.classList.remove("show")}]));
+document.getElementById("importBtn").addEventListener("click",()=>openModal("Import","Paste a custom-map.json here and apply it. This replaces the current markers.","",[{label:"Apply",pri:true,fn:()=>applyImport(ta.value)},{label:"Close",fn:()=>scrim.classList.remove("show")}]));
+function applyImport(text){ let d; try{d=JSON.parse(text);}catch(e){document.getElementById("modalNote").textContent="That isn't valid JSON — check for a missing brace or comma.";return;}
+  if(!d||typeof d!=="object"){document.getElementById("modalNote").textContent="Expected a custom-map object.";return;}
+  state.name=d.name||""; state.baseSeason=d.baseSeason||"11.00"; state.bounds={...DEFAULT_BOUNDS,...(d.worldBounds||{})}; state.elements=[]; uid=1;
+  (d.pois||[]).forEach(p=>state.elements.push({id:uid++,kind:"poi",name:p.name||"POI",x:Math.round(p.x||0),y:Math.round(p.y||0),radius:Math.round(p.radius||5000)}));
+  (d.riftZones||[]).forEach(p=>state.elements.push({id:uid++,kind:"rift",name:p.name||"Rift",effect:p.effect||"no_build",minX:Math.round(p.minX||0),maxX:Math.round(p.maxX||0),minY:Math.round(p.minY||0),maxY:Math.round(p.maxY||0)}));
+  (d.landingZones||[]).forEach(p=>state.elements.push({id:uid++,kind:"landing",name:p.name||"Landing",x:Math.round(p.x||0),y:Math.round(p.y||0)}));
+  (d.dropRegions||[]).forEach(p=>state.elements.push({id:uid++,kind:"drop",name:p.name||"Drop",x:Math.round(p.x||0),y:Math.round(p.y||0)}));
+  (d.props||[]).forEach(p=>state.elements.push({id:uid++,kind:"prop",name:p.asset||"Prop",asset:p.asset||"",x:Math.round(p.x||0),y:Math.round(p.y||0)}));
+  (d.actors||[]).forEach(p=>state.elements.push({id:uid++,kind:"actor",name:p.class||"Actor",class:p.class||"",x:Math.round(p.x||0),y:Math.round(p.y||0),z:p.z==null||p.z===""?null:Math.round(p.z),yaw:Math.round(p.yaw||0)}));
+  selId=null; scrim.classList.remove("show"); initSettings(); layoutGround(); rebuild(); renderSide(); renderList(); frame(); save(); }
+function copyText(t){ const done=()=>{const btn=document.querySelector("#modalActs button.pri");if(btn){const o=btn.textContent;btn.textContent="Copied";setTimeout(()=>btn.textContent=o,1200);}};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(()=>{ta.select();done();});}else{ta.select();try{document.execCommand("copy");}catch(e){}done();} }
+
+/* ---- misc ---- */
+document.getElementById("fitBtn").addEventListener("click",frame);
+document.getElementById("topBtn").addEventListener("click",topView);
+document.getElementById("gT").addEventListener("click",()=>setGizmoMode("translate"));
+document.getElementById("gS").addEventListener("click",()=>setGizmoMode("scale"));
+document.getElementById("gR").addEventListener("click",()=>setGizmoMode("rotate"));
+window.addEventListener("keydown",e=>{ if((e.key==="Delete"||e.key==="Backspace")&&selId!=null&&!/input|textarea|select/i.test(e.target.tagName))removeEl(selId); });
+window.addEventListener("resize",()=>{ if(renderer)resizeGL(); });
+
+/* ---- boot ---- */
+if(new URLSearchParams(location.search).get("panel")==="1")document.body.classList.add("panel"); // Level Editor side column
+load(); state.elements.forEach(e=>{ delete e.live; delete e.adopt; }); initSettings(); renderSide(); renderList();
+function start(){ if(typeof THREE==="undefined"||!THREE.OrbitControls||!THREE.TransformControls){ document.getElementById("loading").textContent="3D libraries blocked — check your connection and reload."; document.getElementById("webglRead").textContent="3D unavailable"; return; }
+  try{ initGL(); if(state.imgData)applyImage(state.imgData); rebuild(); frame(); if(renderer)new ResizeObserver(()=>resizeGL()).observe(renderer.domElement.parentElement); }
+  catch(err){ document.getElementById("loading").textContent="3D failed to start: "+(err&&err.message||err); } }
+window.addEventListener("load",start);
+
+/* ---- launcher integration: live prefab palette + native save ---- */
+const TOKEN=new URLSearchParams(location.search).get("token")||"";
+const HOSTED=!!TOKEN;
+function api(p){ return p+(p.includes("?")?"&":"?")+"token="+encodeURIComponent(TOKEN); }
+function renderPalette(data){
+  const note=document.getElementById("paletteNote"), host=document.getElementById("palette");
+  const items=[];
+  (data.prefabs||[]).forEach(n=>items.push(["prefab",n]));
+  (data.meshes||[]).forEach(n=>items.push(["mesh",n]));
+  if(!items.length){ note.innerHTML='<div class="empty">'+esc(data.note||"No prefabs found yet - launch a Dev Kit match once so the game server can export them.")+'</div>'; host.innerHTML=""; return; }
+  note.innerHTML='<div class="empty">'+items.length+' assets from your build (season '+esc(String(data.season||"?"))+'). Pick one, then use the Prop tool and click the ground.</div>';
+  host.innerHTML=items.map(([t,n])=>'<div class="item" data-asset="'+esc(n)+'"><span class="sw" style="background:var(--accent)"></span><span class="nm">'+esc(n)+'</span><span class="co">'+t+'</span></div>').join("");
+  host.querySelectorAll(".item").forEach(el=>el.addEventListener("click",()=>{ selectedAsset=el.dataset.asset; host.querySelectorAll(".item").forEach(x=>x.setAttribute("aria-selected",x===el)); tool="prop"; document.querySelectorAll(".tool").forEach(t=>t.setAttribute("aria-pressed",t.dataset.tool==="prop")); document.getElementById("toolRead").textContent="prop: "+selectedAsset; }));
+}
+let assetSeason=null;
+function loadAssets(season){ if(!HOSTED)return; assetSeason=season||null;
+  fetch(api("/tilted/mapeditor/assets"+(season?"?season="+encodeURIComponent(season):""))).then(r=>r.json()).then(d=>{ renderPalette(d); renderActorClasses(d); }).catch(()=>{ document.getElementById("paletteNote").innerHTML='<div class="empty">Could not reach the backend for the asset list.</div>'; }); }
+const post=(p,body)=>fetch(api(p),{method:"POST",headers:{"content-type":"application/json","x-tilted-dev":TOKEN},body:JSON.stringify(body)}).then(async r=>({ok:r.ok,status:r.status,j:await r.json().catch(()=>({}))}));
+function validationText(v){ if(!v)return ""; const out=[]; (v.errors||[]).forEach(e=>out.push("ERROR  "+e)); (v.warnings||[]).forEach(w=>out.push("note   "+w));
+  if(!out.length)out.push("No problems found."); return out.join("\n"); }
+function showReport(title,note,v){ openModal(title,note,validationText(v),[{label:"Close",pri:true,fn:()=>scrim.classList.remove("show")}]); ta.readOnly=true; }
+async function saveToSyndicate(){ const btn=document.getElementById("saveBtn"), old=btn.textContent; btn.textContent="Saving…";
+  try{ const {ok,status,j}=await post("/tilted/mapeditor/save",buildJSON());
+    btn.textContent=ok?"Saved ✓":"Save failed";
+    if(!ok){ document.getElementById("hint").textContent="Save failed: "+(j.error||status); }
+    else if(j.active){ document.getElementById("hint").textContent="Saved to "+j.file+". It loads in season "+j.season+" Dev Kit matches."; if(j.validation&&j.validation.warnings.length)showReport("Saved","Saved and active for season "+j.season+". Notes:",j.validation); }
+    else showReport("Saved, not active","Saved to "+j.file+", but it will not load in matches until these are fixed:",j.validation); }
+  catch(e){ btn.textContent="Save failed"; document.getElementById("hint").textContent="Save failed: "+e.message; }
+  setTimeout(()=>btn.textContent=old,1600); }
+async function checkMap(){ try{ const {j}=await post("/tilted/mapeditor/validate",buildJSON()); showReport("Check map",j.ok?"This map can load (season "+j.season+").":"This map cannot load yet:",j); }catch(e){ document.getElementById("hint").textContent="Check failed: "+e.message; } }
+// Saved maps: open one in the editor, or make it (or nothing) the active map for its season.
+async function openSaved(){
+  let maps=[]; try{ maps=(await (await fetch(api("/tilted/mapeditor/maps"))).json()).maps||[]; }catch(e){}
+  openModal("Saved maps",maps.length?"Open loads a map into the editor (replacing what is here). Activate makes it the map Dev Kit matches on its season load; it is checked first.":"No saved maps yet.","",[{label:"Close",fn:()=>scrim.classList.remove("show")}]);
+  ta.style.display="none"; const host=document.getElementById("modalActs"); const box=document.createElement("div"); box.className="list savedList"; box.style.maxHeight="50vh"; box.style.width="100%";
+  box.innerHTML=maps.map(m=>'<div class="item" style="cursor:default"><span class="sw" style="background:var('+(m.active?"--landing":"--border")+')"></span><span class="nm">'+esc(m.name)+' <span class="co">'+esc(m.season||"?")+' · '+m.actors+' actors'+(m.active?' · active':'')+'</span></span><button data-open="'+esc(m.slug)+'">Open</button>'+(m.active?'<button data-off="'+esc(m.season||"")+'">Turn off</button>':'<button data-act="'+esc(m.slug)+'">Activate</button>')+'</div>').join("");
+  host.parentElement.insertBefore(box,host);
+  const done=()=>{ box.remove(); ta.style.display=""; };
+  document.getElementById("modalClose").addEventListener("click",done,{once:true});
+  box.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",async()=>{ const m=await (await fetch(api("/tilted/mapeditor/map/"+encodeURIComponent(b.dataset.open)))).json(); done(); applyImport(JSON.stringify(m)); }));
+  box.querySelectorAll("[data-act]").forEach(b=>b.addEventListener("click",async()=>{ const {ok,j}=await post("/tilted/mapeditor/activate",{slug:b.dataset.act}); done(); if(ok){ scrim.classList.remove("show"); document.getElementById("hint").textContent="Active for season "+j.season+" from the next Dev Kit match."; } else showReport("Not activated",j.error||"This map cannot load yet:",j.validation); }));
+  box.querySelectorAll("[data-off]").forEach(b=>b.addEventListener("click",async()=>{ await post("/tilted/mapeditor/deactivate",{season:b.dataset.off}); done(); scrim.classList.remove("show"); document.getElementById("hint").textContent="Season "+b.dataset.off+" matches load no custom map now."; }));
+}
+
+/* ---- live match: actor palette, commands, and what the match reports back ---- */
+let actorData={build:["Floor","Solid","StairW","RoofC"],containers:[],props:[]};
+function renderActorClasses(d){
+  const c=(d&&d.classes)||{};
+  actorData={build:["Floor","Solid","StairW","RoofC"].concat((c.build||[]).filter(n=>/^PBWA_/.test(n))),containers:c.containers||[],props:c.props||[]};
+  const n=actorData.containers.length+actorData.props.length;
+  document.getElementById("actorNote").innerHTML='<div class="empty">'+(n?(actorData.build.length+actorData.containers.length+actorData.props.length)+" classes from season "+esc(String(d.season||"?"))+". Pick one, then use the Actor tool or Drop in front of me.":"Only build pieces until a Dev Kit match exports this season's class list.")+'</div>';
+  drawActorList();
+}
+function drawActorList(){
+  const cat=document.getElementById("actorCat").value, f=document.getElementById("actorFilter").value.toLowerCase();
+  const list=(actorData[cat]||[]).filter(n=>!f||n.toLowerCase().includes(f)).slice(0,300);
+  const host=document.getElementById("actorList");
+  host.innerHTML=list.map(n=>'<div class="item" data-cls="'+esc(n)+'" aria-selected="'+(n===selectedClass)+'"><span class="sw" style="background:var(--actor)"></span><span class="nm">'+esc(n)+'</span></div>').join("")||'<div class="empty" style="font-size:12px;color:var(--muted)">Nothing matches.</div>';
+  host.querySelectorAll("[data-cls]").forEach(el=>el.addEventListener("click",()=>{ selectedClass=el.dataset.cls; tool="actor"; if(IG.on)sendInGame();
+    host.querySelectorAll(".item").forEach(x=>x.setAttribute("aria-selected",x===el)); document.querySelectorAll(".tool").forEach(t=>t.setAttribute("aria-pressed",t.dataset.tool==="actor")); document.getElementById("toolRead").textContent="actor: "+selectedClass; }));
+}
+document.getElementById("actorCat").addEventListener("change",drawActorList);
+document.getElementById("actorFilter").addEventListener("input",drawActorList);
+
+function liveSend(ops){ if(!HOSTED||!LIVE.on||!ops.length)return; post("/tilted/mapeditor/live",{ops}).then(({j})=>{ if(j.rejected&&j.rejected.length)document.getElementById("hint").textContent="Not sent: "+j.rejected[0].error; }).catch(()=>{}); }
+const spawnOp=el=>({op:"spawn",id:el.id,class:el.class,x:el.x,y:el.y,z:el.z==null?"g":el.z,yaw:el.yaw||0});
+function liveSpawn(el){ liveSend([spawnOp(el)]); }
+const moveTimers=new Map();
+function liveMoveSoon(el){ if(!LIVE.on)return; clearTimeout(moveTimers.get(el.id));
+  moveTimers.set(el.id,setTimeout(()=>{ moveTimers.delete(el.id); liveSend([el.live&&el.live.ok?{op:"move",id:el.id,x:el.x,y:el.y,z:el.z==null?"g":el.z,yaw:el.yaw||0}:spawnOp(el)]); },250)); }
+
+let meObj=null;
+function drawMe(h){
+  if(!scene)return;
+  if(!h){ if(meObj){ scene.remove(meObj); disposeObj(meObj); meObj=null; } return; }
+  if(!meObj){ meObj=new THREE.Group(); const col=hex("--me");
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,1.8,12),new THREE.MeshStandardMaterial({color:col})); body.position.y=0.9; meObj.add(body);
+    const nose=new THREE.Mesh(new THREE.ConeGeometry(0.35,1,10),new THREE.MeshStandardMaterial({color:col})); nose.rotation.z=-Math.PI/2; nose.position.set(0.9,1.3,0); meObj.add(nose);
+    const beacon=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,60,8),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.35})); beacon.position.y=30; meObj.add(beacon);
+    scene.add(meObj); }
+  const [sx,sz]=worldToScene(h.x,h.y); meObj.position.set(sx,h.z*WS,sz); meObj.rotation.y=(h.yaw||0)*Math.PI/180;
+  if(LIVE.follow){ const d=new THREE.Vector3().subVectors(camera.position,orbit.target); orbit.target.set(sx,h.z*WS,sz); camera.position.copy(orbit.target).add(d.lengthSq()>4e4?d.setLength(40):d); }
+}
+async function pollLive(){
+  let d=null; try{ d=await (await fetch(api("/tilted/mapeditor/live"))).json(); }catch(e){}
+  const was=LIVE.on; LIVE.on=!!(d&&d.live);
+  const status=document.getElementById("liveStatus");
+  if(!LIVE.on){ status.textContent=(d&&d.note)||"Backend not reachable."; LIVE.host=null; drawMe(null); if(was)state.elements.forEach(e=>{ if(e.kind==="actor")delete e.live; }); }
+  else{
+    LIVE.season=d.season; LIVE.host=d.host;
+    const byId=new Map((d.actors||[]).map(a=>[a.id,a])); let changed=false; LIVE.mapCount=(d.actors||[]).filter(a=>a.map).length;
+    // Pieces placed from inside the game (ids 800000000 and up) join the map here so they can be saved; one
+    // removed in the game leaves it.
+    const have=new Set(state.elements.map(e=>e.id));
+    for(const a of d.actors||[]) if(a.ok&&!a.map&&a.id>=IG_IDS&&a.id<900000000&&!have.has(a.id)){
+      state.elements.push({id:a.id,kind:"actor",name:a.c,class:a.c,x:a.x,y:a.y,z:a.z,yaw:a.yaw}); changed=true; save(); }
+    const before=state.elements.length;
+    state.elements=state.elements.filter(e=>!(e.kind==="actor"&&e.id>=IG_IDS&&e.id<900000000&&e.live&&e.live.ok&&!byId.has(e.id)));
+    if(state.elements.length!==before){ for(const o of [...objById.keys()])if(!state.elements.some(e=>e.id===o)){ const ob=objById.get(o); scene.remove(ob); disposeObj(ob); objById.delete(o); if(selId===o){selId=null;applyGizmo();} } changed=true; save(); }
+    for(const el of state.elements){ if(el.kind!=="actor")continue; const a=byId.get(el.id);
+      const nl=a?{ok:!!a.ok,e:a.e,x:a.x,y:a.y,z:a.z}:null;
+      if(a&&el.adopt){ el.x=a.x; el.y=a.y; el.z=a.z; el.yaw=a.yaw; delete el.adopt; changed=true; save(); }
+      if(JSON.stringify(nl)!==JSON.stringify(el.live||null)){ if(nl)el.live=nl; else delete el.live; changed=true; } }
+    if(changed && !(gizmo&&gizmo.dragging)){ for(const el of state.elements)if(el.kind==="actor")refreshOne(el); renderSide(); renderList(); }
+    const placed=state.elements.filter(e=>e.kind==="actor"&&e.live&&e.live.ok).length;
+    if(IG.on) document.getElementById("igNote").textContent=d.ingame?("Placing "+d.ingame.class+(d.ingame.turn?", turned "+d.ingame.turn+"°":"")+". Aim and press "+keyName(IG.keys.place)+"."):"Waiting for the match to pick up the switch…";
+    status.textContent="Connected: season "+d.season+(d.host?" · you at "+d.host.x+", "+d.host.y+", "+d.host.z:" · you have no body yet")+" · "+placed+" placed"+(LIVE.mapCount?" · "+LIVE.mapCount+" from the active map":"")+(d.result?" · last: "+d.result:"");
+    if(d.season&&d.season!==assetSeason)loadAssets(d.season);
+    drawMe(d.host);
+  }
+  setTimeout(pollLive,LIVE.on?500:2000);
+}
+document.getElementById("liveHere").addEventListener("click",()=>{
+  if(!LIVE.on||!LIVE.host){ document.getElementById("hint").textContent="Drop in front of me needs you in a Dev Kit match (off the bus)."; return; }
+  if(!selectedClass){ document.getElementById("hint").textContent="Pick an actor class first."; return; }
+  const h=LIVE.host; const el={id:uid++,kind:"actor",name:selectedClass,class:selectedClass,x:h.x,y:h.y,z:h.z,yaw:Math.round(h.yaw||0),adopt:true};
+  state.elements.push(el); refreshOne(el); selId=el.id; applyGizmo(); renderSide(); renderList(); save();
+  liveSend([{op:"here",id:el.id,class:el.class,distance:400,yaw:0}]);
+});
+document.getElementById("liveFollow").addEventListener("click",e=>{ LIVE.follow=!LIVE.follow; e.currentTarget.setAttribute("aria-pressed",LIVE.follow); if(LIVE.follow&&LIVE.host)drawMe(LIVE.host); });
+document.getElementById("livePush").addEventListener("click",()=>{ if(!LIVE.on){ document.getElementById("hint").textContent="No Dev Kit match is running."; return; }
+  const actors=state.elements.filter(e=>e.kind==="actor"); liveSend([{op:"clear"}].concat(actors.map(spawnOp)));
+  document.getElementById("hint").textContent="Sent "+actors.length+" actor(s) to the match."; });
+document.getElementById("liveClear").addEventListener("click",()=>{ if(!LIVE.on)return; liveSend([{op:"clear"}]); document.getElementById("hint").textContent="Cleared what the editor placed in this match (your map here is unchanged)."; });
+
+/* ---- in-game placing: the match server reads these keys while Fortnite is in front ---- */
+const IG_IDS=800000000;
+const KEY_CHOICES=[[0x78,"F9"],[0x79,"F10"],[0x7A,"F11"],[0x7B,"F12"],[0x76,"F7"],[0x77,"F8"],[0x2D,"Insert"],[0x2E,"Delete"],[0x24,"Home"],[0x23,"End"],[0x21,"Page Up"],[0x22,"Page Down"],[0x04,"Middle mouse"],[0x05,"Mouse 4"],[0x06,"Mouse 5"],[0x60,"Numpad 0"],[0x6B,"Numpad +"],[0x6D,"Numpad -"]];
+const keyName=v=>(KEY_CHOICES.find(k=>k[0]===v)||[0,"key "+v])[1];
+const IG={on:false,snap:true,keys:{place:0x78,turn:0x79,remove:0x2E}};
+try{ const s=JSON.parse(localStorage.getItem("tilted-map-editor-ingame")||"null"); if(s&&s.keys)Object.assign(IG.keys,s.keys); if(s&&typeof s.snap==="boolean")IG.snap=s.snap; }catch(e){}
+function sendInGame(){
+  try{ localStorage.setItem("tilted-map-editor-ingame",JSON.stringify({keys:IG.keys,snap:IG.snap})); }catch(e){}
+  if(IG.on&&!selectedClass){ document.getElementById("igNote").textContent="Pick a class in Actor classes first."; }
+  post("/tilted/mapeditor/ingame",{on:IG.on&&!!selectedClass,class:selectedClass||"",snap:IG.snap,keys:IG.keys}).then(({ok,j})=>{ if(!ok)document.getElementById("igNote").textContent=j.error||"Could not switch in-game placing."; }).catch(()=>{});
+}
+function initInGame(){
+  const ids={place:"igPlace",turn:"igTurn",remove:"igRemove"};
+  for(const [k,id] of Object.entries(ids)){ const s=document.getElementById(id); s.innerHTML=KEY_CHOICES.map(([v,n])=>'<option value="'+v+'">'+({place:"Place",turn:"Turn",remove:"Remove"})[k]+": "+n+'</option>').join(""); s.value=IG.keys[k];
+    s.addEventListener("change",()=>{ IG.keys[k]=+s.value; sendInGame(); }); }
+  const snap=document.getElementById("igSnap"); snap.checked=IG.snap; snap.addEventListener("change",()=>{ IG.snap=snap.checked; sendInGame(); });
+  document.getElementById("igToggle").addEventListener("click",e=>{ IG.on=!IG.on; const b=e.currentTarget; b.setAttribute("aria-pressed",IG.on); b.textContent="In-game placing: "+(IG.on?"on":"off");
+    document.getElementById("igPanel").hidden=!IG.on; sendInGame(); });
+  window.addEventListener("pagehide",()=>{ if(IG.on)fetch(api("/tilted/mapeditor/ingame"),{method:"POST",keepalive:true,headers:{"content-type":"application/json","x-tilted-dev":TOKEN},body:JSON.stringify({on:false})}); });
+}
+
+if(HOSTED){
+  initInGame(); sendInGame();
+  const sb=document.getElementById("saveBtn"); sb.hidden=false; sb.addEventListener("click",saveToSyndicate);
+  const cb=document.getElementById("checkBtn"); cb.hidden=false; cb.addEventListener("click",checkMap);
+  const ob=document.getElementById("openBtn"); ob.hidden=false; ob.addEventListener("click",openSaved);
+  document.getElementById("liveGroup").hidden=false; document.getElementById("actorGroup").hidden=false;
+  loadAssets(); drawActorList(); pollLive();
+}
+</script>

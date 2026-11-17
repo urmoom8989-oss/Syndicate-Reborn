@@ -1,0 +1,142 @@
+[
+  {
+    "version": "0.4.18",
+    "date": "2026-11-07",
+    "new": [
+      "Full controller support in the launcher: every screen can be driven with a controller, and the launcher now steps aside and minimizes when Fortnite opens (and comes back when you close the game), so you never have to reach for the mouse."
+    ],
+    "fixed": [
+      "Pre-season and Season 1: \"A to unequip\" works in the inventory again, so you can rearrange your items with a controller.",
+      "Season Shop (Pre-season / Season 1): items like Renegade Raider now require their real Season Level instead of unlocking the moment you have enough V-Bucks.",
+      "Vehicles: your weapon stays equipped after you get out, and you can no longer harvest materials from inside a vehicle.",
+      "50v50 (Season 4): your teammate bots now drop from your own team's bus instead of the enemy's, and the friendly counter shows your team.",
+      "A knocked (downed) teammate can no longer build or edit while they're down.",
+      "Season 1: the Battle Bus banner is granted free at level 10 and the Mako glider at level 25, and accounts now show only the 20 base 2017 banners.",
+      "Item shop: the Party Animal pickaxe is priced correctly at 1,200 V-Bucks (it was 200)."
+    ]
+  },
+  {
+    "version": "0.4.17",
+    "date": "2026-11-05",
+    "new": [
+      "Brand-new launcher look: a home page with LAUNCH, your player and build, and Chapter tiles; a numbered side menu; and a restyled Settings, Store, Stats and Multiplayer.",
+      "Remove default outfits from the locker (Settings > Modded > Cosmetics): hides the eight default skins, the default pickaxe and glider for the selected player. An equipped default swaps to one of your own cosmetics first. Reversible.",
+      "Remove unreleased win umbrellas (Settings > Modded > Cosmetics): hides the Bronze (25 wins) and Gold (50 wins) milestone umbrellas. Reversible.",
+      "Save the World skins switch under Unlock all (Settings > Modded > Cosmetics): with Unlock all on, adds every Save the World hero to your locker as an outfit, now in Season 4 to Chapter 2 Season 1 too. Equip one in the locker or pick it in the launcher and you wear the hero in matches."
+    ],
+    "fixed": [
+      "Fixed players stuck on \"Account service isn't ready\" and \"Couldn't load players: The calling thread cannot access this object\" when another Syndicate copy's services were still running.",
+      "Battle Pass banners now show up in the locker. Banners from tiers you'd already reached (including from buying the pass in the launcher) are filled in automatically.",
+      "Save the World weapons now spawn with ammo in matches, and no longer crash the match server on Season X / Paradox.",
+      "Joining a friend now shows their real season on the join card (a Chapter 2 Season 1 host used to show as Season 4).",
+      "Turbo build works again in Season 4 and later.",
+      "Season 6.20 no longer crashes a few seconds after you land."
+    ]
+  },
+  {
+    "version": "0.4.16",
+    "date": "2026-11-04",
+    "new": [
+      "Hosting multiplayer opens the ports it needs in Windows Firewall automatically the first time you host, and confirms they are open."
+    ],
+    "fixed": [
+      "Chapter 2 Season 1 item shop: buying no longer fails with 'Offer ID not found' when you have V-Bucks.",
+      "Challenges now pay out their stars, XP and items when you Collect Rewards, including ones that complete the moment you get them.",
+      "Season X: your outfit stays on in Tilted Town instead of switching to the townsperson skin.",
+      "Season 1: kills, wins and matches count again toward V-Bucks and XP."
+    ]
+  },
+  {
+    "version": "0.4.15",
+    "date": "2026-10-31",
+    "new": [
+      "Tamper-proofing: every program file is checksummed against the encrypted bundle on each launch, and any that were changed are restored, so only official Syndicate files run."
+    ],
+    "fixed": [
+      "Lobby music plays again (it never started in 0.4.13 and 0.4.14).",
+      "Error reports now include the match server's log when a match fails to start."
+    ]
+  },
+  {
+    "version": "0.4.14",
+    "date": "2026-10-31",
+    "new": [
+      "Chapter 2 Season 1 (11.00) is now playable: the intro, location discovery, real loot pool, hot drops, Arena and Syndicate's bots. Select your 11.00 folder in the launcher.",
+      "Chapter 1 AR and pump switch for Chapter 2 (Settings > Modded)."
+    ],
+    "fixed": [
+      "The 0.4.13 launcher hid Chapter 2 Season 1 and refused the 11.00 build."
+    ]
+  },
+  {
+    "version": "0.4.13",
+    "date": "2026-10-31",
+    "new": [
+      "Lobby music player in the launcher: 8 tracks, works on every Windows.",
+      "Redeem codes (Settings > Redeem code) for exclusive skins.",
+      "Launcher shop: 11 new packs, 6 bundles and Prodigy. Instinct now rotates in the item shop.",
+      "True stretched in Seasons 7-X and in windowed fullscreen, with automatic FOV.",
+      "Bots keep fighting instead of dropping fights, get more materials, survive the endgame zone, use the Grapnel Gun in Season X, break off roofs, crawl to teammates when knocked and heal more.",
+      "Daily challenges in every season. Heavy Shotgun vaulted in Season X."
+    ],
+    "fixed": [
+      "The launcher no longer freezes while starting a match.",
+      "Season 4 no longer crashes when squads join; Season 7 and 8 squad crashes fixed.",
+      "'Offer ID not found' when buying after the shop rotates.",
+      "Saved login stuck on 'Account service isn't ready'.",
+      "Left mouse stuck or spamming after turbo build.",
+      "Starter packs and exclusives no longer show in the item shop.",
+      "Reward pop-ups now come from Syndicate instead of Epic Games."
+    ]
+  },
+  {
+    "version": "0.4.11",
+    "date": "2026-10-29",
+    "new": [
+      "Season 3 bot skills in every season and playlist: build fights, ramp-rush answers, edit peeks, wall takes, box fights. Arena bots fight you from circle 1.",
+      "Smarter bot teammates: stick together, use traps and launch pads. Fill and No Fill work in Duos and Squads in every season.",
+      "Bots open doors on the run, use the pickaxe when unarmed, wall up on stairs and thank the bus driver (Season 6-X).",
+      "Reward screen after buying bundles, battle passes, packs and tiers.",
+      "Shop outfits come with their back bling, pickaxe and glider (Season 5-X). Raptor and Frostbite owners get missing items.",
+      "Season 1 shows your saved outfit, back bling, pickaxe and glider; contrails work.",
+      "True stretched for Season 8-X."
+    ],
+    "fixed": [
+      "Traps now go off on bots and give you the elimination.",
+      "Knocked players can always crawl in Duos and Squads.",
+      "Bot teammates' health and shield show in the squad HUD, and their HUD name matches their name tag.",
+      "Knocked bots now bleed out.",
+      "Walls you couldn't pickaxe and could walk through (left behind by bots far away) no longer appear.",
+      "Walking and running animations no longer freeze after using a Guided Missile (Season 6).",
+      "Season 1 shop no longer runs off the screen.",
+      "Fortnite no longer crashes when the Dev Console markers are turned on (Season 6 and Season 7).",
+      "Duos and Squads load again after playing Solo, and the Season 3 freeze when starting a match is fixed."
+    ]
+  },
+  {
+    "version": "0.4.10",
+    "date": "2026-10-27",
+    "new": [
+      "Sprint by default for Pre-season to Season 4: turn it on in Settings > Modded, pick your sprint key, and holding W (or W+A / W+D) sprints. Works on Xbox and PS4/PS5 controllers too.",
+      "Use the launcher with a controller: LB/RB switch tabs, A selects, B goes back, Y plays. Button hints only show once you use a controller.",
+      "Redesigned store with Battle Pass and Exclusive Packs tabs, a cleaner item page with the price and Buy button on the right, and no more scrolling descriptions.",
+      "Unlock All now unlocks every outfit style, and the style you pick in the lobby is the one you wear in the match (Season 4 to Season X).",
+      "Ninja, Tfue and Mongraal are always your bot teammates in Duos and Squads, and six new named bots can show up in your matches.",
+      "Smarter bots: they build fight, loot early, heal with real items, farm materials, retreat when low, and drop at each season's hot spots.",
+      "Pre-season network HUD and HUD toggles in Settings > Modded; a compact Arena HUD at the bottom left.",
+      "Discord status with a Join button, and the launcher opens straight to the main page much faster.",
+      "Settings switches are now sliding toggles."
+    ],
+    "fixed": [
+      "Squads on Season 5 to Season X: you now get knocked instead of dying instantly.",
+      "Bot teammates box up and revive you, even while being shot at.",
+      "Far fewer bots getting stuck on walls and terrain.",
+      "Smoother frame rate in busy matches (lighter game server networking).",
+      "Season 3: Squads is available in the lobby again.",
+      "Pre-season crash (stack overflow) and server freezes on Pre-season to Season 2.",
+      "Pre-season and Season 1 friend presence and party invites.",
+      "Radmin/LAN: the second match no longer times out, and multiplayer hosts the season that is actually running.",
+      "Creative is turned off for now while the island loading is fixed."
+    ]
+  }
+]

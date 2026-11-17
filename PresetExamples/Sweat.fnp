@@ -1,0 +1,28 @@
+{
+  "Format": "Syndicate.FNP",
+  "Version": 1,
+  "Name": "Sweat",
+  "Mixed": false,
+  "Values": {
+    "aimAccuracy": 100,
+    "aimTracking": 100,
+    "reactionSpeed": 100,
+    "firingFrequency": 100,
+    "aggression": 100,
+    "pursuit": 100,
+    "buildFrequency": 100,
+    "buildSpeed": 100,
+    "heightSeeking": 100,
+    "defensiveBuilding": 100,
+    "editFrequency": 100,
+    "editSpeed": 100,
+    "strafing": 100,
+    "jumping": 100,
+    "awareness": 100,
+    "prediction": 100,
+    "looting": 100,
+    "harvesting": 100,
+    "healing": 100,
+    "rotation": 100
+  }
+}

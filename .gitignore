@@ -1,0 +1,38 @@
+# Build output
+bin/
+obj/
+x64/
+dist/
+Debug/
+Release/
+*.obj
+*.iobj
+*.ipdb
+*.pdb
+*.ilk
+*.tlog
+*.lastbuildstate
+*.recipe
+
+# Built binaries (ship these as GitHub Releases, not in the repo)
+*.exe
+*.dll
+
+# IDE files
+.vs/
+*.user
+*.suo
+
+# Archives
+*.zip
+*.rar
+*.7z
+
+# Node
+node_modules/
+
+
+# Code signing — never commit private keys or passwords
+syndicate.pfx
+.env
+Launcher/SyndicateLauncher/bin/**/Mapping.xml
