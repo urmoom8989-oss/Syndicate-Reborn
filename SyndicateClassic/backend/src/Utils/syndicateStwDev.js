@@ -25,6 +25,7 @@
 import fs from 'fs';
 import path from 'path';
 import { dirname } from 'dirname-filename-esm';
+import { stwEnabledFor } from './syndicateSeasonModes.js';
 
 const __dirname = dirname(import.meta);
 const stwFolder = path.join(__dirname, '../Profiles/StwDev');
@@ -36,7 +37,9 @@ export const STW_PROFILES = Object.freeze(['campaign', 'theater0', 'outpost0', '
 const ACCESS_TOKENS = Object.freeze(['Token:campaignaccess', 'Token:founderspack_1']);
 const KEEP = /^(Currency|HomebaseBannerColor|HomebaseBannerIcon):/i; // the account's own wallet and banners
 
-export const stwDevEnabled = () => process.env.TILTED_DEVKIT === '1';
+// The Dev Kit (TILTED_DEVKIT=1, every build, as before) or, with the client's user agent, the launcher's Save the World
+// switch for that season (Settings > Game modes, syndicateSeasonModes.js). Experimental outside the Dev Kit.
+export const stwDevEnabled = (userAgent) => stwEnabledFor(userAgent);
 
 let worldInfo = null;
 export function stwWorldInfo() {
@@ -135,8 +138,8 @@ function freshProfile0(old, accountId) {
 }
 
 // Returns the $set update for the account's profiles document, or null when nothing needs to change.
-export function stwDevUpdate(doc) {
-  if (!stwDevEnabled() || !doc?.profiles) return null;
+export function stwDevUpdate(doc, userAgent) {
+  if (!stwDevEnabled(userAgent) || !doc?.profiles) return null;
   const set = {};
   const old0 = doc.profiles.profile0;
   if (old0 && (Number(old0.stats?.attributes?.syndicate_stw_dev) || 0) < STW_DEV_VERSION) {
@@ -178,6 +181,6 @@ export function stwDevUpdate(doc) {
 }
 
 // Profile operations the Save the World lobby sends that have no handler here: answer with no changes.
-export function stwDevNoOp(profileId) {
-  return stwDevEnabled() && profileId !== 'athena' && profileId !== 'common_core';
+export function stwDevNoOp(profileId, userAgent) {
+  return stwDevEnabled(userAgent) && profileId !== 'athena' && profileId !== 'common_core';
 }

@@ -3520,7 +3520,7 @@ app.post(
     // them and never saved, so the 1.7.2 Homebase tutorial sent the same objective twice a second forever
     // ("Saving homebase data..."). Record each objective, complete a quest once all its objectives are done,
     // and save.
-    if (stwDevEnabled() && req.query.profileId !== "athena" && profile?.items) {
+    if (stwDevEnabled(req.headers["user-agent"]) && req.query.profileId !== "athena" && profile?.items) {
       const base = profile.rvn || 0;
       let changed = false;
       for (const adv of req.body?.advance || []) {
@@ -4022,7 +4022,7 @@ app.post(
     let profiles = await Profile.findOne({ accountId: req.user.accountId });
     // Dev launcher only: give the account Save the World access and full Save the World profiles once.
     if(profiles&&(req.query.profileId==='common_core'||req.query.profileId==='profile0'||STW_PROFILES.includes(req.query.profileId))){
-      try{const update=stwDevUpdate(profiles);if(update){await profiles.updateOne({$set:update});profiles=await Profile.findOne({accountId:req.user.accountId});console.log('[Syndicate STW] dev: Save the World profiles set up for',req.user.accountId);}}
+      try{const update=stwDevUpdate(profiles,req.headers['user-agent']);if(update){await profiles.updateOne({$set:update});profiles=await Profile.findOne({accountId:req.user.accountId});console.log('[Syndicate STW] dev: Save the World profiles set up for',req.user.accountId);}}
       catch(error){console.error('[Syndicate STW] dev profile setup skipped:',error.message);}
     }
     if (!(await profileManager.validateProfile(req.query.profileId, profiles)))
@@ -4378,7 +4378,7 @@ app.post(
       }
       default:
         // Dev launcher: Save the World lobby operations with no handler yet answer with no changes, not 404.
-        if (stwDevNoOp(req.query.profileId)) {
+        if (stwDevNoOp(req.query.profileId, req.headers["user-agent"])) {
           console.log(`[Syndicate STW] dev: no handler for ${req.params.operation} (${req.query.profileId}); answered with no changes`);
           break;
         }

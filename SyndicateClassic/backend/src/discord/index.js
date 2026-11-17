@@ -13,6 +13,7 @@ import Users from "../User/Mongodb/Schema/user.js";
 import Utils from "../Utils/Utils.js";
 import jwt from "jsonwebtoken";
 import fetch from "node-fetch";
+import { OFFLINE } from "../Utils/syndicateOffline.js";
 const xmpp_port = process.env.XMPP_PORT;
 
 import dotenv from "dotenv";
@@ -202,7 +203,9 @@ client.on(Events.GuildBanRemove, async (ban) => {
 
 const discordToken = process.env.DISCORD_TOKEN || process.env.BOT_TOKEN;
 
-if (discordToken) {
+if (OFFLINE) {
+  logger.debug("Offline mode, Discord bot login skipped.");
+} else if (discordToken) {
   client.login(discordToken).catch((error) => {
     logger.error(`Discord bot failed to login: ${error}`);
   });

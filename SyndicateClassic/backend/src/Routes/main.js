@@ -141,7 +141,7 @@ app.get("/fortnite/api/game/v2/twitch/*", (req, res) => {
 });
 app.get("/fortnite/api/game/v2/world/info", (req, res) => {
   // Dev launcher: the Save the World theaters and missions (LawinServer's data); otherwise empty as before.
-  res.json(stwDevEnabled() ? stwWorldInfo() : {});
+  res.json(stwDevEnabled(req.headers['user-agent']) ? stwWorldInfo() : {});
 });
 app.post(
   "/fortnite/api/game/v2/chat/*/recommendGeneralChatRooms/pc",

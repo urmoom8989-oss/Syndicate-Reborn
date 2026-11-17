@@ -50,7 +50,7 @@
     "zod": "^3.21.4"
   },
   "scripts": {
-    "test": "node --test src/Utils/telemetry/test/telemetry.test.js src/Utils/telemetry/test/buildfights.test.js src/Utils/test/syndicateAutoFriends.test.js src/Utils/test/syndicateMaxProgress.test.js src/Utils/test/syndicateToggleSprint.test.js src/Utils/test/syndicateLegacyEquip.test.js src/Utils/test/syndicateCustomMap.test.js",
+    "test": "node --test src/Utils/telemetry/test/telemetry.test.js src/Utils/telemetry/test/buildfights.test.js src/Utils/test/syndicateAutoFriends.test.js src/Utils/test/syndicateMaxProgress.test.js src/Utils/test/syndicateToggleSprint.test.js src/Utils/test/syndicateLegacyEquip.test.js src/Utils/test/syndicateCustomMap.test.js src/Utils/test/syndicateSeasonReset.test.js src/Utils/test/syndicateSeasonModes.test.js",
     "start": "node build/index.js",
     "build": "tsc",
     "prod": "npm run build && node build/index.js",

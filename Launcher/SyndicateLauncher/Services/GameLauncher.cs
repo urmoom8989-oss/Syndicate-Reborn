@@ -397,6 +397,8 @@ public static class GameLauncher
             // active-build.json (for example 1.11) rejects 7.40 with errors.com.syndicate.game_version.
             File.WriteAllText(Path.Combine(syndicateRuntime, "active-build.json"),
                 JsonSerializer.Serialize(new { Build = build.Version }));
+            // Settings > Game modes: the backend reads the lobby's modes from here when Fortnite asks for its hotfixes.
+            SeasonModes.WriteForBackend();
             if (File.Exists(syndicateReadyFile)) File.Delete(syndicateReadyFile);
 
             syndicateRunId = Guid.NewGuid().ToString("N");
@@ -420,6 +422,10 @@ public static class GameLauncher
             hostInfo.Environment["SYNDICATE_STW_DEV"] = "1";
             // stw-host.txt next to the launcher: Pre-season/Season 1 hosts start on the Save the World tutorial zone.
             if (StwHostWanted()) hostInfo.Environment["SYNDICATE_STW_HOST"] = "1";
+#else
+            // Settings > Game modes > Save the World (experimental) for this season: the same beacon as the dev launcher.
+            if (SeasonModes.IsEnabled(build.Version, "stw")) hostInfo.Environment["SYNDICATE_STW_DEV"] = "1";
+            else hostInfo.Environment.Remove("SYNDICATE_STW_DEV");
 #endif
             // Syndicate Studio open: its playlist, dev live data, and for a Studio match no bots and no bus.
             var studio = Studio.StudioSession.Current();
@@ -1075,6 +1081,10 @@ public static class GameLauncher
         // Save the World (dev launcher): Erbium answers the STW reservation beacon on port 15009.
         hostInfo.Environment["SYNDICATE_STW_DEV"] = "1";
         if (StwHostWanted()) hostInfo.Environment["SYNDICATE_STW_HOST"] = "1";
+#else
+        // Settings > Game modes > Save the World (experimental) for this season.
+        if (SeasonModes.IsEnabled(build.Version, "stw")) hostInfo.Environment["SYNDICATE_STW_DEV"] = "1";
+        else hostInfo.Environment.Remove("SYNDICATE_STW_DEV");
 #endif
         var studio = standby ? null : Studio.StudioSession.Current();
         string playlist = Studio.StudioSession.Apply(hostInfo, studio, record);

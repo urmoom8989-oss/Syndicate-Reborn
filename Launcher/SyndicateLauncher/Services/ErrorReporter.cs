@@ -89,6 +89,7 @@ public static class ErrorReporter
     {
         try
         {
+            if (OfflineMode.Enabled) return; // Offline mode: the logs stay on this PC
             var hook = Webhook();
             if (string.IsNullOrWhiteSpace(hook)) return;
             lock (Gate) { if (!Sent.Add(title ?? "")) return; }

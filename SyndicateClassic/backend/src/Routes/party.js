@@ -7,6 +7,7 @@ import User from "../User/Mongodb/Schema/user.js";
 import Friends from "../User/Mongodb/Schema/friends.js";
 import Utils from "../Utils/Utils.js";
 import { verifyToken } from "../User/tokenManager/tokenVerify.js";
+import { OFFLINE } from "../Utils/syndicateOffline.js";
 
 const app = express.Router();
 const require = createRequire(import.meta.url);
@@ -996,8 +997,14 @@ app.post(
 
     const party = global.parties[pid];
     if (!party) return createPartyNotFoundError(pid, res);
+    // Offline mode: voice chat runs on Epic's RTC service or Vivox, both on the internet. Answer at once with no
+    // voice provider instead of leaving the game waiting on a request that cannot finish.
+    if (OFFLINE) return res.json({ providers: {} });
 
     if (rtcp) {
+      // Syndicate: without internet (or when Epic refuses), the request used to hang with no answer. Voice is
+      // optional: answer without it.
+      try {
       if (!lastClient || new Date(lastClient.expires_at).getTime() <= Date.now()) {
         const response = await axios.post(
           "https://api.epicgames.dev/auth/v1/oauth/token",
@@ -1059,6 +1066,10 @@ app.post(
         client_base_url: vcInfo[pid].url,
         room_name: vcInfo[pid].name,
       };
+      } catch (error) {
+        console.warn("[Syndicate] Voice chat unavailable:", error?.message || error);
+        return res.json({ providers: {} });
+      }
     } else {
       const channel_uri = `sip:confctl-g-epicgames.p-${pid}@mtu1xp.vivox.com`;
       const user_uri = `sip:.epicgames.${accountId}.@mtu1xp.vivox.com`;

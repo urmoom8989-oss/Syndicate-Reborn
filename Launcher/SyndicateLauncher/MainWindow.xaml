@@ -45,6 +45,73 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <!-- Title bar ONLINE / OFFLINE button (ViewModels/MainViewModel.Offline.cs): amber while Offline mode is on. -->
+        <Style x:Key="OfflinePill" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Command" Value="{Binding ToggleOfflineCommand}" />
+            <Setter Property="ToolTip" Value="{Binding OfflineButtonTip}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Pill" CornerRadius="5" Padding="9,3" BorderThickness="1"
+                                Background="#14FFFFFF" BorderBrush="#33FFFFFF">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse x:Name="Dot" Width="7" Height="7" VerticalAlignment="Center"
+                                         Fill="{DynamicResource SuccessBrush}" />
+                                <TextBlock x:Name="Label" Text="{Binding OfflineButtonText}" FontSize="10" FontWeight="Bold"
+                                           Foreground="#B4B4B4" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Pill" Property="BorderBrush" Value="#66FFFFFF" />
+                                <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource TextBrush}" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding OfflineModeEnabled}" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="#33FFB020" />
+                                <Setter TargetName="Pill" Property="BorderBrush" Value="#FFB020" />
+                                <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource WarnBrush}" />
+                                <Setter TargetName="Label" Property="Foreground" Value="#FFC857" />
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Red confirm button (Reset season). Same look as the Delete player confirmation. -->
+        <Style x:Key="DangerConfirmButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="5" Background="#D9E5485C"
+                                BorderBrush="#FF8A98" BorderThickness="1" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="White" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#FFF0566A" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Background" Value="#40E5485C" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#55FF8A98" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Small text button over the Reset season item list (ALL / OUTFITS / NONE). -->
+        <Style x:Key="TinyGhostButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="FontSize" Value="9.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+        </Style>
         <Style x:Key="ProfileDot" TargetType="Ellipse">
             <Setter Property="Width" Value="6" />
             <Setter Property="Height" Value="6" />
@@ -905,6 +972,7 @@
                                     </ControlTemplate>
                                 </Button.Template>
                             </Button>
+                            <Button Style="{StaticResource OfflinePill}" Margin="0,0,12,0" AutomationProperties.Name="Offline mode" />
                             <Border Width="1" Height="16" Background="#1FFFFFFF" Margin="0,0,8,0" VerticalAlignment="Center" />
                             <Border Visibility="{Binding Visibility, ElementName=DevBadge}" IsHitTestVisible="False"
                                     VerticalAlignment="Center" Margin="0,0,10,0" Padding="7,2" CornerRadius="3"
@@ -948,6 +1016,7 @@
                                 <TextBlock Text="DEV LAUNCHER" FontFamily="{StaticResource DisplayFont}" FontSize="11"
                                            FontWeight="Bold" Foreground="#FFC857" />
                             </Border>
+                            <Button Style="{StaticResource OfflinePill}" Margin="0,0,14,0" AutomationProperties.Name="Offline mode" />
                             <Button Style="{StaticResource WindowButton}" Click="Minimize_Click"
                                     ToolTip="Minimize" AutomationProperties.Name="Minimize"
                                     Content="&#xE921;" />
@@ -3480,6 +3549,50 @@
                                                                            Margin="0,3,0,0" />
                                                             </StackPanel>
                                                         </CheckBox>
+
+                                                        <Border Height="1" Background="#14FFFFFF" Margin="0,22,0,18" />
+
+                                                        <!-- Game modes per season (ViewModels/MainViewModel.GameModes.cs, Services/SeasonModes.cs) -->
+                                                        <TextBlock Text="Game modes" FontSize="13.5" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource TextBrush}" />
+                                                        <TextBlock Text="Choose which modes each season shows in Fortnite's lobby. Pick a season, then switch modes on or off. Creative (Season 7 and up) and Save the World are experimental."
+                                                                   FontSize="11.5" Foreground="#8A8A8A" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                        <DockPanel Margin="0,0,0,4">
+                                                            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Height="32" Padding="14,0"
+                                                                    Margin="8,0,0,0" Content="Usual modes" FontSize="11" FontWeight="Bold"
+                                                                    Command="{Binding ResetGameModesCommand}"
+                                                                    ToolTip="Put this season back to the modes it normally has"
+                                                                    AutomationProperties.Name="Put the usual modes back for this season" />
+                                                            <ComboBox Style="{StaticResource DarkComboBox}" Height="32" FontSize="12"
+                                                                      ItemsSource="{Binding GameModeSeasons}"
+                                                                      SelectedItem="{Binding SelectedGameModeSeason, Mode=TwoWay}"
+                                                                      AutomationProperties.Name="Season for game modes" />
+                                                        </DockPanel>
+                                                        <ItemsControl ItemsSource="{Binding GameModeToggles}" Focusable="False">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <CheckBox Style="{StaticResource SwitchToggle}" Margin="0,12,0,0"
+                                                                              IsChecked="{Binding IsOn, Mode=TwoWay}"
+                                                                              AutomationProperties.Name="{Binding Name}">
+                                                                        <StackPanel>
+                                                                            <StackPanel Orientation="Horizontal">
+                                                                                <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="Bold"
+                                                                                           Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" />
+                                                                                <Border Margin="8,0,0,0" Padding="6,1" CornerRadius="3" VerticalAlignment="Center"
+                                                                                        Background="#33FFB020" BorderBrush="#FFB020" BorderThickness="1"
+                                                                                        Visibility="{Binding Experimental, Converter={StaticResource BoolToVis}}">
+                                                                                    <TextBlock Text="EXPERIMENTAL" FontSize="8.5" FontWeight="Bold" Foreground="#FFC857" />
+                                                                                </Border>
+                                                                            </StackPanel>
+                                                                            <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#8A8A8A"
+                                                                                       TextWrapping="Wrap" Margin="0,2,0,0" />
+                                                                        </StackPanel>
+                                                                    </CheckBox>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <TextBlock Text="{Binding GameModesNote}" FontSize="10.5" Foreground="#8A8A8A"
+                                                                   TextWrapping="Wrap" Margin="0,12,0,0" />
                                                     </StackPanel>
                                                 </Border>
 
@@ -4155,6 +4268,20 @@
                                                                     Height="38" Padding="16,0" Margin="0,0,8,8"
                                                                     Click="OpenData_Click" />
                                                         </WrapPanel>
+
+                                                        <Border Height="1" Background="#14FFFFFF" Margin="0,18,0,18" />
+
+                                                        <!-- Offline mode (ViewModels/MainViewModel.Offline.cs, Services/OfflineMode.cs) -->
+                                                        <CheckBox Style="{StaticResource SwitchToggle}" Margin="0,0,0,4"
+                                                                  IsChecked="{Binding OfflineModeEnabled}"
+                                                                  AutomationProperties.Name="Offline mode">
+                                                            <StackPanel>
+                                                                <TextBlock Text="Offline mode" FontSize="13.5"
+                                                                           FontWeight="Bold" Foreground="{DynamicResource TextBrush}" />
+                                                                <TextBlock Text="Play with nothing going online: no update check, error reports, Discord status, friends or redeem codes, and no other PC can connect to this one. Matches with bots, the locker, the shops and progression work as normal. Same as the ONLINE / OFFLINE button at the top of the launcher."
+                                                                           FontSize="11.5" Foreground="#8A8A8A" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                            </StackPanel>
+                                                        </CheckBox>
 
                                                         <Border Height="1" Background="#14FFFFFF" Margin="0,18,0,18" />
 
@@ -4888,16 +5015,16 @@
                                            FontWeight="Bold" FontStyle="Italic" Foreground="{DynamicResource TextBrush}"
                                            Margin="0,2,0,0" />
                                 <!-- Manage the selected player. Each button opens a confirmation step first. -->
-                                <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
-                                    <StackPanel.Resources>
+                                <WrapPanel Orientation="Horizontal" Margin="0,8,0,4">
+                                    <WrapPanel.Resources>
                                         <Style x:Key="PlayerActionButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
                                             <Setter Property="Height" Value="30" />
                                             <Setter Property="Padding" Value="11,0" />
                                             <Setter Property="FontSize" Value="10" />
                                             <Setter Property="FontWeight" Value="Bold" />
-                                            <Setter Property="Margin" Value="0,0,7,0" />
+                                            <Setter Property="Margin" Value="0,0,7,6" />
                                         </Style>
-                                    </StackPanel.Resources>
+                                    </WrapPanel.Resources>
                                     <Button Style="{StaticResource PlayerActionButton}" Command="{Binding StartRenamePlayerCommand}"
                                             ToolTip="Change this player's name. Everything they own stays."
                                             AutomationProperties.Name="Rename player">
@@ -4925,7 +5052,16 @@
                                             <TextBlock Text="DELETE" VerticalAlignment="Center" Foreground="{DynamicResource DangerBrush}" />
                                         </StackPanel>
                                     </Button>
-                                </StackPanel>
+                                    <Button Style="{StaticResource PlayerActionButton}" Command="{Binding StartSeasonResetCommand}"
+                                            ToolTip="Reset a season's level, Battle Pass and challenges, or take its Battle Pass items out of the locker."
+                                            AutomationProperties.Name="Reset season">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE72C;" FontFamily="{StaticResource IconFont}" FontSize="11" Margin="0,0,7,0"
+                                                       VerticalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
+                                            <TextBlock Text="RESET SEASON" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </WrapPanel>
                                 <!-- Unlock All: BR only, or with Save the World skins (MainViewModel.Players.cs) -->
                                 <StackPanel Visibility="{Binding ShowStwSkinsOption, Converter={StaticResource BoolToVis}}" Margin="0,6,0,6">
                                     <TextBlock Text="Unlock All locker" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" />
@@ -5056,6 +5192,147 @@
                                 </Button>
                             </StackPanel>
                         </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Reset season (MainViewModel.SeasonReset.cs, backend Utils/syndicateSeasonReset.js). -->
+                <Grid Visibility="{Binding IsSeasonResetOpen, Converter={StaticResource BoolToVis}}">
+                    <Border CornerRadius="16" Background="#B3050608" />
+                    <Border Width="720" Height="566" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="14"
+                            Background="{DynamicResource Tint_F2161616}" BorderBrush="{DynamicResource Accent_55}" BorderThickness="1"
+                            Padding="24,18,24,18">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Title -->
+                            <Grid Grid.Row="0">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Width="4" Height="16" CornerRadius="2" Margin="0,0,9,0" Background="{DynamicResource AccentBrush}" />
+                                        <TextBlock Text="RESET SEASON" FontSize="9" FontWeight="Bold" Foreground="#8A8A8A" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding SeasonResetTitle}" FontFamily="{StaticResource DisplayFont}" FontSize="26"
+                                               FontWeight="Bold" FontStyle="Italic" Foreground="{DynamicResource TextBrush}"
+                                               TextTrimming="CharacterEllipsis" Margin="0,6,40,0" />
+                                </StackPanel>
+                                <Button Style="{StaticResource IconButton}" Width="32" Height="32" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Command="{Binding CloseSeasonResetCommand}" ToolTip="Close" AutomationProperties.Name="Close reset season">
+                                    <TextBlock Text="&#xE711;" FontFamily="{StaticResource IconFont}" FontSize="11" />
+                                </Button>
+                            </Grid>
+
+                            <!-- Season -->
+                            <Grid Grid.Row="1" Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="230" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <ComboBox Style="{StaticResource DarkComboBox}" Height="32" FontSize="12"
+                                          ItemsSource="{Binding SeasonResetSeasons}"
+                                          SelectedItem="{Binding SelectedSeasonResetSeason, Mode=TwoWay}"
+                                          IsEnabled="{Binding SeasonResetIdle}"
+                                          AutomationProperties.Name="Season to reset" />
+                                <TextBlock Grid.Column="1" Text="{Binding SeasonResetSummary}" FontSize="11" Foreground="#B4B4B4"
+                                           VerticalAlignment="Center" TextWrapping="Wrap" Margin="14,0,0,0" />
+                            </Grid>
+
+                            <!-- Progress -->
+                            <CheckBox Grid.Row="2" Style="{StaticResource SwitchToggle}" Margin="0,14,0,0"
+                                      IsChecked="{Binding SeasonResetProgress}" IsEnabled="{Binding SeasonResetIdle}"
+                                      AutomationProperties.Name="Reset level, Battle Pass tier and challenges">
+                                <StackPanel>
+                                    <TextBlock Text="Reset level, Battle Pass tier and challenges" FontSize="12.5" FontWeight="Bold"
+                                               Foreground="{DynamicResource TextBrush}" />
+                                    <TextBlock Text="The season starts over as if you had never played it. V-Bucks the pass already gave you are kept and not paid out again."
+                                               FontSize="11" Foreground="#8A8A8A" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                </StackPanel>
+                            </CheckBox>
+
+                            <!-- Items header -->
+                            <DockPanel Grid.Row="3" Margin="0,14,0,6">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Style="{StaticResource TinyGhostButton}" Content="ALL" Command="{Binding SelectAllPassItemsCommand}"
+                                            AutomationProperties.Name="Tick every item" />
+                                    <Button Style="{StaticResource TinyGhostButton}" Content="OUTFITS" Command="{Binding SelectOutfitPassItemsCommand}"
+                                            AutomationProperties.Name="Tick only outfits" />
+                                    <Button Style="{StaticResource TinyGhostButton}" Content="NONE" Command="{Binding SelectNoPassItemsCommand}"
+                                            AutomationProperties.Name="Untick every item" />
+                                </StackPanel>
+                                <TextBlock Text="BATTLE PASS ITEMS TO TAKE OUT OF THE LOCKER" FontSize="8.5" FontWeight="Bold"
+                                           Foreground="#8A8A8A" VerticalAlignment="Center" />
+                            </DockPanel>
+
+                            <!-- Items -->
+                            <Border Grid.Row="4" CornerRadius="10" Background="#10FFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1" Padding="12,10">
+                                <Grid>
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                                  Visibility="{Binding HasSeasonResetItems, Converter={StaticResource BoolToVis}}">
+                                        <ItemsControl ItemsSource="{Binding SeasonResetItems}" Focusable="False" IsEnabled="{Binding SeasonResetIdle}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox Style="{StaticResource DarkCheckBox}" Width="318" Margin="0,0,0,8"
+                                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                              AutomationProperties.Name="{Binding Name}">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" MaxWidth="160"
+                                                                       TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextBrush}"
+                                                                       ToolTip="{Binding Name}" />
+                                                            <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="#8A8A8A"
+                                                                       Margin="8,1,0,0" VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </CheckBox>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                    <TextBlock Text="No Battle Pass items from this season are in the locker."
+                                               FontSize="11.5" Foreground="#8A8A8A" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Visibility="{Binding SeasonResetNoItems, Converter={StaticResource BoolToVis}}" />
+                                    <TextBlock Text="Loading..." FontSize="11.5" Foreground="#8A8A8A" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Visibility="{Binding SeasonResetShowLoading, Converter={StaticResource BoolToVis}}" />
+                                </Grid>
+                            </Border>
+
+                            <!-- What will happen -->
+                            <StackPanel Grid.Row="5" Margin="0,10,0,0">
+                                <TextBlock Text="{Binding SeasonResetPlan}" FontSize="11.5" Foreground="#B4B4B4" TextWrapping="Wrap" LineHeight="17" />
+                                <TextBlock Text="{Binding SeasonResetPassNote}" FontSize="11" Foreground="{DynamicResource WarnBrush}" TextWrapping="Wrap"
+                                           Margin="0,4,0,0" Visibility="{Binding HasSeasonResetPassNote, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="{Binding SeasonResetDone}" FontSize="11" Foreground="{DynamicResource SuccessBrush}" TextWrapping="Wrap"
+                                           Margin="0,4,0,0" Visibility="{Binding HasSeasonResetDone, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="{Binding SeasonResetError}" FontSize="11" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"
+                                           Margin="0,4,0,0" Visibility="{Binding HasSeasonResetError, Converter={StaticResource BoolToVis}}" />
+                            </StackPanel>
+
+                            <!-- Buttons -->
+                            <Grid Grid.Row="6" Margin="0,14,0,0">
+                                <Button Style="{StaticResource GhostButton}" Height="36" Padding="16,0" HorizontalAlignment="Left"
+                                        Content="{Binding RestoreRemovedText}" Command="{Binding RestoreRemovedPassItemsCommand}"
+                                        Visibility="{Binding HasRemovedPassItems, Converter={StaticResource BoolToVis}}"
+                                        ToolTip="Put this season's removed Battle Pass items back. Items from tiers you haven't reached come back as you earn them."
+                                        AutomationProperties.Name="Put back removed items" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Style="{StaticResource GhostButton}" Height="36" Padding="18,0" Margin="0,0,10,0"
+                                            Content="CLOSE" Command="{Binding CloseSeasonResetCommand}" AutomationProperties.Name="Close" />
+                                    <Button Style="{StaticResource DangerConfirmButton}" Height="36" Padding="18,0"
+                                            Content="{Binding SeasonResetConfirmText}" Command="{Binding ConfirmSeasonResetCommand}"
+                                            AutomationProperties.Name="Confirm reset season" />
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
                     </Border>
                 </Grid>
                 </Grid>

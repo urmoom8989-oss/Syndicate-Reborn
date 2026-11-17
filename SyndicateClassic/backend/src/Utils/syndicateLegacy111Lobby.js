@@ -1,4 +1,16 @@
 import {clientBuild} from './syndicateBuild.js';
+import {enabledModes,MODES} from './syndicateSeasonModes.js';
+// Launcher Settings > Game modes (syndicateSeasonModes.js): the lobby lists the modes turned on for the build.
+// The Save the World and Creative buttons stay relabelled UNAVAILABLE unless they are turned on.
+const STW_BUTTON='F1B39B41400513DFDBBC39BE41A2AA7A',CREATIVE_BUTTON='85CC70F746437FF312DF528927FD1F52';
+// One +TextReplacements entry by key. "Save The\r\nWorld" spans two lines, so match up to the closing ))).
+const dropText=(text,key)=>text.replace(new RegExp('^\\+TextReplacements=[^\\n]*Key="'+key+'"[\\s\\S]*?\\)\\)\\)[ \\t]*\\r?$\\n?','m'),'');
+function openButtons(text,modes){
+ if(modes.includes('stw'))text=dropText(text,STW_BUTTON);
+ if(modes.includes('creative'))text=dropText(text,CREATIVE_BUTTON);
+ return text;
+}
+const lobbyModes=modes=>modes.filter(m=>MODES[m]?.playlist);
 // Keep Cert 3807424 on its own native lobby/playlist configuration.
 export function cloudTextForClient(file,userAgent,hotfixes){
  const key=file.toLowerCase().replace(/\.ini$/,'');
@@ -20,28 +32,32 @@ export function cloudTextForClient(file,userAgent,hotfixes){
  if(['2.5','3.5.1','5.10','6.20','7.40','8.50','9.40','10.31','10.40','11.00','12.50'].includes(build) && key==='defaultgame'){let g=normal.replace(/^\+?FrontEndPlaylistData=.*$/gm,'');
   // Dev Kit 11.00: drop the "Creative -> UNAVAILABLE" relabel so the Creative button is clickable to
   // experiment. Island streaming is still broken on UE4, so expect empty sea until that's solved.
-  if(process.env.TILTED_DEVKIT==='1' && build==='11.00')g=g.replace(/^\+TextReplacements=.*NativeString="Creative".*$/gm,'');
+  // Creative (Seasons 7+) and Save the World open their lobby buttons when turned on in the launcher. Creative's
+  // island streaming is still broken on UE4, so expect empty sea until that's solved.
+  const modes=enabledModes(build);
+  g=openButtons(g,modes);
   return g+`
 [/Script/FortniteGame.FortGameInstance]
 !FrontEndPlaylistData=ClearArray
-+FrontEndPlaylistData=(PlaylistName=Playlist_DefaultSolo,PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=true,bVisibleWhenDisabled=true,CategoryIndex=0,DisplayPriority=0))
-+FrontEndPlaylistData=(PlaylistName=Playlist_DefaultDuo,PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=false,bVisibleWhenDisabled=true,CategoryIndex=0,DisplayPriority=1))
-+FrontEndPlaylistData=(PlaylistName=Playlist_DefaultSquad,PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=false,bVisibleWhenDisabled=true,CategoryIndex=0,DisplayPriority=2))
-`+(['8.50','9.40','10.31','10.40','11.00','12.50'].includes(build)?`+FrontEndPlaylistData=(PlaylistName=Playlist_ShowdownAlt_Solo,PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=false,bVisibleWhenDisabled=true,CategoryIndex=0,DisplayPriority=3))
-`:'')+(process.env.TILTED_DEVKIT==='1'&&build==='11.00'?`+FrontEndPlaylistData=(PlaylistName=Playlist_PlaygroundV2,PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=false,bVisibleWhenDisabled=true,bIsTournament=false,CategoryIndex=0,DisplayPriority=4))
-`:'');}
+`+lobbyModes(modes).map((m,i)=>`+FrontEndPlaylistData=(PlaylistName=${MODES[m].playlist},PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=${i===0},bVisibleWhenDisabled=true,${m==='creative'?'bIsTournament=false,':''}CategoryIndex=0,DisplayPriority=${i}))
+`).join('');}
  // Season 4 exposes PlaylistOverrides (PlaylistName, bEnabled, RegionsDisabled).
- // FrontEndPlaylistData is a legacy field and is absent in the 4.5 client.
- if(build==='4.5' && key==='defaultgame')return normal.replace('[/Script/FortniteGame.FortGameInstance]',
-  '[/Script/FortniteGame.FortGameInstance]\n+PlaylistOverrides=(PlaylistName=Playlist_50v50,bEnabled=true)\n+PlaylistOverrides=(PlaylistName=Playlist_Playground,bEnabled=true)');
+ // FrontEndPlaylistData is a legacy field and is absent in the 4.5 client. Solo, Duos and Squads are on in the client
+ // already; 50v50 and Playground are switched on here, and anything turned off in the launcher is switched off.
+ if(build==='4.5' && key==='defaultgame'){
+  const modes=enabledModes(build),lines=[];
+  for(const m of ['solo','duo','squad','50v50','playground']){
+   const on=modes.includes(m);
+   if(!on||m==='50v50'||m==='playground')lines.push(`+PlaylistOverrides=(PlaylistName=${MODES[m].playlist},bEnabled=${on})`);
+  }
+  return openButtons(normal,modes).replace('[/Script/FortniteGame.FortGameInstance]','[/Script/FortniteGame.FortGameInstance]\n'+lines.join('\n'));
+ }
  if(!['1.11','2.5','1.8.2','1.7.2'].includes(build))return normal;
  if(key==='defaultgame')return `
 [/Script/FortniteGame.FortGameInstance]
 bBattleRoyaleMatchmakingEnabled=true
 !FrontEndPlaylistData=ClearArray
-+FrontEndPlaylistData=(PlaylistName=Playlist_DefaultSolo,PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=true,bVisibleWhenDisabled=true,bDisplayAsNew=false,CategoryIndex=0,bDisplayAsLimitedTime=false,DisplayPriority=0))
-+FrontEndPlaylistData=(PlaylistName=Playlist_DefaultDuo,PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=false,bVisibleWhenDisabled=true,bDisplayAsNew=false,CategoryIndex=0,bDisplayAsLimitedTime=false,DisplayPriority=1))
-+FrontEndPlaylistData=(PlaylistName=Playlist_DefaultSquad,PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=false,bVisibleWhenDisabled=true,bDisplayAsNew=false,CategoryIndex=0,bDisplayAsLimitedTime=false,DisplayPriority=2))
+${lobbyModes(enabledModes(build)).map((m,i)=>`+FrontEndPlaylistData=(PlaylistName=${MODES[m].playlist},PlaylistAccess=(bEnabled=true,bIsDefaultPlaylist=${i===0},bVisibleWhenDisabled=true,bDisplayAsNew=false,CategoryIndex=0,bDisplayAsLimitedTime=false,DisplayPriority=${i}))`).join('\n')}
 [/Script/FortniteGame.FortChatManager]
 bShouldRequestGeneralChatRooms=false
 bShouldJoinGlobalChat=false

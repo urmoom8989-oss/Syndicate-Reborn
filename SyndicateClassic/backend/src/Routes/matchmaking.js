@@ -7,6 +7,7 @@ const require=createRequire(import.meta.url);
 const playlists=require('../../Matchmaker/playlists.cjs');
 const teamFill=require('../../Matchmaker/fill.cjs');
 import {remoteHost,prepareRemote,startLanBridge} from '../Utils/syndicateLan.js';
+import {modeEnabled,modeName,stwEnabledFor} from '../Utils/syndicateSeasonModes.js';
 import Profile from '../User/Mongodb/Schema/profiles.js';
 import {publishCharacter,preseasonMatchProfile} from '../Utils/syndicateLocker.js';
 import express from "express";
@@ -120,6 +121,8 @@ app.get(
     // Fortnite keeps the intro switches it read at startup for the whole session, so after the entrance it can still
     // ask for Playlist_Intro_Apollo_*. Once the account has had its entrance (or on a host's PC), that is a normal Solo.
     else if(mode==='intro')mode='solo';
+    // Launcher Settings > Game modes: a mode turned off for this season is not matched (the lobby hides it too).
+    if(!modeEnabled(build,mode))return res.status(409).json({errorCode:"errors.com.syndicate.playlist",errorMessage:modeName(mode)+' is turned off for this season. Turn it on in the Syndicate launcher: Settings > Game modes.'});
     if(remoteHost()){
       try{
         const user=await User.findOne({accountId:req.user.accountId}).lean();
@@ -164,7 +167,8 @@ app.get(
       sessionId: req.params.sessionId,
       // Dev launcher (Save the World beacon): a real 32-byte AES key; Erbium's host uses the same bytes
       // (Misc.cpp, SyndicateWelcomeHook). Anything shorter is ignored and every packet fails to encrypt.
-      key: process.env.TILTED_DEVKIT === "1" ? Buffer.from("SyndicateStwDevKey0123456789ABCD").toString("base64") : "none",
+      // Also when Save the World is turned on for this season in the launcher (syndicateSeasonModes.js).
+      key: stwEnabledFor(req.headers["user-agent"]) ? Buffer.from("SyndicateStwDevKey0123456789ABCD").toString("base64") : "none",
     });
   }
 );
@@ -238,7 +242,8 @@ app.post("/fortnite/api/matchmaking/session/*/join", (req, res) => {
 app.post("/fortnite/api/matchmaking/session/matchMakingRequest", (req, res) => {
   // Save the World (dev launcher): Pre-season's tutorial matchmakes here (an MCP session search) and got no
   // sessions back ("No matches available"). Log what it asks for, so the tutorial session can be built to match.
-  if (process.env.TILTED_DEVKIT === '1') console.log('[Syndicate STW] matchMakingRequest ' + JSON.stringify(req.body));
+  const stwOn = stwEnabledFor(req.headers['user-agent']); // Dev Kit, or Save the World on for this season
+  if (stwOn) console.log('[Syndicate STW] matchMakingRequest ' + JSON.stringify(req.body));
   // The request (logged above) asks for an EMPTY dedicated server: GAMEMODE_s FORTEMPTY, maxCurrentPlayers 0,
   // REGION_s NA, MATCHMAKINGPOOL_s Desktop/Any. In 2017 the client then reserved that empty server through its
   // beacon and the server loaded the mission (the tutorial) for it. Dev launcher: offer the local host as that
@@ -247,12 +252,12 @@ app.post("/fortnite/api/matchmaking/session/matchMakingRequest", (req, res) => {
   // Local tutorial (dev launcher, stw-local.txt): no host. Tell the client's SyndicateStudio.dll to open the
   // tutorial map in the player's own game, and offer no server.
   const stwShared = process.env.LOCALAPPDATA ? process.env.LOCALAPPDATA + '/ProjectTilted' : '';
-  if (process.env.TILTED_DEVKIT === '1' && wantsEmpty && stwShared && fs.existsSync(stwShared + '/stw-local.flag')) {
+  if (stwOn && wantsEmpty && stwShared && fs.existsSync(stwShared + '/stw-local.flag')) {
     fs.writeFileSync(stwShared + '/stw-local-go.txt', String(Date.now()));
     console.log('[Syndicate STW] local tutorial: told the client to open the tutorial map');
     return res.json([]);
   }
-  if (process.env.TILTED_DEVKIT === '1' && wantsEmpty) {
+  if (stwOn && wantsEmpty) {
     const info = getGameServerInfo();
     const region = (req.body.criteria.find(c => c?.key === 'REGION_s')?.value) || 'NA';
     const session = {

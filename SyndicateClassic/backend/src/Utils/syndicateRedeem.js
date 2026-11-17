@@ -12,6 +12,7 @@ import {withAccountLock} from './syndicateAccountLock.js';
 import {addRewardGift} from './syndicatePurchaseGift.js';
 import {ensureSharedWallet, walletId} from './syndicateShopWallet.js';
 import {REWARDS} from './syndicateRedeemItems.js';
+import {OFFLINE,OFFLINE_REDEEM} from './syndicateOffline.js';
 export {REWARDS, REDEEM_ONLY, redeemedItems} from './syndicateRedeemItems.js';
 
 // Redeem codes need your own relay: set TILTED_REDEEM_URL. Empty = redeem codes are off.
@@ -35,6 +36,7 @@ async function post(path, data) {
 
 export async function redeem(accountId, code) {
   const body = normalizeCode(code);
+  if (OFFLINE) throw new Error(OFFLINE_REDEEM);
   if (body.length !== 16) throw new Error('That is not a valid code. Codes look like TILT-ABCD-EFGH-JKLM-NPQR.');
   return withAccountLock(accountId, async () => {
     const user = await User.findOne({accountId}).lean();

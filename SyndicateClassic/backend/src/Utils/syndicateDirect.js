@@ -9,13 +9,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
+import {OFFLINE,offlineRefuses} from './syndicateOffline.js';
 const runtime=fileURLToPath(new URL('../../../Runtime/Server/',import.meta.url));
 export const DIRECT_HEADER='x-tilted-direct';
 function read(file){try{return JSON.parse(fs.readFileSync(path.join(runtime,file),'utf8'));}catch{return {};}}
 let hostCache={at:0,value:null};
 function hostSettings(){const now=Date.now();if(now-hostCache.at>2000){hostCache={at:now,value:read('direct-host.json')};}return hostCache.value||{};}
 // The key this PC sends when it joins a host by share code ('' for Radmin / LAN joins).
-export function guestKey(){const k=read('remote-host.json').key;return typeof k==='string' && /^[a-f0-9]{32}$/.test(k)?k:'';}
+export function guestKey(){if(OFFLINE)return '';const k=read('remote-host.json').key;return typeof k==='string' && /^[a-f0-9]{32}$/.test(k)?k:'';}
 // A code stops working when it expires (expires = ms since 1970, written by the launcher; 6 hours after opening).
 function hostKey(){const s=hostSettings();if(typeof s.expires==='number' && Date.now()>s.expires)return '';return s.on===true && typeof s.key==='string' && /^[a-f0-9]{32}$/.test(s.key)?s.key:'';}
 // Join approval: a friend with a valid code still waits until the host presses Allow in the launcher.
@@ -63,6 +64,8 @@ function keyMatches(given){
 }
 // Express middleware for the backend (3551) and the LAN bridge (3552).
 export function directGuard(req,res,next){
+ // Offline mode (syndicateOffline.js): nothing from another machine, not even the home network or Radmin.
+ if(offlineRefuses(req.socket?.remoteAddress))return res.status(403).type('text').send('This PC is in Offline mode.');
  if(!fromInternet(req.socket?.remoteAddress))return next();
  const state=admit(req.socket?.remoteAddress,req.headers[DIRECT_HEADER],req.headers[NAME_HEADER]);
  if(state==='ok')return next();
@@ -72,6 +75,6 @@ export function directGuard(req,res,next){
 }
 // Raw TCP (the chat relay on port 70): an internet connection must start with "SYNDICATE <key>\n".
 export function directSocketKey(){return guestKey();}
-export function checkSocketLine(remoteAddress,line){return !fromInternet(remoteAddress) || admit(remoteAddress,line.startsWith('SYNDICATE ')?line.slice(7).trim():'','')==='ok';}
+export function checkSocketLine(remoteAddress,line){if(offlineRefuses(remoteAddress))return false;return !fromInternet(remoteAddress) || admit(remoteAddress,line.startsWith('SYNDICATE ')?line.slice(7).trim():'','')==='ok';}
 // Headers a guest sends to a direct-play host: the join key and the player's name (shown in the host's Allow prompt).
 export function guestHeaders(name){const k=guestKey();if(!k)return {};const h={[DIRECT_HEADER]:k};if(name)h[NAME_HEADER]=String(name).replace(/[^\w .~-]/g,'').slice(0,32);return h;}

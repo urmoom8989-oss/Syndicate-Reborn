@@ -22,7 +22,7 @@ public sealed partial class MainViewModel
     /// <summary>Called once the main window is up. Reads only plain strings from here, from its own task.</summary>
     public void StartDiscordPresence()
     {
-        if (!_settings.DiscordPresence) return;
+        if (!_settings.DiscordPresence || _settings.OfflineMode) return; // Offline mode: no Discord status
         DiscordPresence.Start(() => (State == BuildState.Found ? BuildEraText : "", SelectedProfile?.Name ?? ""));
     }
 }

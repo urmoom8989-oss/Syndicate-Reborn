@@ -31,6 +31,8 @@ public static class SyndicateBackend
     private static readonly List<Process> Started = new();
     private static readonly SemaphoreSlim StartGate = new(1, 1);
     private static int _startedSeason = -1;
+    // Offline mode the running backend was started with (SYNDICATE_OFFLINE is read once, at its start).
+    private static bool _startedOffline;
 
     /// <summary>The shared Runtime\Server folder the matchmaker reads server/build state from.</summary>
     public static string? RuntimeDirectory
@@ -126,7 +128,7 @@ public static class SyndicateBackend
         bool ours = Started.Any(process => !process.HasExited);
         if (await IsUpAsync())
         {
-            if (ours && _startedSeason == mainSeason)
+            if (ours && _startedSeason == mainSeason && _startedOffline == OfflineMode.Enabled)
             {
                 await EnsureMatchmakerAsync(backend, status);
                 return;
@@ -135,8 +137,11 @@ public static class SyndicateBackend
             if (ours)
             {
                 // One backend serves one season's Battle Pass data (MAIN_SEASON), so switching
-                // builds restarts it instead of showing the previous season's pass.
-                status("Restarting the local backend for the selected season...");
+                // builds restarts it instead of showing the previous season's pass. Turning Offline
+                // mode on or off restarts it too (the backend reads SYNDICATE_OFFLINE at start).
+                status(_startedSeason == mainSeason
+                    ? (OfflineMode.Enabled ? "Restarting the local backend in Offline mode..." : "Restarting the local backend online...")
+                    : "Restarting the local backend for the selected season...");
                 StopStarted();
                 await Task.Delay(600);
             }
@@ -201,6 +206,9 @@ public static class SyndicateBackend
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };
+        // Offline mode: the matchmaker only accepts this PC (Matchmaker/index.js).
+        if (OfflineMode.Enabled) info.Environment["SYNDICATE_OFFLINE"] = "1";
+        else info.Environment.Remove("SYNDICATE_OFFLINE");
         var proc = Process.Start(info) ?? throw new InvalidOperationException("Could not start matchmaking.");
         TextWriter? mmWriter = null;
         try
@@ -393,6 +401,11 @@ public static class SyndicateBackend
         info.Environment["TILTED_BACKEND_LOG"] = Path.Combine(logDirectory, "syndicate-backend.log");
         info.Environment["BOT_TOKEN"] = "";
         info.Environment["DISCORD_TOKEN"] = "";
+        // Offline mode (Services/OfflineMode.cs, backend Utils/syndicateOffline.js). Set either way, so an
+        // installation's .env can't turn it on behind the player's back.
+        bool offline = OfflineMode.Enabled;
+        info.Environment["SYNDICATE_OFFLINE"] = offline ? "1" : "0";
+        _startedOffline = offline;
 #if DEV_BUILD
         // Dev launcher: the backend's developer routes (Syndicate Studio's live map editor, match telemetry).
         info.Environment["TILTED_DEVKIT"] = "1";

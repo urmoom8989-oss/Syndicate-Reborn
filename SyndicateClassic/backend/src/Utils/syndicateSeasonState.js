@@ -14,6 +14,9 @@ export function putSeason(p,state){
  for(const [id,item] of Object.entries(p.items))if(seasonalItem(item))delete p.items[id];
  Object.assign(p.items,clone(state.items||{}));
 }
+// A season the player has never played: level, pass and challenges at the start. Also used by the launcher's
+// Reset season (syndicateSeasonReset.js), so a reset season looks exactly like a first visit.
+export function freshSeasonState(){return {attributes:{level:0,xp:0,book_level:1,book_xp:0,book_purchased:false,season_match_boost:0,season_friend_match_boost:0,rested_xp:0,quest_manager:{},purchased_battle_pass_tier_offers:[]},items:{}};}
 export function activateSeason(p,season){
  if(![2,3,4,5,6,7,8,9,10,11,12].includes(season))throw Error('Unsupported season');
  const a=p.stats.attributes;let changed=false;
@@ -21,7 +24,7 @@ export function activateSeason(p,season){
  const old=activeSeason(p);
  if(old!==season){
   a.tilted_season_states[old]=captureSeason(p);
-  putSeason(p,a.tilted_season_states[season]||{attributes:{level:0,xp:0,book_level:1,book_xp:0,book_purchased:false,season_match_boost:0,season_friend_match_boost:0,rested_xp:0,quest_manager:{},purchased_battle_pass_tier_offers:[]},items:{}});
+  putSeason(p,a.tilted_season_states[season]||freshSeasonState());
   a.tilted_active_season=season;changed=true;
  }
  if(a.season_num!==season){a.season_num=season;changed=true;}

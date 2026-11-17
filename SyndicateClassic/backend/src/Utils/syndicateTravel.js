@@ -11,11 +11,13 @@ import Friends from '../User/Mongodb/Schema/friends.js';
 import {withAccountLock} from './syndicateAccountLock.js';
 import {digest,validateProfile,signed,verified} from './syndicateTravelCore.js';
 import {guestKey,DIRECT_HEADER,NAME_HEADER,fromInternet,checkSocketLine,guestHeaders} from './syndicateDirect.js';
+import {OFFLINE,offlineRefuses} from './syndicateOffline.js';
 const root=fileURLToPath(new URL('../../../Runtime/',import.meta.url));
 const dir=path.join(root,'AccountTravel');fs.mkdirSync(dir,{recursive:true});
 function read(file,fallback=null){try{return JSON.parse(fs.readFileSync(file,'utf8'));}catch{return fallback;}}
 function write(file,value){fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file+'.tmp',JSON.stringify(value));fs.renameSync(file+'.tmp',file);}
-export function selectedHost(){const h=read(path.join(root,'Server','remote-host.json'),{})?.host||'';return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(h)?h:'';}
+// Offline mode: never join a friend's host; every match runs on this PC.
+export function selectedHost(){if(OFFLINE)return '';const h=read(path.join(root,'Server','remote-host.json'),{})?.host||'';return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(h)?h:'';}
 const file=id=>path.join(dir,id+'.json');
 const pendingDir=path.join(process.env.LOCALAPPDATA||root,'ProjectTilted','UserData','PendingTravel');fs.mkdirSync(pendingDir,{recursive:true});
 export function travelActive(id){return /^[a-f0-9]{32}$/i.test(id||'')&&!!read(file(id));}
@@ -109,10 +111,13 @@ async function recoverPending(id,host){
   fs.unlinkSync(source);
  }
 }
-export async function finishTravel(id){return withAccountLock(id,async()=>{try{await syncLocked(id,true);return {pending:false};}catch(error){return deferLocked(id,error);}});}
+// Offline mode: a friend's host is never contacted. The account is released from the last local save and the host's
+// progress is recovered the next time that host is joined (recoverPending), exactly as when the host can't be reached.
+const offlineRelease=id=>deferLocked(id,Error('Offline mode is on.'));
+export async function finishTravel(id){return withAccountLock(id,async()=>{if(OFFLINE)return offlineRelease(id);try{await syncLocked(id,true);return {pending:false};}catch(error){return deferLocked(id,error);}});}
 export async function openTravel(id){return withAccountLock(id,async()=>{
  const host=selectedHost();let lease=read(file(id));
- if(lease&&lease.host!==host){try{await syncLocked(id,true);}catch(error){await deferLocked(id,error);}lease=null;}
+ if(lease&&lease.host!==host){if(OFFLINE)await offlineRelease(id);else try{await syncLocked(id,true);}catch(error){await deferLocked(id,error);}lease=null;}
  if(!host)return null;
  await recoverPending(id,host);
  if(lease){try{await syncLocked(id);lease=read(file(id));}catch(error){if(!error.message.includes('Hosted account session not found'))throw error;}}
@@ -128,7 +133,7 @@ let syncing=false;
 // "This account is playing on another host." Finish it now: pull the final progress
 // from that host if it answers, otherwise save both copies to PendingTravel (recovered
 // automatically if you reconnect to that host) and release the account.
-async function travelTick(){if(syncing)return;syncing=true;try{for(const name of fs.readdirSync(dir).filter(n=>/^[a-f0-9]{32}\.json$/.test(n))){const id=name.slice(0,-5);try{await withAccountLock(id,async()=>{const lease=read(file(id));if(!lease)return;if(lease.host!==selectedHost()){try{await syncLocked(id,true);}catch(error){const outcome=await deferLocked(id,error);console.warn('[Syndicate travel] Released stale hosted session for',id,'-',outcome.message||'synced');}}else await syncLocked(id);});}catch{/* Keep the lease and retry; never discard unsynced progress. */}}}finally{syncing=false;}}
+async function travelTick(){if(syncing)return;syncing=true;try{for(const name of fs.readdirSync(dir).filter(n=>/^[a-f0-9]{32}\.json$/.test(n))){const id=name.slice(0,-5);try{await withAccountLock(id,async()=>{const lease=read(file(id));if(!lease)return;if(lease.host!==selectedHost()){if(OFFLINE){await offlineRelease(id);return;}try{await syncLocked(id,true);}catch(error){const outcome=await deferLocked(id,error);console.warn('[Syndicate travel] Released stale hosted session for',id,'-',outcome.message||'synced');}}else await syncLocked(id);});}catch{/* Keep the lease and retry; never discard unsynced progress. */}}}finally{syncing=false;}}
 setInterval(travelTick,5000).unref();
 setTimeout(travelTick,1500).unref();
 export function proxyLobby(req,res,next){
@@ -141,6 +146,7 @@ export function startSocialRelay(){
  const pipe=(client,remote,first)=>{const close=()=>{client.destroy();remote.destroy();};client.on('error',close);remote.on('error',close);client.on('close',()=>remote.destroy());remote.on('close',()=>client.destroy());
   if(first&&first.length)remote.write(first);client.pipe(remote);remote.pipe(client);};
  const server=net.createServer(client=>{
+  if(offlineRefuses(client.remoteAddress)){client.destroy();return;} // Offline mode: this PC only
   const host=selectedHost();
   if(host){ // joining someone: forward to the host (a share-code join starts with the join key)
    const remote=net.connect(70,host);const key=guestKey();if(key)remote.write('SYNDICATE '+key+'\n');pipe(client,remote);return;}

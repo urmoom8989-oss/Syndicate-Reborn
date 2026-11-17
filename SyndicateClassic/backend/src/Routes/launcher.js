@@ -23,6 +23,7 @@ import {achievementView,claimAchievement} from '../Utils/syndicateAchievements.j
 import {walletId as achWalletId,ensureSharedWallet as achEnsureWallet} from '../Utils/syndicateShopWallet.js';
 import {withAccountLock as achAccountLock} from '../Utils/syndicateAccountLock.js';
 import {fileURLToPath} from 'node:url';
+import {RESET_SEASONS,resetView,applySeasonReset,restoreRemovedPassItems,seasonLabel} from '../Utils/syndicateSeasonReset.js';
 
 const router = express.Router();
 const sessions = new Map();
@@ -489,6 +490,51 @@ for(const operation of ['status','set'])router.post(`/launcher/stwhero/${operati
   return res.json({unlockAll:true,stwSkins:true,hero:selectedHero(a),heroes});
  }
  res.status(409).json({message:'Your locker is busy. Try again in a moment.'});
+}));
+// Syndicate: Choose Player > Reset season (Utils/syndicateSeasonReset.js). status lists the seasons and one season's
+// Battle Pass items; apply resets the season's progress and/or takes picked pass items out of the locker; restore puts
+// removed items back. Saved like the other locker switches: under the account lock, only if neither profile changed.
+router.post('/launcher/seasonreset/status',safe(async(req,res)=>{
+ const accountId=achAccount(req);if(!accountId)return res.status(401).json({message:'Please sign in again.'});
+ const doc=await Profile.collection.findOne({accountId});if(!doc?.profiles?.athena)return res.status(404).json({message:'Profile missing.'});
+ res.json(resetView(doc,Number(req.body?.season)));
+}));
+for(const operation of ['apply','restore'])router.post(`/launcher/seasonreset/${operation}`,safe(async(req,res)=>{
+ const accountId=achAccount(req);if(!accountId)return res.status(401).json({message:'Please sign in again.'});
+ if(travelActive(accountId))return res.status(409).json({message:'Quit your friend\'s match to sync your account first.'});
+ const season=Number(req.body?.season);
+ if(!RESET_SEASONS.includes(season))return res.status(400).json({message:'Pick a season from the list.'});
+ const resetProgress=req.body?.resetProgress===true;
+ const remove=Array.isArray(req.body?.remove)?req.body.remove.filter(v=>typeof v==='string'&&v.length<=160).slice(0,600):[];
+ try{
+  const result=await achAccountLock(accountId,async()=>{
+   for(let attempt=0;attempt<6;attempt++){
+    const doc=await Profile.collection.findOne({accountId});
+    if(!doc?.profiles?.athena||!doc.profiles.common_core)throw new Error('Profile missing.');
+    const a=doc.profiles.athena,c=doc.profiles.common_core,ar=a.rvn,cr=c.rvn;
+    let outcome;
+    if(operation==='apply')outcome=applySeasonReset(doc,season,{resetProgress,remove});
+    else{
+     if(a.stats.attributes.tilted_unlock_all)throw new Error('Switch this player to Progression first.');
+     const added=restoreRemovedPassItems(doc.profiles,season);
+     outcome={unsetPurchases:[],message:added?`${added} item${added===1?' is':'s are'} back in the locker. Items from tiers you have not reached come back as you earn them.`
+      :`Removed ${seasonLabel(season)} items will come back as you earn their tiers.`};
+    }
+    for(const p of [a,c]){p.rvn=(p.rvn||0)+1;p.commandRevision=(p.commandRevision||0)+1;p.updated=new Date().toISOString();}
+    const update={$set:{'profiles.athena':a,'profiles.common_core':c}};
+    if(outcome.unsetPurchases.length)update.$unset=Object.fromEntries(outcome.unsetPurchases.map(id=>[`syndicatePassPurchases.${id}`,'']));
+    const saved=await Profile.collection.updateOne({accountId,'profiles.athena.rvn':ar,'profiles.common_core.rvn':cr},update);
+    if(!saved.matchedCount)continue;
+    if(global.giftReceived)global.giftReceived[accountId]=true;
+    // A removed item may have been worn: refresh the loadout the match server reads.
+    try{await publishCharacter(accountId,a);}catch(error){console.warn('[Syndicate] Could not refresh the loadout:',error.message);}
+    if(outcome.unsetPurchases.length)for(const id of outcome.unsetPurchases)delete doc.syndicatePassPurchases[id];
+    return {...resetView(doc,season),message:outcome.message};
+   }
+   throw new Error('Your locker is busy. Try again in a moment.');
+  });
+  res.json(result);
+ }catch(error){res.status(409).json({message:error.message});}
 }));
 // Syndicate Arena HUD: the launcher polls this once a second while Fortnite runs. The game server
 // writes Runtime/Server/arena-live.json during Arena matches (kills, placement, players alive);

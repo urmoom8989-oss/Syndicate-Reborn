@@ -68,7 +68,7 @@ public static class UpdateChecker
     {
         try
         {
-            if (_done) return;
+            if (_done || OfflineMode.Enabled) return; // Offline mode: never ask GitHub
             _done = true;
 #if DEV_BUILD
             // The dev launcher (UPDATE FROM GIT) is built from source and is never replaced by a public release.

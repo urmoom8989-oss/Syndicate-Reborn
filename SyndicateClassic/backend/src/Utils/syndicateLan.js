@@ -1,5 +1,6 @@
 import {handleTravel} from './syndicateTravel.js';
 import {directGuard,guestKey,DIRECT_HEADER,guestHeaders} from './syndicateDirect.js';
+import {OFFLINE} from './syndicateOffline.js';
 // Private testing: accounts stay local; only match data crosses the LAN.
 import express from 'express';
 import fs from 'node:fs';
@@ -16,7 +17,7 @@ const lan=path.join(runtime,'lan');
 fs.mkdirSync(lan,{recursive:true});
 function read(file,fallback){try{return JSON.parse(fs.readFileSync(file,'utf8'));}catch{return fallback;}}
 function write(file,value){fs.writeFileSync(file+'.tmp',JSON.stringify(value));fs.renameSync(file+'.tmp',file);}
-export function remoteHost(){const h=read(path.join(runtime,'remote-host.json'),{}).host||'';return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(h)?h:'';}
+export function remoteHost(){if(OFFLINE)return '';const h=read(path.join(runtime,'remote-host.json'),{}).host||'';return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(h)?h:'';}
 const peersFile=path.join(lan,'peers.json'),leasesFile=path.join(lan,'leases.json');
 const peers=read(peersFile,{}),leases=read(leasesFile,{});
 export function validateGuest(body){
@@ -54,6 +55,7 @@ export async function prepareRemote(accountId,username,loadout,mode,build,fill=f
  return request(host,'/playlist',{username,key:lease.key,mode,build,fill});
 }
 export async function pullRemoteRewards(award){
+ if(OFFLINE)return; // Offline mode: friends' hosts keep the rewards until this PC is back online.
  for(const lease of Object.values(leases)){
   try{
    const events=await request(lease.host,'/events',{username:lease.username,key:lease.key});
@@ -72,6 +74,7 @@ export function routeGuestReward(event){
  return true;
 }
 export function startLanBridge(localUsernameExists){
+ if(OFFLINE){console.log('[Syndicate LAN] Offline mode: the friends bridge (3552) is not started.');return null;}
  const app=express();app.use(directGuard);app.use(express.json({limit:'32mb'}));
  app.post('/travel',handleTravel);
  app.get('/status',(_,res)=>{const state=read(path.join(runtime,'server.json'),{});res.json({protocol:4,channel:"public",build:playlists.selectedBuild(),playlistSelection:true,accountTransfer:true,ready:!remoteHost()&&isReady(),mode:['solo','duo','squad','50v50'].includes(state.Mode)?state.Mode:'solo'});});

@@ -7,12 +7,22 @@ const playlists=require("./playlists.cjs");
 // Start listening websocket on port
 const port = Number(process.env.TILTED_MATCHMAKER_PORT || 6969);
 const wss = new WebSocket({ port: port });
+// Offline mode (launcher, SYNDICATE_OFFLINE=1; see src/Utils/syndicateOffline.js): matchmaking for this PC only.
+const OFFLINE = /^(1|true|yes|on)$/i.test(String(process.env.SYNDICATE_OFFLINE || "").trim());
+function fromThisPc(address) {
+    let a = String(address || "").toLowerCase();
+    if (a.startsWith("::ffff:")) a = a.slice(7);
+    if (a === "" || a === "::1" || /^127\./.test(a)) return true;
+    try { return Object.values(require("os").networkInterfaces()).some(list => (list || []).some(e => String(e.address).toLowerCase() === a)); }
+    catch { return false; }
+}
 
 wss.on('listening', () => {
     console.log(`Matchmaker started listening on port ${port}`);
 });
 
 wss.on('connection', async (ws,request) => {
+    if (OFFLINE && !fromThisPc(request.socket && request.socket.remoteAddress)) { ws.close(1008, 'This PC is in Offline mode'); return; }
     const id=new URL(request.url,'http://localhost').searchParams.get('ticket');
     const ticket=playlists.readTicket(id);
     if(!ticket){ws.close(1008,'A playlist matchmaking ticket is required');return;}

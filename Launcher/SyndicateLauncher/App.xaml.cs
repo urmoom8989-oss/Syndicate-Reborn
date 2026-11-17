@@ -43,6 +43,8 @@ public partial class App : Application
         Services.LegacyData.Migrate();
         StartupTrace.Mark("legacy migrated");
         var startupSettings = new Services.SettingsService().Load();
+        // Offline mode is known before anything could go online (update check, error reports, the backend).
+        Services.OfflineMode.Enabled = startupSettings.OfflineMode;
         // Silently try to add Defender exclusions — no UAC prompt, fire-and-forget.
         // If the launcher is not elevated this is a no-op; the user can use the button in Settings > Launcher & files.
         if (startupSettings.AutoAddExclusions)
@@ -90,7 +92,7 @@ public partial class App : Application
         // into Runtime\release-tag.txt; dev/untagged copies are skipped). Fire-and-forget, never blocks startup.
         // The standalone bootstrapper (single encrypted exe) manages its own updates and passes --skip-update,
         // so the inner launcher must not also prompt.
-        if (System.Array.IndexOf(e.Args, "--skip-update") < 0)
+        if (System.Array.IndexOf(e.Args, "--skip-update") < 0 && !Services.OfflineMode.Enabled)
             _ = SyndicateLauncher.Services.UpdateChecker.CheckAsync();
 
         // Runtime recovery: check for missing or AV-quarantined DLLs and

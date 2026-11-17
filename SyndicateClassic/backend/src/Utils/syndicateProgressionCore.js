@@ -3,6 +3,7 @@ import {ensureSeason2Shields} from './syndicateSeason2Shields.js';
 import {activeSeason,holdSeasonMax} from './syndicateSeasonState.js';
 import {ensureSeason4Styles} from './syndicateSeason4Styles.js';
 import {seasonMaxed} from './syndicateMaxProgress.js';
+import {removedPassItems} from './syndicateSeasonReset.js';
 import fs from 'node:fs';
 const read = (season,name) => JSON.parse(fs.readFileSync(new URL(`../local/Battlepass/Data/Season${season}/${name}.json`, import.meta.url)));
 const tables=Object.fromEntries([2,3,4,5,6,7,8,9,10,11,12].map(s=>[s,Object.fromEntries(['SeasonXP','SeasonBP','SeasonFreeBattlepass','SeasonPaidBattlepass'].map(n=>[n,
@@ -28,10 +29,12 @@ export function grantMissingPassCosmetics(athena){
   const season=activeSeason(athena);if(!tables[season]||seasonMaxed(s,season))return 0;
   const reached=Math.max(0,Math.min(season===2?70:100,Number(s.book_level)||0));
   athena.items??={};const owned=new Set(Object.values(athena.items).map(i=>String(i?.templateId||'').toLowerCase()));let added=0;
+  // Items the player took out in the launcher (Reset season) stay out (syndicateSeasonReset.js).
+  const removed=removedPassItems(s,season);
   for(const [track,table,enabled] of [['free',tables[season].SeasonFreeBattlepass,true],['paid',tables[season].SeasonPaidBattlepass,!!s.book_purchased]]){
    if(!enabled)continue;
    for(const row of table)if(row.Level>=1&&row.Level<=reached)for(const reward of row.Rewards||[]){
-    const id=reward.templateId||reward.TemplateId;if(!id||!/^(Athena(Character|Backpack|Pickaxe|Glider|Dance|ItemWrap|SkyDiveContrail|LoadingScreen|MusicPack|Pet|PetCarrier|Spray|Emoji|Toy)|HomebaseBannerIcon):/i.test(id)||owned.has(id.toLowerCase()))continue;
+    const id=reward.templateId||reward.TemplateId;if(!id||!/^(Athena(Character|Backpack|Pickaxe|Glider|Dance|ItemWrap|SkyDiveContrail|LoadingScreen|MusicPack|Pet|PetCarrier|Spray|Emoji|Toy)|HomebaseBannerIcon):/i.test(id)||owned.has(id.toLowerCase())||removed.has(id.toLowerCase()))continue;
     athena.items['tilted_s'+season+'_'+track+'_'+row.Level+'_'+id]={templateId:id,quantity:1,attributes:{item_seen:false,level:1,xp:0,variants:reward.variants||[]}};
     owned.add(id.toLowerCase());added++;
    }
@@ -80,11 +83,16 @@ export function applyProgression(profiles, amount=0) {
   if(s.level===100)s.xp=0;
   s[key+'xp_total']=(s[key+'xp_total']||0)+amount;
   a.items??={};c.items??={};
+  // Launcher Reset season (syndicateSeasonReset.js): removed items stay out, and V-Bucks a tier already paid
+  // before the reset are not paid again.
+  const removed=removedPassItems(s,season);
   for(const [track,table,enabled] of [['free',free,true],['paid',paid,!!s.book_purchased]]){
    if(!enabled)continue;
    const last=s[key+track+'_reward_tier']??(season===4?s.tilted_season4_reward_tier||0:0);
+   const currencyThrough=Number(s[key+track+'_currency_through'])||0;
    for(let tier=last+1;tier<=s.book_level;tier++)for(const reward of table.find(r=>r.Level===tier)?.Rewards||[]){
     const id=reward.templateId||reward.TemplateId;if(!id)continue;
+    if(removed.has(id.toLowerCase())||(/^Currency:/i.test(id)&&tier<=currencyThrough))continue;
     const target=/^Currency:/i.test(id)?c:a;
     const existing=Object.entries(target.items).find(([,v])=>v.templateId?.toLowerCase()===id.toLowerCase());
     const stack=/^(Currency|Token):/i.test(id);

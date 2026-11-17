@@ -110,6 +110,7 @@ public sealed partial class MainViewModel : ViewModelBase
         InitializeDifficulty();
         InitializeBotNames();
         InitializeCustomBotNames();
+        InitializeGameModes();
         foreach (var profile in _settings.Profiles)
         {
             ProfileAvatars.Ensure(profile);
@@ -129,6 +130,7 @@ public sealed partial class MainViewModel : ViewModelBase
             AvatarError = "";
             SyncSelectedAvatar();
             if (!_actionBusy) EndPlayerAction(); // never reopen on a stale confirmation step
+            if (!_seasonResetBusy) CloseSeasonReset(); // ...or on the Reset season panel
             IsPlayerSelectOpen = true;
         });
         ClosePlayerSelectCommand = new RelayCommand(() => IsPlayerSelectOpen = false);

@@ -120,4 +120,9 @@ public sealed class AppSettings
     public CrosshairSettings Crosshair { get; set; } = new();
     /// <summary>The newest Patch Notes version the player has opened. A newer one opens the Patch Notes tab once.</summary>
     public string LastSeenPatchNotes { get; set; } = "";
+    /// <summary>Title bar OFFLINE button (Services/OfflineMode.cs): nothing goes online and no other PC can connect in.</summary>
+    public bool OfflineMode { get; set; }
+    /// <summary>Settings &gt; Match &amp; bots &gt; Game modes (Services/SeasonModes.cs): the modes each build shows in the
+    /// lobby, keyed by build ("7.40"). A build that is not listed keeps its usual lobby.</summary>
+    public Dictionary<string, List<string>> SeasonModes { get; set; } = new();
 }

@@ -57,6 +57,8 @@ async function readJson(resp) { try { return await resp.json(); } catch { return
 
 // Sends up to 10 lines. Returns { ok, via, status, message }; ok only when Discord accepted it.
 export async function deliver(lines, { fetchImpl = globalThis.fetch, env = process.env, relayUrl = RELAY_URL, username = 'Syndicate match tracking', timeoutMs = 15000, channel = 'learning' } = {}) {
+  // Offline mode (launcher, syndicateOffline.js): nothing leaves this PC. Matches stay queued for later.
+  if (/^(1|true|yes|on)$/i.test(String(env?.SYNDICATE_OFFLINE || '').trim())) return { ok: false, via: 'none', status: null, message: 'Offline mode: nothing is sent.' };
   const config = webhookConfig(env, channel);
   if (config.kind === 'none') return { ok: false, via: 'none', status: null, message: channel === 'mechanics' ? 'No mechanics webhook configured.' : 'No webhook or relay configured (set TILTED_DISCORD_WEBHOOK).' };
   if (config.kind === 'invalid') return { ok: false, via: 'webhook', status: null, message: 'TILTED_DISCORD_WEBHOOK is set but is not a Discord webhook URL (https://discord.com/api/webhooks/<id>/<token>). Fix it in Syndicate-backend\\.env.' };
