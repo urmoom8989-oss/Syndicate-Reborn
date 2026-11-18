@@ -5334,10 +5334,16 @@
                     </Border>
                 </Grid>
 
-                <!-- Lobby editor (Views/LobbyEditorView.xaml, MainViewModel.GameModes.cs) -->
-                <views:LobbyEditorView Visibility="{Binding IsLobbyEditorOpen, Converter={StaticResource BoolToVis}}" />
                 </Grid>
             </Border>
+        </Grid>
+
+        <!-- ======================= LOBBY EDITOR ======================= -->
+        <!-- Settings > Game modes > Open lobby editor (Views/LobbyEditorView.xaml, MainViewModel.GameModes.cs). Its own
+             layer over the whole launcher, like Choose Player, so it opens from any page. -->
+        <Grid Panel.ZIndex="110" Background="#C406070C"
+              Visibility="{Binding IsLobbyEditorOpen, Converter={StaticResource BoolToVis}}">
+            <views:LobbyEditorView Margin="22" />
         </Grid>
 
         <!-- ======================= STARTUP COVER ======================= -->
