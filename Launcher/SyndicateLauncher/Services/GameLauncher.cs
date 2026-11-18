@@ -1087,7 +1087,7 @@ public static class GameLauncher
         else hostInfo.Environment.Remove("SYNDICATE_STW_DEV");
 #endif
         var studio = standby ? null : Studio.StudioSession.Current();
-        string playlist = Studio.StudioSession.Apply(hostInfo, studio, record);
+        string playlist = MatchOptions.ModeFromServerPlaylist(Studio.StudioSession.Apply(hostInfo, studio, record));
         if (!standby) HostLog = hostLog;
 
         var host = StartOwnedHidden(hostInfo);

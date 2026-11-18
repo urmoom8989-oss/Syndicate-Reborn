@@ -18,6 +18,15 @@ public sealed record MatchOptions(int MinimumBots, int MaximumBots, bool EditOnR
     public string Playlist { get; init; } = "solo";
     public static readonly string[] Playlists = { "solo", "duo", "squad", "50v50", "playground", "arenasolo", "creative", "intro",
         "gauntlet", "solidgold", "blitz", "snipers", "close", "highexplosives", "disco", "teamrumble", "foodfight", "floorislava", "arenaduos" };
+    /// <summary>The mode id for a TILTED_PLAYLIST value: a limited-time playlist name back to its id, anything else as is.
+    /// server.json must carry the id, or the launcher and matchmaker see a different mode and restart the server
+    /// over and over (Fortnite stuck on "Finding match").</summary>
+    public static string ModeFromServerPlaylist(string value)
+    {
+        foreach (var (mode, ltm) in SeasonModes.LimitedTime)
+            if (string.Equals(ltm.Playlist, value, StringComparison.OrdinalIgnoreCase)) return mode;
+        return value;
+    }
     /// <summary>What the match server (TILTED_PLAYLIST) gets: limited-time modes by their playlist name, the rest by id.</summary>
     public static string ServerPlaylist(string? mode)
     {
