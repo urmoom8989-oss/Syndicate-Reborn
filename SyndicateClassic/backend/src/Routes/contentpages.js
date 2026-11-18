@@ -62,12 +62,12 @@ app.get("/content/api/pages/*", async (req, res) => {
   const info=Contentpages.playlistinformation?.playlist_info;
   const host=String(req.socket.localAddress||'127.0.0.1').replace(/^::ffff:/,'');
   const base='http://'+(host.includes(':')?'['+host+']':host)+':'+req.socket.localPort;
-  const build=clientBuild(req.headers['user-agent']);
+  const tileBuild=clientBuild(req.headers['user-agent']);
   const named=new Set(pictures.map(p=>p.playlist.toLowerCase()));
   const playlists=(info?.playlists||[]).filter(p=>!named.has(String(p.playlist_name).toLowerCase()));
   for(const p of pictures){
     let stamp=0;try{stamp=Math.round(fs.statSync(p.file).mtimeMs);}catch{}
-    playlists.push({image:`${base}/syndicate/modeimage/${encodeURIComponent(build)}/${p.mode}?v=${stamp}`,playlist_name:p.playlist,hidden:false,special_border:'None',_type:'FortPlaylistInfo'});
+    playlists.push({image:`${base}/syndicate/modeimage/${encodeURIComponent(tileBuild)}/${p.mode}?v=${stamp}`,playlist_name:p.playlist,hidden:false,special_border:'None',_type:'FortPlaylistInfo'});
   }
   res.json({...Contentpages,playlistinformation:{...Contentpages.playlistinformation,playlist_info:{...info,playlists}}});
 });
