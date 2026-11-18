@@ -56,6 +56,11 @@ app.get("/content/api/pages/*", async (req, res) => {
     Contentpages.playlistinformation.playlist_info.playlists.push({playlist_name:'Playlist_50v50',hidden:false,special_border:'None',_type:'FortPlaylistInfo'});
     Contentpages.playlistinformation.playlist_info.playlists.push({playlist_name:'Playlist_Playground',hidden:false,special_border:'None',_type:'FortPlaylistInfo'});
   }
+  // Arena Duos' event tile (Routes/events.js) uses the Solo Arena display info.
+  const tournaments=Contentpages.tournamentinformation?.tournament_info?.tournaments;
+  const soloInfo=Array.isArray(tournaments)&&tournaments.find(t=>t.tournament_display_id==='LG_ARENA_SOLO');
+  if(soloInfo&&!tournaments.some(t=>t.tournament_display_id==='LG_ARENA_DUOS'))
+    tournaments.push({...soloInfo,tournament_display_id:'LG_ARENA_DUOS'});
   // Pictures chosen in the launcher's lobby editor go on the game's mode tiles, served by this backend.
   const pictures=modeImages(clientBuild(req.headers['user-agent']));
   if(!pictures.length)return res.json(Contentpages);

@@ -153,6 +153,10 @@ app.get("/api/v1/events/Fortnite/download/:accountid", verifyToken, async (req, 
         let events;
         try {
             events = JSON.parse(modifiedData);
+            // Arena Duos turned on in the launcher: its own event (the Solo one on the Duos playlist), so the Duos
+            // tile shows the division and Hype too. Both share the one Hype score the backend keeps.
+            { const build = clientBuild(String(req.headers['user-agent'] || ''));
+              if (enabledModes(build).includes('arenaduos')) SyndicateAddArenaDuos(events); }
         } catch (parseErr) {
             log.error("Error parsing JSON:", parseErr);
             res.status(500).send('Error parsing JSON!!!');
@@ -169,6 +173,23 @@ app.get("/api/v1/events/Fortnite/download/:accountid", verifyToken, async (req, 
         log.arena("Arena is disabled, not sending json data!");
     }
 });
+
+function SyndicateAddArenaDuos(data) {
+    const solo = (data.events || []).find(e => e.displayDataId === 'LG_ARENA_SOLO');
+    if (!solo || data.events.some(e => e.displayDataId === 'LG_ARENA_DUOS')) return;
+    const duosId = id => String(id).replace(/LGSolo$/, 'LGDuos');
+    const duos = JSON.parse(JSON.stringify(solo));
+    duos.eventId = solo.eventId + '_duos';
+    duos.displayDataId = 'LG_ARENA_DUOS';
+    for (const w of duos.eventWindows || []) { w.eventTemplateId = duosId(w.eventTemplateId); w.eventWindowId = duosId(w.eventWindowId); }
+    data.events.push(duos);
+    for (const t of (data.templates || []).filter(t => t.playlistId === 'Playlist_ShowdownAlt_Solo')) {
+        const copy = JSON.parse(JSON.stringify(t));
+        copy.eventTemplateId = duosId(t.eventTemplateId);
+        copy.playlistId = 'Playlist_ShowdownAlt_Duos';
+        data.templates.push(copy);
+    }
+}
 
 // Syndicate: Arena division tokens. The client re-reads these after every Arena
 // match (RefreshPlayerData); an empty list hides the Arena playlist.

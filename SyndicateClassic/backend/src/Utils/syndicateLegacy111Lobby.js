@@ -47,7 +47,7 @@ export function cloudTextForClient(file,userAgent,hotfixes){
   return g+`
 [/Script/FortniteGame.FortGameInstance]
 !FrontEndPlaylistData=ClearArray
-`+lobbyTiles(build).filter(t=>!(t.mode==='arenasolo'&&ARENA_EVENT_TILE.has(build))).map((t,i)=>tileLine(t,i)+'\n').join('');}
+`+lobbyTiles(build).filter(t=>!((t.mode==='arenasolo'||t.mode==='arenaduos')&&ARENA_EVENT_TILE.has(build))).map((t,i)=>tileLine(t,i)+'\n').join('');}
  // Season 4 exposes PlaylistOverrides (PlaylistName, bEnabled, RegionsDisabled).
  // FrontEndPlaylistData is a legacy field and is absent in the 4.5 client. Solo, Duos and Squads are on in the client
  // already; 50v50 and Playground are switched on here, and anything turned off in the launcher is switched off.
