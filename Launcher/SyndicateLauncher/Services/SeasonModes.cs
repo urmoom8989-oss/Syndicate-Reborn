@@ -87,7 +87,7 @@ public static class SeasonModes
     }
 
     /// <summary>
-    /// Rows in the build's mode selector (FrontEndPlaylistData CategoryIndex). Season X's screen has three: standard
+    /// Rows in the build's mode selector (FrontEndPlaylistData CategoryIndex). Seasons 5 to X have three: standard
     /// modes and two limited-time rows. Other seasons get two; Season 4 lists PlaylistOverrides, which have no rows.
     /// Must match lobbyRowCount in the backend's Utils/syndicateSeasonModes.js.
     /// </summary>
@@ -95,7 +95,7 @@ public static class SeasonModes
     {
         if (!KnownBuilds.Contains(build ?? "")) return 0;
         if (build == "4.5") return 1;
-        return build is "10.31" or "10.40" ? 3 : 2;
+        return build is "5.10" or "6.20" or "7.40" or "8.50" or "9.40" or "10.31" or "10.40" ? 3 : 2;
     }
 
     /// <summary>The lobby each build had before modes could be chosen.</summary>

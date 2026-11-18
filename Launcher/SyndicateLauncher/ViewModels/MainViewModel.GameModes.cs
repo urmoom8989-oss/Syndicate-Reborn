@@ -365,7 +365,7 @@ public sealed partial class MainViewModel
     {
         null => "",
         "4.5" => "Season 4's lobby keeps its own order, rows and badges: only On and Off apply there (Shown locked hides the mode).",
-        "10.31" or "10.40" => "Season X's mode selector has three rows: standard modes on top, then two limited-time rows.",
+        "5.10" or "6.20" or "7.40" or "8.50" or "9.40" or "10.31" or "10.40" => "This season's mode selector has three rows: standard modes on top, then two limited-time rows.",
         _ => "This season's mode selector has two rows: standard modes and limited time. Very old seasons may show every tile in one row."
     };
 

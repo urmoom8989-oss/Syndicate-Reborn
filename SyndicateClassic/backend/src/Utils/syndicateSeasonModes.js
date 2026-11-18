@@ -112,9 +112,9 @@ export function stwEnabledFor(userAgent,options={}){
 }
 // Rows in Fortnite's mode selector (FrontEndPlaylistData CategoryIndex). Season X's screen
 // (AthenaMatchmakingOptionsDisplay_v2) has three: StandardGameModeBox (0), LTMGameModeBox (1) and LTMGameModeBox2 (2).
-// Other seasons get the first two; Season 4 lists PlaylistOverrides, which have no rows. Keep this in step with the
+// Seasons 5 to X get three rows, other seasons the first two; Season 4 lists PlaylistOverrides, which have no rows. Keep this in step with the
 // launcher (Services/SeasonModes.cs RowCount).
-const THREE_ROWS = new Set(['10.31','10.40']);
+const THREE_ROWS = new Set(['5.10','6.20','7.40','8.50','9.40','10.31','10.40']);
 export function lobbyRowCount(build){
  if(!KNOWN.has(build))return 0;
  if(build==='4.5')return 1;
