@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -164,6 +165,48 @@ public sealed class GameModeToggle : ViewModelBase
         internal set => Set(ref _isSelected, value);
     }
 
+    private string _imagePath = "";
+    private ImageSource? _image;
+
+    /// <summary>A picture the player chose for the tile, or "".</summary>
+    public string ImagePath
+    {
+        get => _imagePath;
+        internal set
+        {
+            if (!Set(ref _imagePath, value ?? "")) return;
+            _image = null;
+            OnPropertyChanged(nameof(TileImage));
+            OnPropertyChanged(nameof(HasImage));
+        }
+    }
+
+    public bool HasImage => TileImage is not null;
+
+    public ImageSource? TileImage
+    {
+        get
+        {
+            if (_image is not null || _imagePath.Length == 0 || !File.Exists(_imagePath)) return _image;
+            try
+            {
+                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bitmap.DecodePixelWidth = 480;
+                bitmap.UriSource = new Uri(_imagePath);
+                bitmap.EndInit();
+                bitmap.Freeze();
+                _image = bitmap;
+            }
+            catch
+            {
+                _image = null;
+            }
+            return _image;
+        }
+    }
+
     /// <summary>Changes the state without the change callback (turning a tile on by dropping it in a row, or undoing).</summary>
     internal void SetStateQuietly(int state)
     {
@@ -219,7 +262,7 @@ public sealed partial class MainViewModel
     private GameModeToggle? _selectedLobbyTile;
     private bool _isLobbyEditorOpen, _lobbyRefreshQueued;
     private ICommand? _resetGameModesCommand, _openLobbyEditorCommand, _closeLobbyEditorCommand, _selectLobbyTileCommand,
-        _moveLobbyTileLeftCommand, _moveLobbyTileRightCommand, _makeLobbyDefaultCommand;
+        _moveLobbyTileLeftCommand, _moveLobbyTileRightCommand, _makeLobbyDefaultCommand, _chooseLobbyImageCommand, _clearLobbyImageCommand;
 
     public ObservableCollection<GameModeSeasonChoice> GameModeSeasons { get; } = new();
     public ObservableCollection<LobbyRow> LobbyRows { get; } = new();
@@ -334,6 +377,49 @@ public sealed partial class MainViewModel
     public ICommand MoveLobbyTileRightCommand => _moveLobbyTileRightCommand ??= new RelayCommand(() => NudgeLobbyTile(+1), () => _selectedLobbyTile is { IsOff: false });
     public ICommand MakeLobbyDefaultCommand => _makeLobbyDefaultCommand ??= new RelayCommand(MakeLobbyDefault, () => _selectedLobbyTile is { IsOn: true, IsDefault: false });
 
+    public ICommand ChooseLobbyImageCommand => _chooseLobbyImageCommand ??= new RelayCommand(ChooseLobbyImage, () => _selectedLobbyTile is not null);
+    public ICommand ClearLobbyImageCommand => _clearLobbyImageCommand ??= new RelayCommand(() =>
+    {
+        if (_selectedLobbyTile is not { } tile) return;
+        tile.ImagePath = "";
+        SaveGameModes();
+    }, () => _selectedLobbyTile is { ImagePath.Length: > 0 });
+
+    // The picture is copied next to the player's settings, so moving or deleting the original does not lose it.
+    private void ChooseLobbyImage()
+    {
+        var tile = _selectedLobbyTile;
+        var choice = _gameModeSeason;
+        if (tile is null || choice is null) return;
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Picture for " + tile.Name,
+            Filter = "Pictures|*.png;*.jpg;*.jpeg;*.bmp;*.gif|All files|*.*"
+        };
+        if (dialog.ShowDialog() != true) return;
+        try
+        {
+            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SyndicateLauncher", "ModeImages");
+            Directory.CreateDirectory(folder);
+            string target = Path.Combine(folder, choice.Build + "_" + tile.Id + "_" + DateTime.Now.Ticks + Path.GetExtension(dialog.FileName).ToLowerInvariant());
+            File.Copy(dialog.FileName, target, true);
+            string old = tile.ImagePath;
+            tile.ImagePath = target;
+            if (!tile.HasImage)
+            {
+                tile.ImagePath = old;
+                File.Delete(target);
+                GameModesNote = "The launcher can't show that file as a picture. Try a PNG or JPG.";
+                return;
+            }
+            SaveGameModes();
+        }
+        catch (Exception ex)
+        {
+            GameModesNote = "Couldn't use that picture: " + ex.Message;
+        }
+    }
+
     /// <summary>Called once from the constructor, after the settings are loaded.</summary>
     private void InitializeGameModes()
     {
@@ -388,7 +474,9 @@ public sealed partial class MainViewModel
                 : layout.Locked.Contains(id, StringComparer.OrdinalIgnoreCase) ? GameModeToggle.Locked : GameModeToggle.Off;
             int badge = layout.Badges.TryGetValue(id, out var b) ? (b == "new" ? 1 : b == "limited" ? 2 : 0) : 0;
             int row = layout.Rows.TryGetValue(id, out var r) ? Math.Clamp(r, 0, rows - 1) : 0;
-            _lobbyTiles.Add(new GameModeToggle(info, state, badge, row, OnGameModeStateChanged, SaveGameModes));
+            var tile = new GameModeToggle(info, state, badge, row, OnGameModeStateChanged, SaveGameModes);
+            tile.ImagePath = layout.Images.TryGetValue(id, out var image) ? image : "";
+            _lobbyTiles.Add(tile);
         }
         if (available.Contains("stw") && SeasonModes.All.FirstOrDefault(m => m.Id == "stw") is { } stw)
             _lobbyStw = new GameModeToggle(stw, enabled.Contains("stw") ? GameModeToggle.On : GameModeToggle.Off, 0, 0,
@@ -559,7 +647,8 @@ public sealed partial class MainViewModel
             Default = shown.FirstOrDefault(t => t.IsOn && string.Equals(t.Id, _chosenDefault, StringComparison.OrdinalIgnoreCase))?.Id ?? "",
             Badges = shown.Where(t => t.BadgeIndex > 0).ToDictionary(t => t.Id, t => t.BadgeIndex == 1 ? "new" : "limited"),
             Locked = shown.Where(t => t.IsLocked).Select(t => t.Id).ToList(),
-            Rows = shown.Where(t => Math.Min(t.Row, last) > 0).ToDictionary(t => t.Id, t => Math.Min(t.Row, last))
+            Rows = shown.Where(t => Math.Min(t.Row, last) > 0).ToDictionary(t => t.Id, t => Math.Min(t.Row, last)),
+            Images = shown.Where(t => t.ImagePath.Length > 0).ToDictionary(t => t.Id, t => t.ImagePath)
         };
         Dictionary<string, List<string>> modes = _settings.SeasonModes;
         Dictionary<string, SeasonLayout> layouts = _settings.SeasonLayouts;

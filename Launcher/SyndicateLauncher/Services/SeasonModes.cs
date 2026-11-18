@@ -36,7 +36,7 @@ public static class SeasonModes
         new GameModeInfo("teamrumble", "Team Rumble", "Two big teams with respawns race to the elimination target (Season 7 and up). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("foodfight", "Food Fight", "Durrr Burger against Pizza Pit, split by a barrier (Seasons 7-9). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("floorislava", "Floor Is Lava", "The lava rises through the match: build up to stay alive (Seasons 8-9). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("arenaduos", "Arena Duos", "Duos Arena with Hype and divisions (Season 8 and up). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("arenaduos", "Arena Duos", "Duos Arena with Hype and divisions (Seasons 8, 9 and Chapter 2 Season 2). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("playground", "Playground", "Season 4's Playground: respawns, extra materials and no storm damage.", false),
         new GameModeInfo("creative", "Creative",
             "Experimental, Season 7 and up. The lobby button and playlist open and you go to the Creative hub, but player islands don't load yet (you may land in empty sea), and Season X's match server still starts a normal match.", true),
@@ -60,7 +60,7 @@ public static class SeasonModes
             ["teamrumble"] = ("Playlist_Respawn_24", new[] { "7.40", "8.50", "9.40", "10.31", "10.40", "11.00", "12.50" }),
             ["foodfight"] = ("Playlist_Barrier_16", new[] { "7.40", "8.50", "9.40" }),
             ["floorislava"] = ("Playlist_Respawn_20_Lava", new[] { "8.50", "9.40" }),
-            ["arenaduos"] = ("Playlist_ShowdownAlt_Duos", new[] { "8.50", "9.40", "10.31", "10.40", "11.00", "12.50" }),
+            ["arenaduos"] = ("Playlist_ShowdownAlt_Duos", new[] { "8.50", "9.40", "12.50" }),
         };
     private static readonly HashSet<string> ArenaBuilds = new(StringComparer.OrdinalIgnoreCase) { "8.50", "9.40", "10.31", "10.40", "11.00", "12.50" };
     private static readonly HashSet<string> CreativeBuilds = new(StringComparer.OrdinalIgnoreCase) { "7.40", "8.50", "9.40", "10.31", "10.40", "11.00", "12.50" };
@@ -151,7 +151,9 @@ public static class SeasonModes
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase),
         Locked = (layout.Locked ?? new()).Where(m => !string.IsNullOrEmpty(m)).ToList(),
         Rows = (layout.Rows ?? new()).Where(pair => !string.IsNullOrEmpty(pair.Key) && pair.Value > 0)
-            .ToDictionary(pair => pair.Key, pair => Math.Min(pair.Value, 2), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(pair => pair.Key, pair => Math.Min(pair.Value, 2), StringComparer.OrdinalIgnoreCase),
+        Images = (layout.Images ?? new()).Where(pair => !string.IsNullOrEmpty(pair.Key) && !string.IsNullOrEmpty(pair.Value))
+            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)
     };
 
     private static Dictionary<string, SeasonLayout> LayoutSnapshot() =>

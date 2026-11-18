@@ -17,7 +17,8 @@ test('Creative is offered from Season 7, Arena from Season 8, 50v50 and Playgrou
   // Limited-time modes only on the seasons that had them.
   assert.ok(availableModes('6.20').includes('50v50'));
   assert.equal(availableModes('7.40').includes('50v50'), false);
-  assert.ok(availableModes('10.40').includes('arenaduos'));
+  assert.ok(availableModes('9.40').includes('arenaduos'));
+  assert.equal(availableModes('10.40').includes('arenaduos'), false);
   assert.equal(availableModes('5.10').includes('gauntlet'), false);
   for (const b of ['1.7.2', '1.8.2', '1.11', '3.5.1', '10.40']) assert.ok(availableModes(b).includes('stw'), b);
   assert.deepEqual(availableModes('19.00'), []);

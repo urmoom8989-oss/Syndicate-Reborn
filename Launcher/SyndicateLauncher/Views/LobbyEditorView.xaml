@@ -26,6 +26,7 @@
                 <Grid ClipToBounds="True">
                     <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource IconFont}" FontSize="46" Foreground="#40FFFFFF"
                                HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,10" />
+                    <Border CornerRadius="3"><Border.Background><ImageBrush ImageSource="{Binding TileImage}" Stretch="UniformToFill" /></Border.Background></Border>
                     <Border VerticalAlignment="Bottom" Height="54" CornerRadius="0,0,3,3">
                         <Border.Background>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -91,6 +92,7 @@
                 <Grid>
                     <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource IconFont}" FontSize="26" Foreground="#40FFFFFF"
                                HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,6" />
+                    <Border CornerRadius="3"><Border.Background><ImageBrush ImageSource="{Binding TileImage}" Stretch="UniformToFill" /></Border.Background></Border>
                     <TextBlock Text="{Binding TileName}" FontFamily="{StaticResource BurbankFont}" FontSize="18" Foreground="White"
                                VerticalAlignment="Bottom" Margin="8,0,8,4" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="OFF" FontSize="8.5" FontWeight="Bold" Foreground="White" Margin="8,6,0,0" />
@@ -245,6 +247,7 @@
                                         <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource IconFont}" FontSize="56"
                                                    Foreground="#40FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                    Margin="0,0,16,8" />
+                                        <Border CornerRadius="8"><Border.Background><ImageBrush ImageSource="{Binding TileImage}" Stretch="UniformToFill" /></Border.Background></Border>
                                         <StackPanel VerticalAlignment="Bottom" Margin="12,0,12,8">
                                             <TextBlock Text="{Binding SubName}" FontSize="9" FontWeight="Bold" Foreground="#CCFFFFFF" />
                                             <TextBlock Text="{Binding TileName}" FontFamily="{StaticResource BurbankFont}" FontSize="36"
@@ -277,6 +280,14 @@
                                 <ComboBox Style="{StaticResource DarkComboBox}" Height="32" FontSize="12"
                                           ItemsSource="{Binding BadgeOptions}" SelectedIndex="{Binding BadgeIndex, Mode=TwoWay}"
                                           AutomationProperties.Name="Badge" />
+
+                                <TextBlock Text="PICTURE" Style="{StaticResource Caption}" />
+                                <UniformGrid Columns="2">
+                                    <Button Style="{StaticResource GhostButton}" Height="32" Margin="0,0,4,0" Content="Choose picture"
+                                            Command="{Binding DataContext.ChooseLobbyImageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                    <Button Style="{StaticResource GhostButton}" Height="32" Margin="4,0,0,0" Content="Remove picture"
+                                            Command="{Binding DataContext.ClearLobbyImageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                </UniformGrid>
 
                                 <TextBlock Text="PLACE IN ITS ROW" Style="{StaticResource Caption}" />
                                 <UniformGrid Columns="2">

@@ -144,4 +144,6 @@ public sealed class SeasonLayout
     public List<string> Locked { get; set; } = new();
     /// <summary>Mode id to the selector row it sits in (0 top row, 1 and 2 the limited-time rows). Missing: top row.</summary>
     public Dictionary<string, int> Rows { get; set; } = new();
+    /// <summary>Mode id to a picture the player chose for its tile (a copy in %APPDATA%\SyndicateLauncher\ModeImages).</summary>
+    public Dictionary<string, string> Images { get; set; } = new();
 }
