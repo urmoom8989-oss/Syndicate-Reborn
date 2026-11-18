@@ -56,6 +56,18 @@ public static class SeasonModes
         return list;
     }
 
+    /// <summary>
+    /// Rows in the build's mode selector (FrontEndPlaylistData CategoryIndex). Season X's screen has three: standard
+    /// modes and two limited-time rows. Other seasons get two; Season 4 lists PlaylistOverrides, which have no rows.
+    /// Must match lobbyRowCount in the backend's Utils/syndicateSeasonModes.js.
+    /// </summary>
+    public static int RowCount(string build)
+    {
+        if (!KnownBuilds.Contains(build ?? "")) return 0;
+        if (build == "4.5") return 1;
+        return build is "10.31" or "10.40" ? 3 : 2;
+    }
+
     /// <summary>The lobby each build had before modes could be chosen.</summary>
     public static IReadOnlyList<string> Defaults(string build)
     {
@@ -107,7 +119,9 @@ public static class SeasonModes
         Default = layout.Default ?? "",
         Badges = (layout.Badges ?? new()).Where(pair => pair.Value is "new" or "limited")
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase),
-        Locked = (layout.Locked ?? new()).Where(m => !string.IsNullOrEmpty(m)).ToList()
+        Locked = (layout.Locked ?? new()).Where(m => !string.IsNullOrEmpty(m)).ToList(),
+        Rows = (layout.Rows ?? new()).Where(pair => !string.IsNullOrEmpty(pair.Key) && pair.Value > 0)
+            .ToDictionary(pair => pair.Key, pair => Math.Min(pair.Value, 2), StringComparer.OrdinalIgnoreCase)
     };
 
     private static Dictionary<string, SeasonLayout> LayoutSnapshot() =>

@@ -132,7 +132,7 @@ public sealed class AppSettings
 
 /// <summary>
 /// The lobby mode selector for one build (Services/SeasonModes.cs, backend Utils/syndicateSeasonModes.js lobbyTiles):
-/// tile order, the tile picked when Fortnite opens, NEW / LIMITED TIME badges, and modes shown greyed out.
+/// rows, tile order, the tile picked when Fortnite opens, NEW / LIMITED TIME badges, and modes shown greyed out.
 /// </summary>
 public sealed class SeasonLayout
 {
@@ -142,4 +142,6 @@ public sealed class SeasonLayout
     public Dictionary<string, string> Badges { get; set; } = new();
     /// <summary>Modes that are off but still shown in the selector, locked.</summary>
     public List<string> Locked { get; set; } = new();
+    /// <summary>Mode id to the selector row it sits in (0 top row, 1 and 2 the limited-time rows). Missing: top row.</summary>
+    public Dictionary<string, int> Rows { get; set; } = new();
 }

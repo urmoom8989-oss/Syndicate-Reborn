@@ -82,11 +82,22 @@ export function stwEnabledFor(userAgent,options={}){
  const build=clientBuild(userAgent||'');
  return !!build&&enabledModes(build,options).includes('stw');
 }
+// Rows in Fortnite's mode selector (FrontEndPlaylistData CategoryIndex). Season X's screen
+// (AthenaMatchmakingOptionsDisplay_v2) has three: StandardGameModeBox (0), LTMGameModeBox (1) and LTMGameModeBox2 (2).
+// Other seasons get the first two; Season 4 lists PlaylistOverrides, which have no rows. Keep this in step with the
+// launcher (Services/SeasonModes.cs RowCount).
+const THREE_ROWS = new Set(['10.31','10.40']);
+export function lobbyRowCount(build){
+ if(!KNOWN.has(build))return 0;
+ if(build==='4.5')return 1;
+ return THREE_ROWS.has(build)?3:2;
+}
 // Launcher Settings > Game modes > lobby layout: the tiles Fortnite's mode selector shows, in order. Modes that are on,
 // plus modes the player chose to show locked (greyed out, can't be picked). One tile is the default; a tile can carry
 // a NEW or LIMITED TIME badge. Save the World is a lobby button, not a tile. With no saved layout this is exactly
 // the old list: the modes that are on, in lobby order, the first one default, no badges.
-// layout[build] = {order:[modes], default:mode, badges:{mode:'new'|'limited'}, locked:[modes]}.
+// Each tile sits in a row (rows:{mode:0|1|2}, top row when missing); the lobby lists the rows top to bottom.
+// layout[build] = {order:[modes], default:mode, badges:{mode:'new'|'limited'}, locked:[modes], rows:{mode:row}}.
 export function lobbyTiles(build,{builds=saved(),layouts=savedLayouts(),env=process.env}={}){
  const lower=v=>String(v||'').toLowerCase();
  const available=availableModes(build).filter(m=>MODES[m].playlist);
@@ -95,12 +106,16 @@ export function lobbyTiles(build,{builds=saved(),layouts=savedLayouts(),env=proc
  const locked=new Set((Array.isArray(layout.locked)?layout.locked:[]).map(lower).filter(m=>available.includes(m)&&!enabled.includes(m)));
  const order=Array.isArray(layout.order)?layout.order.map(lower):[];
  const rank=m=>{const i=order.indexOf(m);return i<0?order.length+ORDER.indexOf(m):i;};
- const shown=available.filter(m=>enabled.includes(m)||locked.has(m)).sort((a,b)=>rank(a)-rank(b));
+ const maxRow=Math.max(1,lobbyRowCount(build))-1;
+ const rows={};
+ if(layout.rows&&typeof layout.rows==='object')for(const [m,r] of Object.entries(layout.rows))rows[lower(m)]=r;
+ const rowOf=m=>{const r=Number(rows[m]);return Number.isInteger(r)&&r>0?Math.min(r,maxRow):0;};
+ const shown=available.filter(m=>enabled.includes(m)||locked.has(m)).sort((a,b)=>rowOf(a)-rowOf(b)||rank(a)-rank(b));
  const wanted=lower(layout.default);
  const fallback=shown.find(m=>enabled.includes(m));
  const def=enabled.includes(wanted)?wanted:fallback;
  const badges=layout.badges&&typeof layout.badges==='object'?layout.badges:{};
- return shown.map(m=>({mode:m,playlist:MODES[m].playlist,enabled:enabled.includes(m),isDefault:m===def,
+ return shown.map(m=>({mode:m,playlist:MODES[m].playlist,enabled:enabled.includes(m),isDefault:m===def,row:rowOf(m),
   badge:['new','limited'].includes(lower(badges[m]))?lower(badges[m]):''}));
 }
 export const modeName = mode => ({solo:'Solo',duo:'Duos',squad:'Squads',arenasolo:'Arena',['50v50']:'50v50',playground:'Playground',creative:'Creative',stw:'Save the World'})[mode]||mode;

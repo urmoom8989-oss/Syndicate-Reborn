@@ -1,0 +1,324 @@
+<UserControl x:Class="SyndicateLauncher.Views.LobbyEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Focusable="True" KeyDown="OnKeyDown" IsVisibleChanged="OnIsVisibleChanged">
+    <!-- Lobby editor (MainViewModel.GameModes.cs): the season's mode selector laid out like Fortnite's own screen.
+         Rows of tiles (standard modes on top, limited-time rows below); drag tiles to reorder them, move them between
+         rows or into "Not in the lobby". Click a tile to change it in the panel on the right.
+         DataContext is MainViewModel. -->
+    <UserControl.Resources>
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="9.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+            <Setter Property="Margin" Value="0,14,0,5" />
+        </Style>
+
+        <!-- One tile in a row. Its size comes from the row (LobbyRow.TileWidth / TileHeight). -->
+        <DataTemplate x:Key="LobbyTile">
+            <Border x:Name="Tile" Margin="0,0,10,10" CornerRadius="6" BorderThickness="3" BorderBrush="Transparent"
+                    Width="{Binding DataContext.TileWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                    Height="{Binding DataContext.TileHeight, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                    Background="{Binding ArtBrush}" Cursor="Hand" Focusable="True"
+                    PreviewMouseLeftButtonDown="Tile_PreviewMouseLeftButtonDown" PreviewMouseMove="Tile_PreviewMouseMove"
+                    PreviewMouseLeftButtonUp="Tile_PreviewMouseLeftButtonUp" KeyDown="Tile_KeyDown"
+                    ToolTip="Drag to move it. Click to change it." AutomationProperties.Name="{Binding Name}">
+                <Grid ClipToBounds="True">
+                    <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource IconFont}" FontSize="46" Foreground="#40FFFFFF"
+                               HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,10" />
+                    <Border VerticalAlignment="Bottom" Height="54" CornerRadius="0,0,3,3">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Offset="0" Color="#00000000" />
+                                <GradientStop Offset="1" Color="#B0000000" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+                    <StackPanel VerticalAlignment="Bottom" Margin="10,0,10,6">
+                        <TextBlock Text="{Binding SubName}" FontSize="8.5" FontWeight="Bold" Foreground="#CCFFFFFF" />
+                        <TextBlock Text="{Binding TileName}" FontFamily="{StaticResource BurbankFont}" FontSize="25" Foreground="White"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <Border x:Name="Badge" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="7,7,0,0" Padding="6,1,6,0"
+                            CornerRadius="2" Background="#F4EC17"
+                            Visibility="{Binding HasBadge, Converter={StaticResource BoolToVis}}">
+                        <TextBlock x:Name="BadgeText" Text="{Binding BadgeText}" FontFamily="{StaticResource BurbankFont}" FontSize="13"
+                                   Foreground="#13233D" />
+                    </Border>
+                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,7,7,0" Padding="5,2" CornerRadius="3"
+                            Background="#B3000000" Visibility="{Binding IsDefault, Converter={StaticResource BoolToVis}}"
+                            ToolTip="The lobby opens on this mode">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE735;" FontFamily="{StaticResource IconFont}" FontSize="9" Foreground="#F4EC17"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="DEFAULT" FontSize="8.5" FontWeight="Bold" Foreground="White" Margin="4,0,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <Grid Background="#A6000000" Visibility="{Binding IsLocked, Converter={StaticResource BoolToVis}}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="White"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="LOCKED" FontSize="9" FontWeight="Bold" Foreground="White" Margin="0,4,0,0"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsLimitedBadge}" Value="True">
+                    <Setter TargetName="Badge" Property="Background" Value="#FF4FD8" />
+                    <Setter TargetName="BadgeText" Property="Foreground" Value="White" />
+                </DataTrigger>
+                <Trigger SourceName="Tile" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Tile" Property="BorderBrush" Value="#99FFFFFF" />
+                </Trigger>
+                <Trigger SourceName="Tile" Property="IsKeyboardFocused" Value="True">
+                    <Setter TargetName="Tile" Property="BorderBrush" Value="#99FFFFFF" />
+                </Trigger>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter TargetName="Tile" Property="BorderBrush" Value="{DynamicResource PlayFillBrush}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- A mode that is off, in the "Not in the lobby" tray. -->
+        <DataTemplate x:Key="OffTile">
+            <Border x:Name="Tile" Margin="0,0,10,10" Width="132" Height="70" CornerRadius="6" BorderThickness="3"
+                    BorderBrush="Transparent" Background="{Binding ArtBrush}" Opacity="0.55" Cursor="Hand" Focusable="True"
+                    PreviewMouseLeftButtonDown="Tile_PreviewMouseLeftButtonDown" PreviewMouseMove="Tile_PreviewMouseMove"
+                    PreviewMouseLeftButtonUp="Tile_PreviewMouseLeftButtonUp" KeyDown="Tile_KeyDown"
+                    ToolTip="Drag it into a row to put it back in the lobby." AutomationProperties.Name="{Binding Name}">
+                <Grid>
+                    <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource IconFont}" FontSize="26" Foreground="#40FFFFFF"
+                               HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,6" />
+                    <TextBlock Text="{Binding TileName}" FontFamily="{StaticResource BurbankFont}" FontSize="18" Foreground="White"
+                               VerticalAlignment="Bottom" Margin="8,0,8,4" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="OFF" FontSize="8.5" FontWeight="Bold" Foreground="White" Margin="8,6,0,0" />
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <Trigger SourceName="Tile" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Tile" Property="Opacity" Value="0.85" />
+                </Trigger>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter TargetName="Tile" Property="BorderBrush" Value="{DynamicResource PlayFillBrush}" />
+                    <Setter TargetName="Tile" Property="Opacity" Value="0.9" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <ItemsPanelTemplate x:Key="TileWrap">
+            <WrapPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+    </UserControl.Resources>
+
+    <Border CornerRadius="16" Background="{Binding SelectedGameModeSeason.Season.CoverBrush}">
+        <Border CornerRadius="16">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Offset="0" Color="{DynamicResource TintColor_F20A0A0A}" />
+                    <GradientStop Offset="0.6" Color="{DynamicResource TintColor_CC0C0C0C}" />
+                    <GradientStop Offset="1" Color="{DynamicResource TintColor_990D0D0D}" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid Margin="28,18,28,16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
+                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                        <TextBlock Text="LOBBY EDITOR" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                        <TextBlock Text="SELECT MODE" FontFamily="{StaticResource BurbankFont}" FontSize="42"
+                                   Foreground="{DynamicResource TextBrush}" Margin="0,-2,0,-6" />
+                    </StackPanel>
+                    <ComboBox DockPanel.Dock="Left" Style="{StaticResource DarkComboBox}" Width="250" Height="34" FontSize="12"
+                              Margin="24,0,0,0" VerticalAlignment="Center"
+                              ItemsSource="{Binding GameModeSeasons}" SelectedItem="{Binding SelectedGameModeSeason, Mode=TwoWay}"
+                              AutomationProperties.Name="Season" />
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Width="34" Height="34" Margin="12,0,0,0"
+                            VerticalAlignment="Center" Command="{Binding CloseLobbyEditorCommand}" ToolTip="Close (Esc)"
+                            AutomationProperties.Name="Close the lobby editor">
+                        <TextBlock Text="&#xE711;" FontFamily="{StaticResource IconFont}" FontSize="12" />
+                    </Button>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Height="34" Padding="14,0" Margin="12,0,0,0"
+                            VerticalAlignment="Center" Content="Usual layout" FontWeight="Bold"
+                            Command="{Binding ResetGameModesCommand}"
+                            ToolTip="Put this season back to the modes and layout it normally has" />
+                    <CheckBox DockPanel.Dock="Right" Style="{StaticResource SwitchToggle}" VerticalAlignment="Center"
+                              IsChecked="{Binding LobbyStwOn, Mode=TwoWay}"
+                              Visibility="{Binding HasLobbyStw, Converter={StaticResource BoolToVis}}"
+                              AutomationProperties.Name="Save the World button">
+                        <TextBlock Text="Save the World button (experimental)" FontSize="11.5" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextBrush}" />
+                    </CheckBox>
+                </DockPanel>
+
+                <!-- Selector rows and the selected mode -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="300" />
+                    </Grid.ColumnDefinitions>
+
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  Margin="0,0,18,0" Focusable="False">
+                        <StackPanel>
+                            <ItemsControl ItemsSource="{Binding LobbyRows}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,0,12">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                <TextBlock Text="{Binding Title}" FontFamily="{StaticResource BurbankFont}" FontSize="20"
+                                                           Foreground="{DynamicResource TextBrush}" />
+                                                <TextBlock Text="{Binding Hint}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}"
+                                                           VerticalAlignment="Center" Margin="10,2,0,0" />
+                                            </StackPanel>
+                                            <Border CornerRadius="10" Padding="10,10,0,0" BorderThickness="1"
+                                                    BorderBrush="{DynamicResource HairlineBrush}" Background="{DynamicResource Tint_8C141414}"
+                                                    AllowDrop="True" DragOver="Row_DragOver" DragLeave="Drop_DragLeave" Drop="Row_Drop">
+                                                <Grid MinHeight="{Binding TileHeight}" Margin="0,0,0,10">
+                                                    <ItemsControl ItemsSource="{Binding Tiles}" ItemTemplate="{StaticResource LobbyTile}"
+                                                                  ItemsPanel="{StaticResource TileWrap}" Focusable="False" Margin="0,0,0,-10" />
+                                                    <TextBlock Text="Drag a mode here" FontSize="11" Foreground="{DynamicResource DimTextBrush}"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Tiles.Count}" Value="0">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Grid>
+                                            </Border>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,6">
+                                <TextBlock Text="NOT IN THE LOBBY" FontFamily="{StaticResource BurbankFont}" FontSize="17"
+                                           Foreground="{DynamicResource MutedTextBrush}" />
+                                <TextBlock Text="Drop a mode here to take it out" FontSize="10" Foreground="{DynamicResource DimTextBrush}"
+                                           VerticalAlignment="Center" Margin="10,2,0,0" />
+                            </StackPanel>
+                            <Border CornerRadius="10" Padding="10,10,0,0" BorderThickness="1" BorderBrush="{DynamicResource HairlineBrush}"
+                                    Background="{DynamicResource Tint_8C141414}"
+                                    AllowDrop="True" DragOver="Tray_DragOver" DragLeave="Drop_DragLeave" Drop="Tray_Drop">
+                                <Grid MinHeight="70" Margin="0,0,0,10">
+                                    <ItemsControl ItemsSource="{Binding LobbyOffTiles}" ItemTemplate="{StaticResource OffTile}"
+                                                  ItemsPanel="{StaticResource TileWrap}" Focusable="False" Margin="0,0,0,-10" />
+                                    <TextBlock Text="Every mode this season has is in the lobby" FontSize="11"
+                                               Foreground="{DynamicResource DimTextBrush}" HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" IsHitTestVisible="False">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding LobbyOffTiles.Count}" Value="0">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- The selected mode, like the game's panel on the right -->
+                    <Border Grid.Column="1" CornerRadius="12" Padding="16" Background="{DynamicResource Tint_D9161616}"
+                            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
+                            Visibility="{Binding HasSelectedLobbyTile, Converter={StaticResource BoolToVis}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                            <StackPanel DataContext="{Binding SelectedLobbyTile}">
+                                <Border Height="130" CornerRadius="8" Background="{Binding ArtBrush}">
+                                    <Grid>
+                                        <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource IconFont}" FontSize="56"
+                                                   Foreground="#40FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                   Margin="0,0,16,8" />
+                                        <StackPanel VerticalAlignment="Bottom" Margin="12,0,12,8">
+                                            <TextBlock Text="{Binding SubName}" FontSize="9" FontWeight="Bold" Foreground="#CCFFFFFF" />
+                                            <TextBlock Text="{Binding TileName}" FontFamily="{StaticResource BurbankFont}" FontSize="36"
+                                                       Foreground="White" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                                <Border Margin="0,10,0,0" Padding="6,1" CornerRadius="3" HorizontalAlignment="Left"
+                                        Background="#33FFB020" BorderBrush="#FFB020" BorderThickness="1"
+                                        Visibility="{Binding Experimental, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="EXPERIMENTAL" FontSize="8.5" FontWeight="Bold" Foreground="#FFC857" />
+                                </Border>
+                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                                           TextWrapping="Wrap" Margin="0,8,0,0" />
+
+                                <TextBlock Text="IN THE LOBBY" Style="{StaticResource Caption}" />
+                                <ComboBox Style="{StaticResource DarkComboBox}" Height="32" FontSize="12"
+                                          ItemsSource="{Binding StateOptions}" SelectedIndex="{Binding StateIndex, Mode=TwoWay}"
+                                          AutomationProperties.Name="In the lobby" />
+
+                                <StackPanel Visibility="{Binding DataContext.HasLobbyRowChoice, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="ROW" Style="{StaticResource Caption}" />
+                                    <ComboBox Style="{StaticResource DarkComboBox}" Height="32" FontSize="12"
+                                              ItemsSource="{Binding DataContext.LobbyRowNames, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              SelectedIndex="{Binding DataContext.SelectedLobbyTileRow, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              AutomationProperties.Name="Row" />
+                                </StackPanel>
+
+                                <TextBlock Text="BADGE" Style="{StaticResource Caption}" />
+                                <ComboBox Style="{StaticResource DarkComboBox}" Height="32" FontSize="12"
+                                          ItemsSource="{Binding BadgeOptions}" SelectedIndex="{Binding BadgeIndex, Mode=TwoWay}"
+                                          AutomationProperties.Name="Badge" />
+
+                                <TextBlock Text="PLACE IN ITS ROW" Style="{StaticResource Caption}" />
+                                <UniformGrid Columns="2">
+                                    <Button Style="{StaticResource GhostButton}" Height="32" Margin="0,0,4,0"
+                                            Command="{Binding DataContext.MoveLobbyTileLeftCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            AutomationProperties.Name="Move left">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE76B;" FontFamily="{StaticResource IconFont}" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBlock Text="Move left" Margin="6,0,0,0" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource GhostButton}" Height="32" Margin="4,0,0,0"
+                                            Command="{Binding DataContext.MoveLobbyTileRightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            AutomationProperties.Name="Move right">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Move right" />
+                                            <TextBlock Text="&#xE76C;" FontFamily="{StaticResource IconFont}" FontSize="10" VerticalAlignment="Center"
+                                                       Margin="6,0,0,0" />
+                                        </StackPanel>
+                                    </Button>
+                                </UniformGrid>
+                                <Button Style="{StaticResource GhostButton}" Height="34" Margin="0,10,0,0"
+                                        Command="{Binding DataContext.MakeLobbyDefaultCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        ToolTip="The mode Fortnite's lobby opens on">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE735;" FontFamily="{StaticResource IconFont}" FontSize="11" Foreground="#F4EC17"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="Open the lobby on this mode" Margin="6,0,0,0" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+
+                <!-- Footer -->
+                <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                    <TextBlock Text="{Binding LobbyRowsNote}" FontSize="10.5" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding GameModesNote}" FontSize="10.5" Foreground="{DynamicResource AccentBrush}" TextWrapping="Wrap"
+                               Margin="0,3,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

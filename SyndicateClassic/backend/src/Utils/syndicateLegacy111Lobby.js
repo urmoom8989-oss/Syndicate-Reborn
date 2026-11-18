@@ -11,10 +11,11 @@ function openButtons(text,modes){
  if(modes.includes('creative'))text=dropText(text,CREATIVE_BUTTON);
  return text;
 }
-// One FrontEndPlaylistData line per lobby tile (order, default, locked, badges: syndicateSeasonModes.js lobbyTiles).
+// One FrontEndPlaylistData line per lobby tile (row, order, default, locked, badges: syndicateSeasonModes.js lobbyTiles).
+// CategoryIndex is the row of the mode selector the tile sits in.
 const badgeFields=t=>(t.badge==='new'?'bDisplayAsNew=true,':'')+(t.badge==='limited'?'bDisplayAsLimitedTime=true,':'');
-const tileLine=(t,i)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,${badgeFields(t)}${t.mode==='creative'?'bIsTournament=false,':''}CategoryIndex=0,DisplayPriority=${i}))`;
-const legacyTileLine=(t,i)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,bDisplayAsNew=${t.badge==='new'},CategoryIndex=0,bDisplayAsLimitedTime=${t.badge==='limited'},DisplayPriority=${i}))`;
+const tileLine=(t,i)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,${badgeFields(t)}${t.mode==='creative'?'bIsTournament=false,':''}CategoryIndex=${t.row||0},DisplayPriority=${i}))`;
+const legacyTileLine=(t,i)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,bDisplayAsNew=${t.badge==='new'},CategoryIndex=${t.row||0},bDisplayAsLimitedTime=${t.badge==='limited'},DisplayPriority=${i}))`;
 // Keep Cert 3807424 on its own native lobby/playlist configuration.
 export function cloudTextForClient(file,userAgent,hotfixes){
  const key=file.toLowerCase().replace(/\.ini$/,'');

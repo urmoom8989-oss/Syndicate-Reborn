@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { availableModes, defaultModes, enabledModes, modeEnabled, stwEnabledFor, lobbyTiles } from '../syndicateSeasonModes.js';
+import { availableModes, defaultModes, enabledModes, modeEnabled, stwEnabledFor, lobbyTiles, lobbyRowCount } from '../syndicateSeasonModes.js';
 
 const env = { TILTED_DEVKIT: '' };
 
@@ -84,4 +84,23 @@ test('lobby layout: order, default, locked tiles and badges', () => {
   // A default that is off or locked falls back to the first tile that is on.
   const fallback = lobbyTiles('10.40', { builds, layouts: { '10.40': { order: ['squad', 'duo'], default: 'squad', locked: ['squad'] } }, env });
   assert.equal(fallback.find(t => t.isDefault).mode, 'duo');
+});
+
+test('lobby rows: tiles sit in the mode selector rows, top row first', () => {
+  const builds = { '10.40': ['solo', 'duo', 'arenasolo', 'creative'], '7.40': ['solo', 'duo', 'creative'] };
+  assert.equal(lobbyRowCount('10.40'), 3);
+  assert.equal(lobbyRowCount('7.40'), 2);
+  assert.equal(lobbyRowCount('4.5'), 1);
+  assert.equal(lobbyRowCount('99.99'), 0);
+  // No rows saved: every tile in the top row, as before.
+  assert.deepEqual(lobbyTiles('10.40', { builds, layouts: {}, env }).map(t => t.row), [0, 0, 0, 0]);
+  const layouts = {
+    '10.40': { order: ['creative', 'solo', 'arenasolo', 'duo'], rows: { Creative: 1, arenasolo: 2, duo: '1', solo: -3 } },
+    '7.40': { order: ['creative', 'solo', 'duo'], rows: { creative: 2, duo: 1 } },
+  };
+  // Sorted by row, then by the saved order; the default falls back to the first tile of the top row.
+  assert.deepEqual(lobbyTiles('10.40', { builds, layouts, env }).map(t => [t.mode, t.row, t.isDefault]),
+    [['solo', 0, true], ['creative', 1, false], ['duo', 1, false], ['arenasolo', 2, false]]);
+  // A season with two rows puts a third-row tile in its last row.
+  assert.deepEqual(lobbyTiles('7.40', { builds, layouts, env }).map(t => [t.mode, t.row]), [['solo', 0], ['creative', 1], ['duo', 1]]);
 });
