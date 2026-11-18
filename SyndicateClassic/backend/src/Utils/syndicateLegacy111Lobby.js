@@ -3,6 +3,9 @@ import {MODES,availableModes,enabledModes,lobbyTiles} from './syndicateSeasonMod
 // Launcher Settings > Game modes (syndicateSeasonModes.js): the lobby lists the modes turned on for the build.
 // The Save the World and Creative buttons stay relabelled UNAVAILABLE unless they are turned on.
 const PLAYLIST={solo:'Playlist_DefaultSolo',duo:'Playlist_DefaultDuo',squad:'Playlist_DefaultSquad','50v50':'Playlist_50v50',playground:'Playlist_Playground'};
+// Seasons 8 to X show Arena as the Arena event's own tile (division and Hype, Routes/events.js), so the plain Arena
+// playlist tile is left out there or Arena shows twice.
+const ARENA_EVENT_TILE=new Set(['8.50','9.40','10.31','10.40']);
 const STW_BUTTON='F1B39B41400513DFDBBC39BE41A2AA7A',CREATIVE_BUTTON='85CC70F746437FF312DF528927FD1F52';
 // One +TextReplacements entry by key. "Save The\r\nWorld" spans two lines, so match up to the closing ))).
 const dropText=(text,key)=>text.replace(new RegExp('^\\+TextReplacements=[^\\n]*Key="'+key+'"[\\s\\S]*?\\)\\)\\)[ \\t]*\\r?$\\n?','m'),'');
@@ -44,7 +47,7 @@ export function cloudTextForClient(file,userAgent,hotfixes){
   return g+`
 [/Script/FortniteGame.FortGameInstance]
 !FrontEndPlaylistData=ClearArray
-`+lobbyTiles(build).map((t,i)=>tileLine(t,i)+'\n').join('');}
+`+lobbyTiles(build).filter(t=>!(t.mode==='arenasolo'&&ARENA_EVENT_TILE.has(build))).map((t,i)=>tileLine(t,i)+'\n').join('');}
  // Season 4 exposes PlaylistOverrides (PlaylistName, bEnabled, RegionsDisabled).
  // FrontEndPlaylistData is a legacy field and is absent in the 4.5 client. Solo, Duos and Squads are on in the client
  // already; 50v50 and Playground are switched on here, and anything turned off in the launcher is switched off.

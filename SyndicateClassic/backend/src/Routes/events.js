@@ -1,4 +1,6 @@
 import express from "express";
+import {clientBuild} from "../Utils/syndicateBuild.js";
+import {enabledModes} from "../Utils/syndicateSeasonModes.js";
 import fs from "fs";
 import axios from "axios";
 import { MongoClient } from "mongodb";
@@ -140,10 +142,13 @@ app.get("/api/v1/events/Fortnite/download/:accountid", verifyToken, async (req, 
             .replace(/syndicatevalueseason/g, currentSeason)
             .replace(/syndicatevalueaccountid/g, accountid)
             .replace(/syndicatevaluedivision/g, playerDivision);
-        // Every Arena season lists each public event as its own lobby tile (the two-outfit Arena tile), next to the
-        // plain Arena playlist tile, so Arena showed twice. Arena is played from the plain playlist tile, so the event
+        // Seasons 8 to X: the public Arena event is the lobby's Arena tile and carries the division and Hype, so the
+        // plain Arena playlist tile is left out of the lobby there (syndicateLegacy111Lobby.js). Chapter 2 (11.00, 12.50)
+        // plays Arena from the plain tile, and Arena turned off in the launcher hides the event tile too: the event
         // stays (the in-match counter / TournamentId needs it) but unlisted.
-        modifiedData = modifiedData.replace(/"visibility": "public"/g, '"visibility": "unlisted"');
+        { const ua = String(req.headers['user-agent'] || ''), build = clientBuild(ua);
+          if (build === '11.00' || build === '12.50' || !enabledModes(build).includes('arenasolo'))
+              modifiedData = modifiedData.replace(/"visibility": "public"/g, '"visibility": "unlisted"'); }
 
         let events;
         try {
