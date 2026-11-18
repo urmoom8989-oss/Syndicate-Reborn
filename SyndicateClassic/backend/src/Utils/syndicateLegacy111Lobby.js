@@ -1,5 +1,5 @@
 import {clientBuild} from './syndicateBuild.js';
-import {enabledModes,lobbyTiles} from './syndicateSeasonModes.js';
+import {MODES,availableModes,enabledModes,lobbyTiles} from './syndicateSeasonModes.js';
 // Launcher Settings > Game modes (syndicateSeasonModes.js): the lobby lists the modes turned on for the build.
 // The Save the World and Creative buttons stay relabelled UNAVAILABLE unless they are turned on.
 const PLAYLIST={solo:'Playlist_DefaultSolo',duo:'Playlist_DefaultDuo',squad:'Playlist_DefaultSquad','50v50':'Playlist_50v50',playground:'Playlist_Playground'};
@@ -50,9 +50,9 @@ export function cloudTextForClient(file,userAgent,hotfixes){
  // already; 50v50 and Playground are switched on here, and anything turned off in the launcher is switched off.
  if(build==='4.5' && key==='defaultgame'){
   const modes=enabledModes(build),lines=[];
-  for(const m of ['solo','duo','squad','50v50','playground']){
+  for(const m of availableModes(build).filter(m=>MODES[m]?.playlist)){
    const on=modes.includes(m);
-   if(!on||m==='50v50'||m==='playground')lines.push(`+PlaylistOverrides=(PlaylistName=${PLAYLIST[m]},bEnabled=${on})`);
+   if(!on||!['solo','duo','squad'].includes(m))lines.push(`+PlaylistOverrides=(PlaylistName=${MODES[m].playlist},bEnabled=${on})`);
   }
   return openButtons(normal,modes).replace('[/Script/FortniteGame.FortGameInstance]','[/Script/FortniteGame.FortGameInstance]\n'+lines.join('\n'));
  }

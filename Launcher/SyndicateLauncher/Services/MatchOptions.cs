@@ -16,7 +16,14 @@ public sealed record MatchOptions(int MinimumBots, int MaximumBots, bool EditOnR
     public IReadOnlyList<string> CustomBotNames { get; init; } = Array.Empty<string>();
     /// <summary>The playlist the match host started with. It follows the playlist picked in Fortnite's lobby.</summary>
     public string Playlist { get; init; } = "solo";
-    public static readonly string[] Playlists = { "solo", "duo", "squad", "50v50", "playground", "arenasolo", "creative", "intro" };
+    public static readonly string[] Playlists = { "solo", "duo", "squad", "50v50", "playground", "arenasolo", "creative", "intro",
+        "gauntlet", "solidgold", "blitz", "snipers", "close", "highexplosives", "disco", "teamrumble", "foodfight", "floorislava", "arenaduos" };
+    /// <summary>What the match server (TILTED_PLAYLIST) gets: limited-time modes by their playlist name, the rest by id.</summary>
+    public static string ServerPlaylist(string? mode)
+    {
+        string id = NormalizePlaylist(mode);
+        return id != "50v50" && SeasonModes.LimitedTime.TryGetValue(id, out var ltm) ? ltm.Playlist : id;
+    }
     public static string NormalizePlaylist(string? mode) => (mode ?? "").Trim().ToLowerInvariant() switch
     {
         "duos" => "duo",
@@ -34,6 +41,17 @@ public sealed record MatchOptions(int MinimumBots, int MaximumBots, bool EditOnR
         "arenasolo" => "Arena Solo",
         "creative" => "Creative",
         "intro" => "Chapter 2 entrance",
+        "gauntlet" => "Infinity Gauntlet",
+        "solidgold" => "Solid Gold",
+        "blitz" => "Blitz",
+        "snipers" => "Sniper Shootout",
+        "close" => "Close Encounters",
+        "highexplosives" => "High Explosives",
+        "disco" => "Disco Domination",
+        "teamrumble" => "Team Rumble",
+        "foodfight" => "Food Fight",
+        "floorislava" => "Floor Is Lava",
+        "arenaduos" => "Arena Duos",
         _ => "Solo"
     };
     public static MatchOptions Parse(string? text, bool editOnRelease)

@@ -294,6 +294,15 @@ void Main()
         FConfiguration::Playlist=L"/Game/Athena/Playlists/Playlist_Intro_Apollo_NewPlayer.Playlist_Intro_Apollo_NewPlayer";
     else if (_wcsicmp(selectedPlaylist,L"arenatrios")==0 || _wcsicmp(selectedPlaylist,L"Playlist_ShowdownAlt_Trios")==0) // Arena Trios removed (2026-10-30): falls back to Arena Solo
         FConfiguration::Playlist=L"/Game/Athena/Playlists/Showdown/Playlist_ShowdownAlt_Solo.Playlist_ShowdownAlt_Solo";
+    // Limited-time modes (launcher Settings > Game modes) arrive by playlist name. The folder is a guess:
+    // SyndicatePlaylist() finds the playlist by name in the asset registry when it lives elsewhere.
+    else if (_wcsnicmp(selectedPlaylist,L"Playlist_",9)==0 && wcslen(selectedPlaylist)<200 &&
+             wcsspn(selectedPlaylist,L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")==wcslen(selectedPlaylist))
+    {
+        static wchar_t limitedTime[512];
+        swprintf_s(limitedTime,L"/Game/Athena/Playlists/%ls.%ls",selectedPlaylist,selectedPlaylist);
+        FConfiguration::Playlist=limitedTime;
+    }
     wchar_t managedLog[32768]{};
     const bool managed = GetEnvironmentVariableW(L"TILTED_SERVER_LOG", managedLog, 32768) != 0;
     if (managed)

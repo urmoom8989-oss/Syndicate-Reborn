@@ -15,9 +15,36 @@ const file = fileURLToPath(new URL('../../../Runtime/Server/season-modes.json', 
 // Lobby order. playlist is the FrontEndPlaylistData / PlaylistOverrides name; Save the World has no BR playlist.
 export const MODES = Object.freeze({
  solo:{playlist:'Playlist_DefaultSolo'}, duo:{playlist:'Playlist_DefaultDuo'}, squad:{playlist:'Playlist_DefaultSquad'},
- arenasolo:{playlist:'Playlist_ShowdownAlt_Solo'}, '50v50':{playlist:'Playlist_50v50'}, playground:{playlist:'Playlist_Playground'},
- creative:{playlist:'Playlist_PlaygroundV2'}, stw:{playlist:null},
+ arenasolo:{playlist:'Playlist_ShowdownAlt_Solo'},
+ '50v50':{playlist:'Playlist_50v50'},
+ gauntlet:{playlist:'Playlist_Ashton_Sm'},
+ solidgold:{playlist:'Playlist_SolidGold_Solo'},
+ blitz:{playlist:'Playlist_Blitz_Solo'},
+ snipers:{playlist:'Playlist_Snipers_Solo'},
+ close:{playlist:'Playlist_Close_Solo'},
+ highexplosives:{playlist:'Playlist_HighExplosives_Squads'},
+ disco:{playlist:'Playlist_Disco_32'},
+ teamrumble:{playlist:'Playlist_Respawn_24'},
+ foodfight:{playlist:'Playlist_Barrier_16'},
+ floorislava:{playlist:'Playlist_Respawn_20_Lava'},
+ arenaduos:{playlist:'Playlist_ShowdownAlt_Duos'},
+ playground:{playlist:'Playlist_Playground'}, creative:{playlist:'Playlist_PlaygroundV2'}, stw:{playlist:null},
 });
+// Limited-time modes and the builds that have them (launcher Services/SeasonModes.cs keeps the same list).
+const LTM = {
+ '50v50':['1.11', '2.5', '3.5.1', '4.5', '5.10', '6.20'],
+ gauntlet:['4.5'],
+ solidgold:['3.5.1', '4.5', '5.10', '6.20'],
+ blitz:['3.5.1', '4.5', '5.10', '6.20'],
+ snipers:['3.5.1', '4.5', '5.10', '6.20', '7.40', '8.50', '9.40'],
+ close:['4.5', '5.10', '6.20', '7.40', '8.50', '9.40'],
+ highexplosives:['5.10', '6.20', '7.40', '8.50', '9.40'],
+ disco:['6.20', '7.40'],
+ teamrumble:['7.40', '8.50', '9.40', '10.31', '10.40', '11.00', '12.50'],
+ foodfight:['7.40', '8.50', '9.40'],
+ floorislava:['8.50', '9.40'],
+ arenaduos:['8.50', '9.40', '10.31', '10.40', '11.00', '12.50'],
+};
 const ORDER = Object.keys(MODES);
 const BR = ['solo','duo','squad'];
 const ARENA = new Set(['8.50','9.40','10.31','10.40','11.00','12.50']);
@@ -29,7 +56,8 @@ export function availableModes(build){
  if(!KNOWN.has(build))return [];
  const list=[...BR];
  if(ARENA.has(build))list.push('arenasolo');
- if(build==='4.5')list.push('50v50','playground');
+ for(const [mode,builds] of Object.entries(LTM))if(builds.includes(build))list.push(mode);
+ if(build==='4.5')list.push('playground');
  if(CREATIVE.has(build))list.push('creative');
  list.push('stw');
  return list;

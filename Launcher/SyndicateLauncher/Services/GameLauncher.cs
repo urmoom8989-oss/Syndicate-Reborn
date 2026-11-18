@@ -1068,7 +1068,7 @@ public static class GameLauncher
         string hostUserDir = Path.Combine(syndicateRuntime, "UserData");
         Directory.CreateDirectory(hostUserDir);
         hostInfo.ArgumentList.Add("-UserDir=" + hostUserDir);
-        hostInfo.Environment["TILTED_PLAYLIST"] = MatchOptions.NormalizePlaylist(options.Playlist);
+        hostInfo.Environment["TILTED_PLAYLIST"] = MatchOptions.ServerPlaylist(options.Playlist);
         hostInfo.Environment["TILTED_BOT_COUNT"] = Math.Clamp(options.MaximumBots, 0, 99).ToString();
         hostInfo.Environment["TILTED_BOT_SKILL"] = SyndicateSkillName(options.Difficulty);
         hostInfo.Environment["TILTED_SERVER_READY_FILE"] = readyFile;
