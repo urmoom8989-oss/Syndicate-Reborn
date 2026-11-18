@@ -1,5 +1,6 @@
 import express from "express";
 import {clientBuild} from "../Utils/syndicateBuild.js";
+import {modeImage,modeImages} from "../Utils/syndicateSeasonModes.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -55,7 +56,26 @@ app.get("/content/api/pages/*", async (req, res) => {
     Contentpages.playlistinformation.playlist_info.playlists.push({playlist_name:'Playlist_50v50',hidden:false,special_border:'None',_type:'FortPlaylistInfo'});
     Contentpages.playlistinformation.playlist_info.playlists.push({playlist_name:'Playlist_Playground',hidden:false,special_border:'None',_type:'FortPlaylistInfo'});
   }
-  res.json(Contentpages);
+  // Pictures chosen in the launcher's lobby editor go on the game's mode tiles, served by this backend.
+  const pictures=modeImages(clientBuild(req.headers['user-agent']));
+  if(!pictures.length)return res.json(Contentpages);
+  const info=Contentpages.playlistinformation?.playlist_info;
+  const host=String(req.socket.localAddress||'127.0.0.1').replace(/^::ffff:/,'');
+  const base='http://'+(host.includes(':')?'['+host+']':host)+':'+req.socket.localPort;
+  const build=clientBuild(req.headers['user-agent']);
+  const named=new Set(pictures.map(p=>p.playlist.toLowerCase()));
+  const playlists=(info?.playlists||[]).filter(p=>!named.has(String(p.playlist_name).toLowerCase()));
+  for(const p of pictures){
+    let stamp=0;try{stamp=Math.round(fs.statSync(p.file).mtimeMs);}catch{}
+    playlists.push({image:`${base}/syndicate/modeimage/${encodeURIComponent(build)}/${p.mode}?v=${stamp}`,playlist_name:p.playlist,hidden:false,special_border:'None',_type:'FortPlaylistInfo'});
+  }
+  res.json({...Contentpages,playlistinformation:{...Contentpages.playlistinformation,playlist_info:{...info,playlists}}});
+});
+
+app.get("/syndicate/modeimage/:build/:mode", (req, res) => {
+  const file=modeImage(req.params.build,req.params.mode);
+  if(!file)return res.status(404).end();
+  res.sendFile(file);
 });
 
 export default app;

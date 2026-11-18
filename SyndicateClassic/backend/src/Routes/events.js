@@ -140,12 +140,10 @@ app.get("/api/v1/events/Fortnite/download/:accountid", verifyToken, async (req, 
             .replace(/syndicatevalueseason/g, currentSeason)
             .replace(/syndicatevalueaccountid/g, accountid)
             .replace(/syndicatevaluedivision/g, playerDivision);
-        // Chapter 2 (11.00 and 12.50) lists every public event as its own lobby tile (the two-outfit Arena tile).
-        // Arena is played from the plain playlist tile there, so the event stays (the in-match counter / TournamentId
-        // needs it) but unlisted, same as 11.00.
-        { const ua = String(req.headers['user-agent'] || '');
-          if (ua.includes('Release-11.00') || ua.includes('Release-12.50'))
-              modifiedData = modifiedData.replace(/"visibility": "public"/g, '"visibility": "unlisted"'); }
+        // Every Arena season lists each public event as its own lobby tile (the two-outfit Arena tile), next to the
+        // plain Arena playlist tile, so Arena showed twice. Arena is played from the plain playlist tile, so the event
+        // stays (the in-match counter / TournamentId needs it) but unlisted.
+        modifiedData = modifiedData.replace(/"visibility": "public"/g, '"visibility": "unlisted"');
 
         let events;
         try {

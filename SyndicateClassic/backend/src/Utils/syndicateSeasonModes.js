@@ -8,6 +8,7 @@
 // Creative (Seasons 7 and up) and Save the World are experimental: turning them on opens the lobby button and sends
 // the player to the match server, but the match servers do not run them properly yet (see the launcher's notes).
 import fs from 'node:fs';
+import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {clientBuild} from './syndicateBuild.js';
 
@@ -89,6 +90,20 @@ function load(){
 }
 const saved=()=>load().builds;
 const savedLayouts=()=>load().layout;
+// Pictures the player put on lobby tiles (launcher lobby editor). Only files in the launcher's own picture folder
+// (%APPDATA%\SyndicateLauncher\ModeImages) are served, whatever season-modes.json says.
+const IMAGE_DIR=process.env.APPDATA?path.join(process.env.APPDATA,'SyndicateLauncher','ModeImages'):'';
+export function modeImage(build,mode,{layouts=savedLayouts()}={}){
+ const images=layouts?.[build]?.images;
+ if(!IMAGE_DIR||!images||typeof images!=='object')return null;
+ const key=Object.keys(images).find(k=>k.toLowerCase()===String(mode).toLowerCase());
+ const file=key&&typeof images[key]==='string'?path.resolve(images[key]):'';
+ if(!file||!file.toLowerCase().startsWith(IMAGE_DIR.toLowerCase()+path.sep))return null;
+ try{return fs.statSync(file).isFile()?file:null;}catch{return null;}
+}
+export function modeImages(build,opts){
+ return Object.keys(MODES).filter(m=>MODES[m].playlist).map(m=>({mode:m,playlist:MODES[m].playlist,file:modeImage(build,m,opts)})).filter(x=>x.file);
+}
 // The modes turned on for a build, in lobby order. At least one Battle Royale mode always stays on.
 export function enabledModes(build,{builds=saved(),env=process.env}={}){
  const available=availableModes(build);if(!available.length)return [];
