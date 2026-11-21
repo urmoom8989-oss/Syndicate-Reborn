@@ -3211,6 +3211,8 @@ static void SyndicateSeasonXGotham()
 
 bool bIsLargeTeamGame = false;
 static int SyndicateLargeTeamSquadSize = 4;
+// Team Rumble (large teams with respawns): you respawn with your items and lose only your materials.
+bool SyndicateRespawnKeepsItems = false;
 // Large-team modes (Team Rumble, 50v50): a side is many squads. TeamIndex is the side; SquadId is the squad that
 // shows in the sidebar, with names and revives. Every MaxSquadSize players who join a side get their own SquadId,
 // unique across the match (side * 25 + squad), or the whole side showed as one squad.
@@ -3355,6 +3357,7 @@ void SetupPlaylist(AFortGameMode* GameMode, AFortGameStateAthena* GameState)
 
         bIsLargeTeamGame = Playlist->bIsLargeTeamGame;
         if (Playlist->MaxSquadSize > 0) SyndicateLargeTeamSquadSize = Playlist->MaxSquadSize;
+        SyndicateRespawnKeepsItems = Playlist->bIsLargeTeamGame && Playlist->RespawnType > 0;
 
         //if (GameState->HasAdditionalPlaylistLevelsStreamed())
         //    GameState->OnRep_AdditionalPlaylistLevelsStreamed();

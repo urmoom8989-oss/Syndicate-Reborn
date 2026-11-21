@@ -22,6 +22,11 @@ extern uint64_t ApplyCharacterCustomization;
 #include "../../Erbium/Public/GUI.h"
 #include "../Public/FortAthenaCreativePortal.h"
 uint8 SyndicateSquadIdFor(uint8 TeamIndex, uint8 TeamSquadId); // FortGameMode.cpp: squads inside large teams
+extern bool SyndicateRespawnKeepsItems; // FortGameMode.cpp: Team Rumble keeps items on death, drops materials
+static bool SyndicateDropsOnDeath(UFortItemDefinition* Def)
+{
+    return Def && Def->CanBeDropped() && (!SyndicateRespawnKeepsItems || Def->IsA<UFortResourceItemDefinition>());
+}
 
 
 static void (*HumanBotReviveStartedOG)(UObject*,FFrame&)=nullptr;
@@ -829,7 +834,7 @@ void AFortPlayerControllerAthena::ServerAcknowledgePossession(UObject* Context, 
 		{
 			auto& Entry = PlayerController->WorldInventory->Inventory.ReplicatedEntries.Get(i, FFortItemEntry::Size());
 
-			if (Entry.ItemDefinition->CanBeDropped())
+			if (SyndicateDropsOnDeath(Entry.ItemDefinition))
 			{
 				//NewPlayer->WorldInventory->Inventorxy.ReplicatedEntries.Remove(i, FFortItemEntry::Size());
 				//i--;
@@ -2005,7 +2010,7 @@ void AFortPlayerControllerAthena::ClientOnPawnDied(AFortPlayerControllerAthena* 
 		{
 			auto& entry = PlayerController->WorldInventory->Inventory.ReplicatedEntries.Get(i, FFortItemEntry::Size());
 
-			if (entry.ItemDefinition->CanBeDropped())
+			if (SyndicateDropsOnDeath(entry.ItemDefinition))
 				AFortInventory::SpawnPickup(PlayerController->Pawn->K2_GetActorLocation(), entry, EFortPickupSourceTypeFlag::GetPlayer(), EFortPickupSpawnSource::GetPlayerElimination(), PlayerController->MyFortPawn);
 		}
 	}
