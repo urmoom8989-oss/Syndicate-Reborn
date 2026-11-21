@@ -21,6 +21,7 @@ extern uint64_t ApplyCharacterCustomization;
 #include "../Public/BattleRoyaleGamePhaseLogic.h"
 #include "../../Erbium/Public/GUI.h"
 #include "../Public/FortAthenaCreativePortal.h"
+uint8 SyndicateSquadIdFor(uint8 TeamIndex, uint8 TeamSquadId); // FortGameMode.cpp: squads inside large teams
 
 
 static void (*HumanBotReviveStartedOG)(UObject*,FFrame&)=nullptr;
@@ -2908,7 +2909,7 @@ void AFortPlayerControllerAthena::ServerCheat(UObject* Context, FFrame& Stack)
 
 				PlayerState->TeamIndex = AFortGameMode::PickTeam(GameMode, 0, PlayerController);
 				if (PlayerState->HasSquadId())
-					PlayerState->SquadId = PlayerState->TeamIndex - (VersionInfo.FortniteVersion<9.f||VersionInfo.EngineVersion<4.23?0:VersionInfo.EngineVersion<4.24?3:2);
+					PlayerState->SquadId = SyndicateSquadIdFor(PlayerState->TeamIndex, PlayerState->TeamIndex - (VersionInfo.FortniteVersion<9.f||VersionInfo.EngineVersion<4.23?0:VersionInfo.EngineVersion<4.24?3:2));
 				if (PlayerState->HasbIsABot())
 					PlayerState->bIsABot = true;
 

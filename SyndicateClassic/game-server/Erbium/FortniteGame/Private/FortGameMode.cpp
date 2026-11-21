@@ -3210,6 +3210,18 @@ static void SyndicateSeasonXGotham()
 }
 
 bool bIsLargeTeamGame = false;
+static int SyndicateLargeTeamSquadSize = 4;
+// Large-team modes (Team Rumble, 50v50): a side is many squads. TeamIndex is the side; SquadId is the squad that
+// shows in the sidebar, with names and revives. Every MaxSquadSize players who join a side get their own SquadId,
+// unique across the match (side * 25 + squad), or the whole side showed as one squad.
+uint8 SyndicateSquadIdFor(uint8 TeamIndex, uint8 TeamSquadId)
+{
+    if (!bIsLargeTeamGame) return TeamSquadId;
+    static int Joined[256] = {};
+    const int Size = SyndicateLargeTeamSquadSize > 0 ? SyndicateLargeTeamSquadSize : 4;
+    const int Squad = Joined[TeamIndex]++ / Size;
+    return (uint8)((TeamSquadId * 25 + (Squad < 25 ? Squad : 24)) & 0xFF);
+}
 
 // Finds the selected playlist; falls back to its short name (e.g. Playlist_ShowdownAlt_Solo)
 // when the asset folder in the configured path does not match this build.
@@ -3342,6 +3354,7 @@ void SetupPlaylist(AFortGameMode* GameMode, AFortGameStateAthena* GameState)
             GameMode->bEnableDBNO = Playlist->MaxSquadSize > 1;
 
         bIsLargeTeamGame = Playlist->bIsLargeTeamGame;
+        if (Playlist->MaxSquadSize > 0) SyndicateLargeTeamSquadSize = Playlist->MaxSquadSize;
 
         //if (GameState->HasAdditionalPlaylistLevelsStreamed())
         //    GameState->OnRep_AdditionalPlaylistLevelsStreamed();
@@ -5274,7 +5287,7 @@ void AFortGameMode::HandleStartingNewPlayer_(UObject* Context, FFrame& Stack)
 
     if (PlayerState->HasSquadId())
     {
-        PlayerState->SquadId = PlayerState->TeamIndex - (VersionInfo.FortniteVersion<9.f||VersionInfo.EngineVersion<4.23?0:VersionInfo.EngineVersion<4.24?3:2); // engines before 4.23 (Seasons 1-8): squad id == team index (as Project Reboot does for engines before 4.23); 0 made the squad HUD empty
+        PlayerState->SquadId = SyndicateSquadIdFor(PlayerState->TeamIndex, PlayerState->TeamIndex - (VersionInfo.FortniteVersion<9.f||VersionInfo.EngineVersion<4.23?0:VersionInfo.EngineVersion<4.24?3:2)); // engines before 4.23 (Seasons 1-8): squad id == team index (as Project Reboot does for engines before 4.23); 0 made the squad HUD empty
         PlayerState->OnRep_SquadId();
     }
 
