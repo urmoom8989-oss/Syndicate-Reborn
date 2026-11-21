@@ -387,10 +387,14 @@ export function progressSeasonChallenges(profile, event, season, dailyOnly = fal
     if (dailyOnly && !item.attributes?.tilted_daily) continue;
     const definition = data.questMap.get(item.templateId.slice(6).toLowerCase()); if (!definition) continue;
     const q = item.attributes;
+    const why = [];
     const deltas = (definition.objectives || []).map(o => {
       let delta = 0;
       if (o.stats?.length) {
-        for (const s of stats) if (o.stats.some(row => statMatches(row, s, season))) delta += s.n;
+        for (const s of stats) if (o.stats.some(row => statMatches(row, s, season))) {
+          delta += s.n;
+          why.push(o.name + ' +' + s.n + ' stat ' + s.t + ' st=[' + s.st.slice(0, 12).join(',') + '] tt=[' + s.tt.slice(0, 6).join(',') + ']');
+        }
         // Match results (play / outlive / top N / win) are not native stat events on these servers.
         if (event.kind === 'match' || event.kind === 'win') delta += matchConditionDelta(o, event, matchKills) ?? fallbackDelta(o.name, event);
         delta += weaponKillDelta(o, event);
@@ -399,6 +403,10 @@ export function progressSeasonChallenges(profile, event, season, dailyOnly = fal
       return delta;
     });
     if (!deltas.some(d => d > 0)) continue;
+    // Which event moved which challenge (Season 3 challenge reports: challenges completing on their own,
+    // location challenges counting anywhere).
+    console.log('[Syndicate challenge] S' + season + ' ' + event.kind + ' ' + definition.id + ': ' +
+      (why.length ? why.join(' | ') : deltas.map((d, i) => d ? definition.objectives[i].name + ' +' + d : '').filter(Boolean).join(', ')));
     if (definition.singleMatch && q.tilted_match !== match && !questComplete(definition, q))
       for (const o of definition.objectives) q['completion_' + o.name] = 0;
     // "Once per match" counts one step per match for small counters (visit/land in different
