@@ -64,6 +64,16 @@ app.get("/content/api/pages/*", async (req, res) => {
   // Pictures chosen in the launcher's lobby editor go on the game's mode tiles, served by this backend.
   const pictures=modeImages(clientBuild(req.headers['user-agent']));
   if(!pictures.length)return res.json(Contentpages);
+  const tileHost=String(req.socket.localAddress||'127.0.0.1').replace(/^::ffff:/,'');
+  const tileBase='http://'+(tileHost.includes(':')?'['+tileHost+']':tileHost)+':'+req.socket.localPort;
+  // Seasons 8 to X show Arena as the event's tile, which takes its picture from the tournament display info.
+  const arenaInfo={arenasolo:'LG_ARENA_SOLO',arenaduos:'LG_ARENA_DUOS'};
+  const tournamentList=(Contentpages.tournamentinformation?.tournament_info?.tournaments||[]).map(t=>{
+    const p=pictures.find(p=>arenaInfo[p.mode]===t.tournament_display_id);
+    if(!p)return t;
+    let stamp=0;try{stamp=Math.round(fs.statSync(p.file).mtimeMs);}catch{}
+    return {...t,playlist_tile_image:`${tileBase}/syndicate/modeimage/${encodeURIComponent(clientBuild(req.headers['user-agent']))}/${p.mode}?v=${stamp}`};
+  });
   const info=Contentpages.playlistinformation?.playlist_info;
   const host=String(req.socket.localAddress||'127.0.0.1').replace(/^::ffff:/,'');
   const base='http://'+(host.includes(':')?'['+host+']':host)+':'+req.socket.localPort;
@@ -74,7 +84,7 @@ app.get("/content/api/pages/*", async (req, res) => {
     let stamp=0;try{stamp=Math.round(fs.statSync(p.file).mtimeMs);}catch{}
     playlists.push({image:`${base}/syndicate/modeimage/${encodeURIComponent(tileBuild)}/${p.mode}?v=${stamp}`,playlist_name:p.playlist,hidden:false,special_border:'None',_type:'FortPlaylistInfo'});
   }
-  res.json({...Contentpages,playlistinformation:{...Contentpages.playlistinformation,playlist_info:{...info,playlists}}});
+  res.json({...Contentpages,tournamentinformation:{...Contentpages.tournamentinformation,tournament_info:{...Contentpages.tournamentinformation?.tournament_info,tournaments:tournamentList}},playlistinformation:{...Contentpages.playlistinformation,playlist_info:{...info,playlists}}});
 });
 
 app.get("/syndicate/modeimage/:build/:mode", (req, res) => {

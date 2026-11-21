@@ -44,7 +44,7 @@ const LTM = {
  teamrumble:['7.40', '8.50', '9.40', '10.31', '10.40', '11.00', '12.50'],
  foodfight:['7.40', '8.50', '9.40'],
  floorislava:['8.50', '9.40'],
- arenaduos:['8.50', '9.40', '12.50'],
+ arenaduos:['8.50', '9.40', '10.31', '10.40', '12.50'],
 };
 const ORDER = Object.keys(MODES);
 const BR = ['solo','duo','squad'];

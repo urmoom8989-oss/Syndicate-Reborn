@@ -1115,7 +1115,7 @@ public sealed partial class MainViewModel : ViewModelBase
         try
         {
             var botNames = RosterForMatch();
-            var matchOptions=MatchOptions.Parse(_settings.BotCountRange,_settings.EditOnRelease) with {Difficulty=_currentPreset.Copy(), HighTickFullLobbies=_settings.HighTickFullLobbies, LateGame=_settings.LateGame && IsLateGameBuild(Build), FastQueue=_settings.FastQueue, BotNames=botNames, CustomBotNames=SavedCustomBotNames.ToList(), Playlist=SyndicateLauncher.Studio.StudioSession.ReadMode()};
+            var matchOptions=MatchOptions.Parse(_settings.BotCountRange,_settings.EditOnRelease) with {Difficulty=_currentPreset.Copy(), HighTickFullLobbies=_settings.HighTickFullLobbies, LateGame=_settings.LateGame && IsLateGameBuild(Build), FastQueue=_settings.FastQueue && Build?.Version is not ("10.40" or "10.31"), BotNames=botNames, CustomBotNames=SavedCustomBotNames.ToList(), Playlist=SyndicateLauncher.Studio.StudioSession.ReadMode()};
             // Late game is always 60 players: 59 bots and you, whatever the bot count setting says.
             if(matchOptions.LateGame)matchOptions=matchOptions with {MinimumBots=59, MaximumBots=59};
             _launching = true;
