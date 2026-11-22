@@ -71,6 +71,7 @@ public sealed partial class MainViewModel
             ShopResults.Clear();
             LoadCustomShop();
             _ = LoadShopItemsAsync();
+            OnCosmeticsSeasonChanged();
         }
     }
 

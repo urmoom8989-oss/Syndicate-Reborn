@@ -118,7 +118,7 @@ export function resetView(doc,season){
 }
 
 // Unequips removed keys/template ids everywhere the locker keeps a choice (same places removeUnlockAll clears).
-function unequip(athena,gone){
+export function unequip(athena,gone){
  const a=athena.stats.attributes;
  for(const field of ['favorite_character','favorite_backpack','favorite_pickaxe','favorite_glider','favorite_skydivecontrail','favorite_loadingscreen','favorite_musicpack'])
   if(gone(a[field]))a[field]='';

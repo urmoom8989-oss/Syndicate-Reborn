@@ -3620,37 +3620,16 @@
                                                                 <ColumnDefinition Width="16" />
                                                                 <ColumnDefinition Width="*" />
                                                             </Grid.ColumnDefinitions>
-                                                            <!-- Everything the season's shop can sell -->
                                                             <StackPanel Grid.Column="0">
-                                                                <DockPanel>
-                                                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Height="30" Padding="10,0" Margin="6,0,0,0"
-                                                                            Content="Load items" FontSize="11" Command="{Binding LoadShopItemsCommand}"
-                                                                            ToolTip="Load the items this season's shop can sell" />
-                                                                    <TextBox Style="{StaticResource GlassTextBox}" Height="30" FontSize="12" Text="{Binding ShopSearch, UpdateSourceTrigger=PropertyChanged}"
-                                                                             AutomationProperties.Name="Search items" ToolTip="Search by name or type (Outfit, Pickaxe, Glider, Emote...)" />
-                                                                </DockPanel>
-                                                                <Border Margin="0,6,0,0" CornerRadius="8" Background="#0AFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1" Height="260">
-                                                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                                                        <ItemsControl ItemsSource="{Binding ShopResults}" Focusable="False" Margin="6">
-                                                                            <ItemsControl.ItemTemplate>
-                                                                                <DataTemplate>
-                                                                                    <DockPanel Margin="2,3">
-                                                                                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Height="26" Padding="8,0" Margin="4,0,0,0" FontSize="10.5"
-                                                                                                Content="Daily" CommandParameter="{Binding}"
-                                                                                                Command="{Binding DataContext.AddShopDailyCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
-                                                                                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Height="26" Padding="8,0" Margin="4,0,0,0" FontSize="10.5"
-                                                                                                Content="Featured" CommandParameter="{Binding}"
-                                                                                                Command="{Binding DataContext.AddShopFeaturedCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
-                                                                                        <StackPanel VerticalAlignment="Center">
-                                                                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis" />
-                                                                                            <TextBlock Text="{Binding Details}" FontSize="10.5" Foreground="#8A8A8A" />
-                                                                                        </StackPanel>
-                                                                                    </DockPanel>
-                                                                                </DataTemplate>
-                                                                            </ItemsControl.ItemTemplate>
-                                                                        </ItemsControl>
-                                                                    </ScrollViewer>
-                                                                </Border>
+                                                                <Button Style="{StaticResource GhostButton}" Height="40" Padding="16,0" HorizontalAlignment="Left" FontWeight="Bold"
+                                                                        Command="{Binding OpenShopEditorCommand}" AutomationProperties.Name="Open the item shop editor">
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock Text="&#xE719;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
+                                                                        <TextBlock Text="Open item shop editor" Margin="8,0,0,0" />
+                                                                    </StackPanel>
+                                                                </Button>
+                                                                <TextBlock Text="Every cosmetic in the season's game files, with pictures (online). Click an item to put it in your shop."
+                                                                           FontSize="11" Foreground="#8A8A8A" TextWrapping="Wrap" Margin="0,8,0,0" />
                                                             </StackPanel>
                                                             <!-- Your picks -->
                                                             <StackPanel Grid.Column="2">
@@ -3687,6 +3666,20 @@
                                                             </StackPanel>
                                                         </Grid>
                                                         <TextBlock Text="{Binding ShopNote}" FontSize="11" Foreground="{DynamicResource AccentBrush}" TextWrapping="Wrap" Margin="0,8,0,0" />
+
+                                                        <Border Height="1" Background="#14FFFFFF" Margin="0,22,0,18" />
+
+                                                        <!-- Locker (Views/CosmeticsView.xaml, MainViewModel.Cosmetics.cs, backend Utils/syndicateLockerEditor.js) -->
+                                                        <TextBlock Text="Locker" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" />
+                                                        <TextBlock Text="Choose which cosmetics are in the selected player's locker: everything in the season's game files, with pictures (online). Outfits you add come with all their styles."
+                                                                   FontSize="11.5" Foreground="#8A8A8A" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                        <Button Style="{StaticResource GhostButton}" Height="40" Padding="16,0" HorizontalAlignment="Left" FontWeight="Bold"
+                                                                Command="{Binding OpenLockerEditorCommand}" AutomationProperties.Name="Open the locker editor">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="&#xE8F1;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
+                                                                <TextBlock Text="Open locker editor" Margin="8,0,0,0" />
+                                                            </StackPanel>
+                                                        </Button>
                                                     </StackPanel>
                                                 </Border>
 
@@ -5432,6 +5425,13 @@
 
                 </Grid>
             </Border>
+        </Grid>
+
+        <!-- ======================= COSMETICS EDITOR ======================= -->
+        <!-- Settings > Item shop / Locker (Views/CosmeticsView.xaml, MainViewModel.Cosmetics.cs). -->
+        <Grid Panel.ZIndex="111" Background="#C406070C"
+              Visibility="{Binding IsCosmeticsOpen, Converter={StaticResource BoolToVis}}">
+            <views:CosmeticsView Margin="22" />
         </Grid>
 
         <!-- ======================= LOBBY EDITOR ======================= -->

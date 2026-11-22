@@ -1,5 +1,6 @@
 import {catalog as secretShopCatalog,purchase as buySecretShop} from '../Utils/syndicateSecretShop.js';
 import {shopItemsFor} from '../Utils/syndicateShopRotation.js';
+import {catalogFor,ownedIds,editLocker} from '../Utils/syndicateLockerEditor.js';
 import {openTravel,finishTravel,travelActive} from '../Utils/syndicateTravel.js';
 import {view as passView,purchase as buyPass} from '../Utils/syndicatePassShop.js';
 import express from 'express';
@@ -275,11 +276,47 @@ for(const operation of ['catalog','purchase'])router.post(`/launcher/passes/${op
  }catch(error){res.status(400).json({message:error.message});}
 }));
 // Syndicate: the launcher's hidden item shop (every item-shop cosmetic, unlocked by a key code in the launcher).
-// Syndicate: Settings > Item shop picker: everything a season's item shop can sell.
+// Syndicate: the launcher's cosmetics editor (Item shop picker and Locker). catalog lists every cosmetic the season's
+// game files have (with shop prices) and what the player owns; locker/set adds or removes items under the account lock.
+const defaultPrice=id=>/^AthenaCharacter:/i.test(id)?1200:/^AthenaDance:/i.test(id)?500:/^AthenaGlider:|^AthenaPickaxe:/i.test(id)?800:300;
 router.post('/launcher/itemshop/items',safe(async(req,res)=>{
   const season=Number(req.body?.season);
   if(!Number.isInteger(season)||season<1||season>20)return res.status(400).json({message:'Choose a season.'});
-  res.json({items:shopItemsFor(season)});
+  const pool=shopItemsFor(season),priced=new Map(pool.map(i=>[i.id.toLowerCase(),i.price]));
+  const items=catalogFor(season).map(i=>({...i,price:priced.get(i.id.toLowerCase())??defaultPrice(i.id)}));
+  const listed=new Set(items.map(i=>i.id.toLowerCase()));
+  for(const i of pool)if(!listed.has(i.id.toLowerCase()))items.push(i);
+  res.json({items});
+}));
+router.post('/launcher/locker/state',safe(async(req,res)=>{
+  const accountId=achAccount(req);if(!accountId)return res.status(401).json({message:'Please sign in again.'});
+  const doc=await Profile.collection.findOne({accountId});if(!doc?.profiles?.athena)return res.status(404).json({message:'Profile missing.'});
+  res.json({owned:ownedIds(doc.profiles.athena),unlockAll:!!doc.profiles.athena.stats?.attributes?.tilted_unlock_all});
+}));
+router.post('/launcher/locker/set',safe(async(req,res)=>{
+  const accountId=achAccount(req);if(!accountId)return res.status(401).json({message:'Please sign in again.'});
+  if(travelActive(accountId))return res.status(409).json({message:'Quit your friend\'s match to sync your account first.'});
+  const season=Number(req.body?.season);
+  if(!Number.isInteger(season)||season<1||season>20)return res.status(400).json({message:'Choose a season.'});
+  const list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string'&&x.length<=160).slice(0,5000):[];
+  const add=list(req.body?.add),remove=list(req.body?.remove);
+  const result=await achAccountLock(accountId,async()=>{
+   for(let attempt=0;attempt<6;attempt++){
+    const doc=await Profile.collection.findOne({accountId});
+    if(!doc?.profiles?.athena)throw new Error('Profile missing.');
+    const a=doc.profiles.athena,base=a.rvn;
+    if(a.stats?.attributes?.tilted_unlock_all)throw new Error('This player has Unlock all on. Switch the player to Progression to choose items.');
+    const outcome=editLocker(a,season,{add,remove});
+    if(!outcome.added&&!outcome.removed)return {...outcome,owned:ownedIds(a)};
+    a.rvn=(a.rvn||0)+1;a.commandRevision=(a.commandRevision||0)+1;a.updated=new Date().toISOString();
+    const saved=await Profile.collection.updateOne({accountId,'profiles.athena.rvn':base},{$set:{'profiles.athena':a}});
+    if(!saved.matchedCount)continue;
+    if(global.giftReceived)global.giftReceived[accountId]=true;
+    return {...outcome,owned:ownedIds(a)};
+   }
+   throw new Error('Your locker is busy. Try again in a moment.');
+  });
+  res.json(result);
 }));
 for(const operation of ['catalog','purchase'])router.post(`/launcher/shop/${operation}`,safe(async(req,res)=>{
  const entry=sessions.get((req.headers.authorization||'').replace(/^Bearer /,''));
