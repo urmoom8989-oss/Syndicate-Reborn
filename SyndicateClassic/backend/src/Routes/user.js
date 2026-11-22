@@ -53,8 +53,9 @@ app.get(
       username_lower: req.params.displayName.toLowerCase(),
       banned: false,
     }).lean();
-    // Season 4: an unknown name becomes a party bot friend with that name.
-    if (!user && partyBotsEnabled(req.headers["user-agent"])) {
+    // Every season: an unknown name becomes a bot friend with that name (bots play offline too). On Season 4
+    // the bot can also join your party.
+    if (!user) {
       const bot = ensureBot(req.params.displayName);
       if (bot) return res.json({ id: bot.accountId, displayName: bot.displayName, externalAuths: {} });
     }

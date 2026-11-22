@@ -21,7 +21,7 @@ export function tierCatalog(season=4){
 export function purchaseTiers(profiles,quantity){
  const a=profiles.athena,c=profiles.common_core,s=a.stats.attributes;
  if(!Number.isSafeInteger(quantity)||quantity<1||quantity>99)throw Error('Choose a whole number of tiers from 1 to 99.');
- s.book_purchased=true; // Matches grant the pass on every season here; a fresh season has not had one yet.
+ if(!s.book_purchased)throw Error('Buy the Battle Pass first: tiers can only be bought with the Battle Pass.');
  const season=activeSeason(a),cap=season===2?70:100;
  const level=Math.max(1,Number(s.book_level)||1);
  if(level+quantity>cap)throw Error('This purchase exceeds tier '+cap+'.');

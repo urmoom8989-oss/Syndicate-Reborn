@@ -54,7 +54,8 @@ export function applyProgression(profiles, amount=0) {
   }
   const {SeasonXP:xp,SeasonBP:stars,SeasonFreeBattlepass:free,SeasonPaidBattlepass:paid}=tables[season];
   const key='tilted_season'+season+'_';
-  s.season_num=season;s.book_purchased=true;
+  // The Battle Pass is bought in the game (V-Bucks), never handed out by playing.
+  s.season_num=season;
   s.level=Math.max(season===2?0:1,Math.min(100,Number(s.level)||0));
   s.xp=Math.max(0,Number(s.xp)||0)+amount;
   s.book_level=Math.max(1,Math.min(cap,Number(s.book_level)||1));

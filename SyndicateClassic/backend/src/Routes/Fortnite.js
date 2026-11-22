@@ -152,7 +152,10 @@ app.use('/fortnite/api/game/v2/profile/:accountId',verifyToken,async(req,res,nex
     const defaultsHidden=applyHideDefaults(p);
     // Launcher "Remove unreleased win umbrellas": strip the Bronze/Gold milestone umbrellas.
     const umbrellasHidden=applyHideWinUmbrellas(p);
-    const freePass=((isSeasonTwoBuild(build)||build==='5.10') && !p.stats.attributes.book_purchased) || (build==='3.5.1' && (!p.stats.attributes.book_purchased || (p.stats.attributes.tilted_season3_free_reward_tier||0)<Math.max(1,p.stats.attributes.book_level||1) || (p.stats.attributes.tilted_season3_paid_reward_tier||0)<Math.max(1,p.stats.attributes.book_level||1)));
+    // Season 3: hand out reward tiers the profile has reached but not received (paid ones only with the pass).
+    // The Battle Pass itself is never free: it is bought in the game.
+    const a3=p.stats.attributes,reached3=Math.max(1,a3.book_level||1);
+    const freePass=build==='3.5.1' && ((a3.tilted_season3_free_reward_tier||0)<reached3 || (!!a3.book_purchased && (a3.tilted_season3_paid_reward_tier||0)<reached3));
     if(switched||defaults||freePass||challenges||dailies||unlocked||maxed||passUnlocked||packsTopped||tierSynced||passFixed||bundleFixed||defaultsHidden||umbrellasHidden){const cr=doc.profiles.common_core.rvn;
      if(freePass)applyProgression(doc.profiles,0);else {p.rvn++;p.commandRevision++;p.updated=new Date().toISOString();}
      const updates={'profiles.athena':p};if(freePass)updates['profiles.common_core']=doc.profiles.common_core;

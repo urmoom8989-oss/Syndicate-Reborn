@@ -155,6 +155,8 @@ export function resetSeasonProgress(athena,season){
  if(!a.tilted_season_states){a.tilted_season_states={'4':captureSeason(athena)};a.tilted_active_season=4;}
  const active=activeSeason(athena),old=(season===active?a:a.tilted_season_states[season]?.attributes)||{};
  const fresh=freshSeasonState();
+ // A Battle Pass that was bought stays bought: only the progress starts over.
+ if(old.book_purchased)fresh.attributes.book_purchased=true;
  for(const track of ['free','paid']){
   const paidOut=Number(old[key+track+'_reward_tier']??(season===4?old.tilted_season4_reward_tier:0))||0;
   const through=Math.max(Number(old[key+track+'_currency_through'])||0,paidOut);
