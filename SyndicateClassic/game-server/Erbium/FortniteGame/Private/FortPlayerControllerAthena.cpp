@@ -1,4 +1,5 @@
 #include "pch.h"
+#include <unordered_set>
 #include "../Public/SyndicateDBNORecovery.h"
 #include "../../Erbium/Public/SyndicateSeasonAssets.h"
 #include <filesystem>
@@ -23,6 +24,32 @@ extern uint64_t ApplyCharacterCustomization;
 #include "../Public/FortAthenaCreativePortal.h"
 uint8 SyndicateSquadIdFor(uint8 TeamIndex, uint8 TeamSquadId); // FortGameMode.cpp: squads inside large teams
 extern bool SyndicateRespawnKeepsItems; // FortGameMode.cpp: Team Rumble keeps items on death, drops materials
+void SyndicateRecordStatText(AActor* PlayerController, long long StatEvent, int32 Count, const std::string& TargetJson, const std::string& SourceJson, const std::string& ContextJson);
+// Seasons 3 to 9: search challenges for things whose actor does not carry the tag the challenge looks for (supply
+// drops, vending machines, hidden battle stars, gnomes) never progressed. The backend gets that tag from the actor's
+// class name. Each class seen is logged once ("[SyndicateQuest] interact ...") so missing ones can be added.
+static void SyndicateInteractQuestTag(AFortPlayerControllerAthena* PC, AActor* Actor, const FGameplayTagContainer& Owned)
+{
+    if (!PC || !Actor || !Actor->Class || VersionInfo.FortniteVersion < 3.0 || VersionInfo.FortniteVersion >= 10.0) return;
+    std::string Name = std::string(Actor->Class->Name.ToString().c_str()), Lower;
+    for (unsigned char C : Name) Lower += char(tolower(C));
+    std::string OwnedText;
+    for (int I = 0; I < Owned.GameplayTags.Num(); ++I) { if (I) OwnedText += ","; OwnedText += std::string(Owned.GameplayTags.Get(I, FGameplayTag::Size()).TagName.ToString().c_str()); }
+    static std::unordered_set<std::string> Logged;
+    if (Logged.insert(Name).second) printf("[SyndicateQuest] interact %s tags=[%s]\n", Name.c_str(), OwnedText.c_str());
+    int Number = -1;
+    { size_t End = Lower.size(); if (End >= 2 && Lower.compare(End - 2, 2, "_c") == 0) End -= 2;
+      size_t Start = End; while (Start > 0 && isdigit((unsigned char)Lower[Start - 1])) --Start;
+      if (Start < End) Number = atoi(Lower.substr(Start, End - Start).c_str()); }
+    char Tag[96] = {};
+    if (Lower.find("supplydrop") != std::string::npos) snprintf(Tag, sizeof(Tag), "Building.Type.Container.SupplyDrop");
+    else if (Lower.find("vending") != std::string::npos) snprintf(Tag, sizeof(Tag), "Building.Type.ItemContainer.VendingMachine");
+    else if (Lower.find("gnome") != std::string::npos && Number > 0) snprintf(Tag, sizeof(Tag), "Athena.Quests.GniceGnome.%02d", Number);
+    else if (Lower.find("star") != std::string::npos && (Lower.find("hidden") != std::string::npos || Lower.find("quest") != std::string::npos) && Number > 0)
+        snprintf(Tag, sizeof(Tag), "Athena.Quests.HiddenStars.%d", Number);
+    if (!Tag[0] || ("," + OwnedText + ",").find(std::string(",") + Tag + ",") != std::string::npos) return; // already reported by the actor's own tags
+    SyndicateRecordStatText(PC, EFortQuestObjectiveStatEvent::GetInteract(), 1, std::string("[\"") + Tag + "\"]", "[]", "[]");
+}
 static bool SyndicateDropsOnDeath(const UFortItemDefinition* ConstDef)
 {
     auto Def = const_cast<UFortItemDefinition*>(ConstDef);
@@ -3403,6 +3430,7 @@ void AFortPlayerControllerAthena::ServerAttemptInteract_(UObject* Context, FFram
 		}
 
 		PlayerController->GetQuestManager(1)->SendStatEvent(PlayerController, EFortQuestObjectiveStatEvent::GetInteract(), 1, false, ReceivingActor, TargetTags);
+		SyndicateInteractQuestTag(PlayerController, ReceivingActor, TargetTags);
 
 		//TargetTags.GameplayTags.Free();
 		//TargetTags.ParentTags.Free();

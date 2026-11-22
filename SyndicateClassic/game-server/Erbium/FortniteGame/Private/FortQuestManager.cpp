@@ -1,4 +1,5 @@
 #include "pch.h"
+#include <cmath>
 #include "../Public/FortQuestManager.h"
 #include "../Public/FortGameMode.h"
 #include "../../Erbium/Public/SyndicateSeasonAssets.h"
@@ -1106,6 +1107,61 @@ UObject* SyndicateLoadStwHero(const std::string& Id)
     return nullptr;
 }
 
+// Seasons 3 to 9: location challenges ("search chests at Pleasant Park", "eliminations at Tilted Towers") counted
+// anywhere, because the location tags the game puts on a stat do not say where the player is. The backend now gets
+// the location from the player's position instead: every Athena.Location tag on the stat is replaced with the tags
+// of the POI volumes (FortPoiVolume, from their brush bounds) the player is standing in.
+struct SyndicatePoiBox { std::vector<std::string> Tags; FVector Center{}, Extent{}; };
+static std::vector<std::string> SyndicateLocationTagsAt(const FVector& At)
+{
+    static UWorld* World = nullptr; static std::vector<SyndicatePoiBox> Boxes;
+    auto Now = UWorld::GetWorld();
+    if (Now != World)
+    {
+        World = Now; Boxes.clear();
+        if (auto VolumeClass = FindClass("FortPoiVolume"))
+        {
+            TArray<AActor*> Volumes; Utils::GetAll(VolumeClass, Volumes);
+            for (int V = 0; V < Volumes.Num(); ++V)
+            {
+                auto Vol = Volumes[V]; if (!Vol) continue;
+                auto TagsOff = Vol->GetOffset("LocationTags"); if (TagsOff == uint32(-1)) continue;
+                auto& Tags = GetFromOffset<TArray<FName>>(Vol, TagsOff);
+                SyndicatePoiBox Box;
+                for (int T = 0; T < Tags.Num(); ++T) { std::string Tag = std::string(Tags[T].ToString().c_str()); if (Tag.rfind("Athena.Location", 0) == 0) Box.Tags.push_back(Tag); }
+                if (Box.Tags.empty()) continue;
+                bool HasBox = false;
+                if (auto BO = Vol->GetOffset("BrushComponent"); BO != uint32(-1))
+                    if (auto Brush = GetFromOffset<UObject*>(Vol, BO))
+                        if (auto BB = Brush->GetOffset("Bounds"); BB != uint32(-1))
+                        {
+                            memcpy(&Box.Center, (uint8*)Brush + BB, FVector::Size());
+                            memcpy(&Box.Extent, (uint8*)Brush + BB + FVector::Size(), FVector::Size());
+                            HasBox = Box.Extent.X > 100 && Box.Extent.Y > 100 && Box.Extent.X < 60000 && Box.Extent.Y < 60000;
+                        }
+                if (!HasBox) { Box.Center = Vol->K2_GetActorLocation(); Box.Extent.X = 9000; Box.Extent.Y = 9000; }
+                Boxes.push_back(Box);
+            }
+        }
+    }
+    std::vector<std::string> Out;
+    for (auto& Box : Boxes)
+        if (fabs(double(At.X) - double(Box.Center.X)) <= double(Box.Extent.X) && fabs(double(At.Y) - double(Box.Center.Y)) <= double(Box.Extent.Y))
+            for (auto& Tag : Box.Tags) Out.push_back(Tag);
+    return Out;
+}
+// A JSON tag list with its Athena.Location tags replaced by Here (and their parent tags).
+static std::string SyndicateRelocate(const std::string& Json, const std::vector<std::string>& Here)
+{
+    std::vector<std::string> Tags; size_t P = 0;
+    while ((P = Json.find('"', P)) != std::string::npos) { auto E = Json.find('"', P + 1); if (E == std::string::npos) break; Tags.push_back(Json.substr(P + 1, E - P - 1)); P = E + 1; }
+    std::string O = "["; bool First = true; std::unordered_set<std::string> Put;
+    auto Add = [&](const std::string& T) { if (!Put.insert(T).second) return; if (!First) O += ","; First = false; O += "\"" + T + "\""; };
+    for (auto& T : Tags) if (T.rfind("Athena.Location", 0) != 0) Add(T);
+    for (auto& T : Here) { std::string Cur = T; while (Cur.rfind("Athena.Location", 0) == 0) { Add(Cur); auto Dot = Cur.rfind('.'); if (Dot == std::string::npos) break; Cur = Cur.substr(0, Dot); } }
+    return O + "]";
+}
+
 void SyndicateRecordStat(AActor* PlayerController, long long StatEvent, int32 Count, const FGameplayTagContainer& TargetTags, const FGameplayTagContainer& SourceTags, const FGameplayTagContainer& ContextTags)
 {
     using namespace SyndicateChallengeData;
@@ -1115,6 +1171,13 @@ void SyndicateRecordStat(AActor* PlayerController, long long StatEvent, int32 Co
     auto& List = Pending[PlayerController];
     if (List.size() >= 400) return;
     PendingStat Stat{ StatEvent, (int)Count, TagList(TargetTags, true), TagList(SourceTags, true), TagList(ContextTags, true) };
+    if (VersionInfo.FortniteVersion >= 3.0 && VersionInfo.FortniteVersion < 10.0 && PC->MyFortPawn)
+    {
+        auto Here = SyndicateLocationTagsAt(PC->MyFortPawn->K2_GetActorLocation());
+        Stat.Target = SyndicateRelocate(Stat.Target, Here);
+        Stat.Source = SyndicateRelocate(Stat.Source, Here);
+        Stat.Context = SyndicateRelocate(Stat.Context, Here);
+    }
     for (auto& Existing : List)
         if (Existing.Type == Stat.Type && Existing.Target == Stat.Target && Existing.Source == Stat.Source && Existing.Context == Stat.Context) { Existing.Count += Stat.Count; return; }
     List.push_back(std::move(Stat));
