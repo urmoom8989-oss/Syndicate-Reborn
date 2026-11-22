@@ -697,7 +697,7 @@ public static class GameLauncher
             }
             else
 #endif
-            if (syndicateServer && SeasonModes.IsEnabled(build.Version, "stw")) await SignInStwHostAsync(hostInfo, status, Record);
+            if (syndicateServer && StwServer(hostInfo, options)) await SignInStwHostAsync(hostInfo, status, Record);
             var host = StartOwnedHidden(hostInfo); activeGame = host;
             if (syndicateServer)
             {
@@ -1042,6 +1042,19 @@ public static class GameLauncher
     /// server's own account. Without one every request fails ("Invalid user auth") and the player is sent back to
     /// the menu, so the server signs in with an exchange code. A failure only leaves Save the World without it.
     /// </summary>
+    /// <summary>A match server for Save the World (the "stw" playlist, asked for by the backend when a mission is
+    /// picked): Erbium starts it on the mission's zone with the reservation beacon (SYNDICATE_STW_HOST). Battle
+    /// Royale servers never run the Save the World code on Seasons 2 and up.</summary>
+    private static bool StwServer(ProcessStartInfo hostInfo, MatchOptions options)
+    {
+        if (MatchOptions.NormalizePlaylist(options.Playlist) != "stw")
+            return hostInfo.Environment.TryGetValue("SYNDICATE_STW_HOST", out var flag) && flag == "1";
+        hostInfo.Environment["SYNDICATE_STW_HOST"] = "1";
+        hostInfo.Environment["SYNDICATE_STW_DEV"] = "1";
+        hostInfo.Environment["TILTED_BOT_COUNT"] = "0";
+        return true;
+    }
+
     private static async Task SignInStwHostAsync(ProcessStartInfo hostInfo, Action<string> status, Action<string> record)
     {
         try
@@ -1114,7 +1127,7 @@ public static class GameLauncher
         if (SeasonModes.IsEnabled(build.Version, "stw")) hostInfo.Environment["SYNDICATE_STW_DEV"] = "1";
         else hostInfo.Environment.Remove("SYNDICATE_STW_DEV");
 #endif
-        if (!standby && SeasonModes.IsEnabled(build.Version, "stw")) await SignInStwHostAsync(hostInfo, status, record);
+        if (!standby && StwServer(hostInfo, options)) await SignInStwHostAsync(hostInfo, status, record);
         var studio = standby ? null : Studio.StudioSession.Current();
         string playlist = MatchOptions.ModeFromServerPlaylist(Studio.StudioSession.Apply(hostInfo, studio, record));
         if (!standby) HostLog = hostLog;
@@ -1413,7 +1426,7 @@ public static class GameLauncher
                     {
                         // Ready pressed right after a match (or that playlist picked again): the next match is already loaded.
                         options = options with { Playlist = requestedMode };
-                        if (requestedMode != "intro") Studio.StudioSession.SaveMode(requestedMode);
+                        if (requestedMode is not ("intro" or "stw")) Studio.StudioSession.SaveMode(requestedMode);
                         status("Your " + MatchOptions.PlaylistName(requestedMode) + " match is ready. Press Ready in Fortnite.");
                     }
                     else
@@ -1442,7 +1455,7 @@ public static class GameLauncher
                             options = options with { Playlist = requestedMode };
                             currentHost = await StartHostOnlyAsync(build, options, sessionDirectory, syndicateRuntime, status, record, hostIndex++, currentSlot, false, null);
                             failures = 0;
-                            if (requestedMode != "intro") Studio.StudioSession.SaveMode(requestedMode);
+                            if (requestedMode is not ("intro" or "stw")) Studio.StudioSession.SaveMode(requestedMode);
                             TryDelete(errorFile);
                             record("playlist ready: " + requestedMode + " (host PID " + currentHost.Id + ")");
                             status("Your " + MatchOptions.PlaylistName(requestedMode) + " match is ready. Press Ready in Fortnite.");

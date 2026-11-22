@@ -3595,6 +3595,24 @@ void AFortGameMode::ReadyToStartMatch_(UObject* Context, FFrame& Stack, bool* Re
                 printf("[Syndicate STW] zone game mode is up, listening for the player (try %d)\n", Tries + 1);
             Tries++;
         }
+        // Tell the launcher the Save the World server is up (Battle Royale servers do this when the island is ready).
+        static bool ZoneReady = false;
+        if (SyndicateListening && !ZoneReady)
+        {
+            ZoneReady = true;
+            wchar_t ReadyPath[32768]{};
+            if (GetEnvironmentVariableW(L"TILTED_SERVER_READY_FILE", ReadyPath, 32768))
+            {
+                FILE* Ready = nullptr;
+                if (_wfopen_s(&Ready, ReadyPath, L"w") == 0 && Ready)
+                {
+                    fprintf(Ready, "%lu", GetCurrentProcessId());
+                    fclose(Ready);
+                }
+            }
+            printf("PROJECT_TILTED_SERVER_READY port=%d (Save the World zone)\n", FConfiguration::Port);
+            fflush(stdout);
+        }
         *Ret = callOGWithRet(((AFortGameMode*)Context), Stack.GetCurrentNativeFunction(), ReadyToStartMatch);
         return;
     }

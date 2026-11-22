@@ -247,12 +247,19 @@ static void SyndicateStartServerWorld()
     // reservation then lands on this map, and Battle Royale setup stays out of the way (SyndicateStwZoneTravel).
     {
         wchar_t Flag[4]{};
-        if (GetEnvironmentVariableW(L"SYNDICATE_STW_HOST", Flag, 4) == 1 && Flag[0] == L'1')
+        bool SyndicateStwHostWanted();
+        if (SyndicateStwHostWanted())
         {
             extern bool SyndicateStwZoneTravel;
+            bool SyndicateStwMissionZone(std::wstring& Map, std::wstring& Mode);
             SyndicateStwZoneTravel = true;
-            terrainOpen = L"open /Game/Maps/Zones/TheFarmstead/Zone_Onboarding_FarmsteadFort?game=/Game/Blueprints/GameModeZone.GameModeZone_C";
-            printf("[Syndicate STW] host starts on the tutorial zone\n");
+            // The zone of the mission the player picked (backend stw-zone.json); the tutorial when there is none.
+            std::wstring Map = L"/Game/Maps/Zones/TheFarmstead/Zone_Onboarding_FarmsteadFort", Mode = L"/Game/Blueprints/GameModeZone.GameModeZone_C";
+            SyndicateStwMissionZone(Map, Mode);
+            static std::wstring ZoneOpen;
+            ZoneOpen = L"open " + Map + L"?game=" + Mode;
+            terrainOpen = ZoneOpen.c_str();
+            printf("[Syndicate STW] Save the World server starts on %ls\n", ZoneOpen.c_str());
         }
     }
     SyndicateApplyKeychain();

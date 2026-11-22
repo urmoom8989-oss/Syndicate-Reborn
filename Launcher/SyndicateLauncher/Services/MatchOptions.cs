@@ -17,7 +17,9 @@ public sealed record MatchOptions(int MinimumBots, int MaximumBots, bool EditOnR
     /// <summary>The playlist the match host started with. It follows the playlist picked in Fortnite's lobby.</summary>
     public string Playlist { get; init; } = "solo";
     public static readonly string[] Playlists = { "solo", "duo", "squad", "50v50", "playground", "arenasolo", "creative", "intro",
-        "gauntlet", "solidgold", "blitz", "snipers", "close", "highexplosives", "disco", "teamrumble", "foodfight", "floorislava", "arenaduos" };
+        "gauntlet", "solidgold", "blitz", "snipers", "close", "highexplosives", "disco", "teamrumble", "foodfight", "floorislava", "arenaduos",
+        // A Save the World match server (Seasons 2 and up): the backend asks for one when a mission is picked.
+        "stw" };
     /// <summary>The mode id for a TILTED_PLAYLIST value: a limited-time playlist name back to its id, anything else as is.
     /// server.json must carry the id, or the launcher and matchmaker see a different mode and restart the server
     /// over and over (Fortnite stuck on "Finding match").</summary>
@@ -58,6 +60,7 @@ public sealed record MatchOptions(int MinimumBots, int MaximumBots, bool EditOnR
         "highexplosives" => "High Explosives",
         "disco" => "Disco Domination",
         "teamrumble" => "Team Rumble",
+        "stw" => "Save the World",
         "foodfight" => "Food Fight",
         "floorislava" => "Floor Is Lava",
         "arenaduos" => "Arena Duos",

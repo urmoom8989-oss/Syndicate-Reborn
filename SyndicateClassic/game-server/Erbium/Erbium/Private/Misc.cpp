@@ -919,8 +919,15 @@ void SyndicateStwTravelTick()
 	else SyndicateStwLog("[Syndicate STW] OpenLevel not found\n");
 }
 
+// A server started for Save the World (launcher: the "stw" playlist, or stw-host.txt on the dev launcher).
+bool SyndicateStwHostWanted()
+{
+	wchar_t Flag[8]{};
+	if (GetEnvironmentVariableW(L"SYNDICATE_STW_HOST", Flag, 8) == 1 && Flag[0] == L'1') return true;
+	wchar_t Playlist[64]{};
+	return GetEnvironmentVariableW(L"TILTED_PLAYLIST", Playlist, 64) > 0 && _wcsicmp(Playlist, L"stw") == 0;
+}
 static void SyndicateStwDumpClass(const wchar_t* WPath);
-static void SyndicateStwDumpClassSafe(const wchar_t* WPath) { __try { SyndicateStwDumpClass(WPath); } __except (1) { SyndicateStwLog("[Syndicate STW] recon of the mission's zone theme crashed (caught)\n"); } }
 // The zone theme of the mission the player picked: the backend (Routes/matchmaking.js) writes it to
 // Runtime\Server\stw-zone.json from the client's ZONEINSTANCEID, next to this host's ready file.
 static std::wstring SyndicateStwRequestedTheme()
@@ -947,18 +954,52 @@ static std::wstring SyndicateStwRequestedTheme()
 	if (Theme.size() < 6 || Theme[0] != '/') return L"";
 	return std::wstring(Theme.begin(), Theme.end());
 }
-static void SyndicateStwPickMissionZone()
+// The map and game mode of a zone theme, read by property name (this build's offsets), not by walking its fields:
+// the 1.7.2 field walk read the wrong layout on 8.50 and crashed the server.
+static bool SyndicateStwZoneOfTheme(const std::wstring& Theme, std::wstring& Map, std::wstring& Mode)
+{
+	auto Cls = (const UClass*)StaticLoadObject(Theme.c_str(), UClass::StaticClass());
+	auto Cdo = Cls ? (UObject*)Cls->GetDefaultObj() : nullptr;
+	if (!Cdo) return false;
+	auto Soft = [&](const char* Name) -> std::wstring
+	{
+		auto Off = Cdo->GetOffset(Name);
+		if (Off == uint32(-1)) return L"";
+		// TSoftObjectPtr / TSoftClassPtr: the path follows the weak pointer; an FName from UE 4.18 on, an FString before.
+		std::string Value = VersionInfo.EngineVersion >= 4.18
+			? std::string(GetFromOffset<FName>(Cdo, Off + 0x10).ToString().c_str())
+			: std::string(GetFromOffset<FString>(Cdo, Off + 0x10).ToString().c_str());
+		if (Value.empty() || Value == "None") return L"";
+		return std::wstring(Value.begin(), Value.end());
+	};
+	auto MapPath = Soft("ZoneToUse");
+	if (MapPath.empty()) return false;
+	Map = MapPath.substr(0, MapPath.find(L'.'));
+	auto GameMode = Soft("ZoneGameMode");
+	if (!GameMode.empty()) Mode = GameMode;
+	return true;
+}
+static bool SyndicateStwZoneOfThemeSafe(const std::wstring& Theme, std::wstring& Map, std::wstring& Mode)
+{
+	__try { return SyndicateStwZoneOfTheme(Theme, Map, Mode); }
+	__except (1) { return false; }
+}
+// The zone of the mission the player picked (stw-zone.json). Map and Mode keep their values when there is none.
+bool SyndicateStwMissionZone(std::wstring& Map, std::wstring& Mode)
 {
 	auto Theme = SyndicateStwRequestedTheme();
-	if (Theme.empty()) return;
-	auto OldMap = SyndicateStwZoneMap, OldMode = SyndicateStwZoneMode;
-	SyndicateStwZoneMap.clear();
-	SyndicateStwZoneMode.clear();
-	SyndicateStwDumpClassSafe(Theme.c_str());
-	if (SyndicateStwZoneMap.empty()) { SyndicateStwZoneMap = OldMap; SyndicateStwZoneMode = OldMode; }
-	if (SyndicateStwZoneMode.empty()) SyndicateStwZoneMode = OldMode;
-	SyndicateStwLog("[Syndicate STW] mission zone theme %ls: map %ls, game mode %ls\n", Theme.c_str(),
-		SyndicateStwZoneMap.empty() ? L"(none)" : SyndicateStwZoneMap.c_str(), SyndicateStwZoneMode.empty() ? L"(default)" : SyndicateStwZoneMode.c_str());
+	if (Theme.empty()) { SyndicateStwLog("[Syndicate STW] no mission picked yet (stw-zone.json); using %ls\n", Map.c_str()); return false; }
+	std::wstring NewMap = Map, NewMode = Mode;
+	bool Found = SyndicateStwZoneOfThemeSafe(Theme, NewMap, NewMode);
+	if (Found) { Map = NewMap; Mode = NewMode; }
+	SyndicateStwLog("[Syndicate STW] mission zone theme %ls: %s map %ls, game mode %ls\n", Theme.c_str(), Found ? "using" : "not readable, keeping",
+		Map.c_str(), Mode.c_str());
+	return Found;
+}
+static void SyndicateStwPickMissionZone()
+{
+	std::wstring Map = SyndicateStwZoneMap, Mode = SyndicateStwZoneMode;
+	if (SyndicateStwMissionZone(Map, Mode)) { SyndicateStwZoneMap = Map; SyndicateStwZoneMode = Mode; }
 }
 
 static int (*SyndicateReserveOG)(void*, void*, void*) = nullptr;
@@ -1260,11 +1301,19 @@ void SyndicateStwBeaconStart()
 		fflush(stdout);
 		return;
 	}
-	// Every season now (it was Pre-season/Season 1 only). Later seasons pick the zone from the mission the player
-	// chose (stw-zone.json, see SyndicateStwRequestedTheme) instead of the 1.7.2 tutorial's theme.
-	SyndicateStwLog("[Syndicate STW] beacon: starting on Fortnite %.2f\n", (double)VersionInfo.FortniteVersion);
+	// Pre-season/Season 1 run it on every match server, as before. Later seasons only on a Save the World server (the
+	// launcher starts one with SYNDICATE_STW_HOST=1 when a mission is picked): on a Battle Royale server the 1.7.2
+	// class recon below read the wrong layout and crashed every 8.50 match as it started.
+	const bool StwServer = SyndicateStwHostWanted();
+	if (VersionInfo.FortniteVersion >= 2.0 && !StwServer)
+	{
+		SyndicateStwLog("[Syndicate STW] beacon: off on Battle Royale servers (Fortnite %.2f)\n", (double)VersionInfo.FortniteVersion);
+		return;
+	}
+	SyndicateStwLog("[Syndicate STW] beacon: starting on Fortnite %.2f%s\n", (double)VersionInfo.FortniteVersion, StwServer ? " (Save the World server)" : "");
 
-	SyndicateStwReconSafe();
+	if (VersionInfo.FortniteVersion < 2.0)
+		SyndicateStwReconSafe();
 	SyndicateStwPassNoGameChecksSafe();
 	if (auto Client = TUObjectArray::FindObject("Default__FortPartyBeaconClient"))
 		if (auto Fn = Client->GetFunction("ServerReconnectExistingReservation"))

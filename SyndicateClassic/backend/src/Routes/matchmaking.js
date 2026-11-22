@@ -240,7 +240,65 @@ app.post("/fortnite/api/matchmaking/session/*/join", (req, res) => {
   res.status(204).end();
 });
 
-app.post("/fortnite/api/matchmaking/session/matchMakingRequest", (req, res) => {
+// Save the World, Seasons 2 and up: it runs on its own match server, started on the mission's zone (launcher "stw"
+// playlist, Erbium SYNDICATE_STW_HOST); Battle Royale servers never run the Save the World code. This asks the
+// launcher for one (playlist-request.json, or restart.request for another mission) and waits for it to be up.
+const STW_WAIT_MS = 45000;
+const stwAlive = pid => { try { process.kill(pid, 0); return true; } catch { return false; } };
+function stwServerUp(skipPid) {
+  const state = playlists.read(path.join(playlists.runtime, 'server.json'));
+  if (!state || String(state.Mode).toLowerCase() !== 'stw' || state.Pid === skipPid || !stwAlive(state.Pid)) return null;
+  try { return fs.readFileSync(path.join(playlists.runtime, state.Ready || 'ready.pid'), 'utf8').trim() === String(state.Pid) ? state : null; }
+  catch { return null; }
+}
+async function stwServerFor(build, theme, wait) {
+  const dir = playlists.runtime, now = Date.now();
+  const state = playlists.read(path.join(dir, 'server.json'));
+  const running = state && String(state.Mode).toLowerCase() === 'stw' && stwAlive(state.Pid);
+  global.syndicateStwServer ??= {pid: 0, theme: '', old: 0};
+  const known = global.syndicateStwServer;
+  if (running && theme && known.pid === state.Pid && known.theme && known.theme !== theme) {
+    // Another mission: the server loads its zone when it starts, so start it again.
+    fs.writeFileSync(path.join(dir, 'restart.request'), `${state.Pid} stw-mission`);
+    global.syndicateStwServer = {pid: 0, theme, old: state.Pid};
+    console.log('[Syndicate STW] another mission picked: restarting the Save the World server');
+  } else if (!running) {
+    const request = playlists.read(path.join(dir, 'playlist-request.json'));
+    if (!request || request.Mode !== 'stw' || request.Expires <= now) {
+      playlists.write(path.join(dir, 'playlist-request.json'), {Id: uuidv4(), Mode: 'stw', Build: build, Expires: now + 600000});
+      global.syndicateStwServer = {pid: 0, theme, old: 0};
+      console.log('[Syndicate STW] asked the launcher for a Save the World server');
+    }
+  }
+  const until = Date.now() + (wait ? STW_WAIT_MS : 0);
+  for (;;) {
+    const up = stwServerUp(global.syndicateStwServer.old);
+    if (up) { global.syndicateStwServer = {pid: up.Pid, theme: global.syndicateStwServer.theme || theme, old: 0}; return up; }
+    if (Date.now() >= until) return null;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+}
+// The session the client searched for, with every criterion it searched by, pointing at the local match server.
+function stwSession(body) {
+  const info = getGameServerInfo();
+  const attributes = {REGION_s: 'NA', SUBREGION_s: 'NA', ALLOWBROADCASTING_b: true, DCID_s: 'SYNDICATE-STW', tenant_s: 'Fortnite',
+    TENANT_s: 'Fortnite', MATCHMAKINGPOOL_s: 'Any', STORMSHIELDDEFENSETYPE_i: 0, HOTFIXVERSION_i: 0, BEACONPORT_i: 15009,
+    ADDRESS_s: info.serverAddress};
+  for (const c of body?.criteria || []) {
+    if (!c?.key || c.type === 'NOT_EQUAL') continue;
+    attributes[c.key] = Array.isArray(c.value) ? c.value[0] : c.value;
+  }
+  return {
+    id: uuidv4().replace(/-/g, ''), ownerId: uuidv4().replace(/-/g, ''), ownerName: '[DS]syndicate-stw', serverName: '[DS]syndicate-stw',
+    serverAddress: info.serverAddress, serverPort: info.serverPort, maxPublicPlayers: 4, openPublicPlayers: 4, maxPrivatePlayers: 0,
+    openPrivatePlayers: 0, attributes, publicPlayers: [], privatePlayers: [], totalPlayers: 0, allowJoinInProgress: true,
+    shouldAdvertise: false, isDedicated: true, usesStats: false, allowInvites: false, usesPresence: false, allowJoinViaPresence: true,
+    allowJoinViaPresenceFriendsOnly: false, buildUniqueId: String(body?.buildUniqueId || '0'), lastUpdated: new Date().toISOString(),
+    started: false,
+  };
+}
+
+app.post("/fortnite/api/matchmaking/session/matchMakingRequest", async (req, res) => {
   // Save the World (dev launcher): Pre-season's tutorial matchmakes here (an MCP session search) and got no
   // sessions back ("No matches available"). Log what it asks for, so the tutorial session can be built to match.
   const stwOn = stwEnabledFor(req.headers['user-agent']); // Dev Kit, or Save the World on for this season
@@ -252,16 +310,32 @@ app.post("/fortnite/api/matchmaking/session/matchMakingRequest", (req, res) => {
   const wantsEmpty = (req.body?.criteria || []).some(c => c?.key === 'GAMEMODE_s' && c?.value === 'FORTEMPTY');
   // The mission the player picked (any season): its zone theme tells the match server which map and game mode to
   // load when the empty server is reserved (Erbium Misc.cpp SyndicateStwRequestedTheme reads stw-zone.json).
+  let theme = '';
   if (stwOn) {
     try {
       const zone = (req.body?.criteria || []).find(c => c?.key === 'ZONEINSTANCEID_s')?.value;
-      const theme = zone ? JSON.parse(zone)?.zoneThemeClass : '';
+      theme = zone ? JSON.parse(zone)?.zoneThemeClass || '' : '';
       if (typeof theme === 'string' && /^\/Game\/[A-Za-z0-9_\/.]+$/.test(theme)) {
         fs.mkdirSync(playlists.runtime, {recursive: true});
         fs.writeFileSync(path.join(playlists.runtime, 'stw-zone.json'), JSON.stringify({zoneThemeClass: theme, at: Date.now()}));
         console.log('[Syndicate STW] mission zone theme ' + theme);
       }
     } catch {}
+  }
+  // Seasons 2 and up: the Save the World server (see stwServerFor). A mission search waits for it and gets it back.
+  {
+    const build = clientBuild(req.headers['user-agent'] || '');
+    if (stwOn && build && !/^1\./.test(build)) {
+      const searching = wantsEmpty || !!theme;
+      const host = await stwServerFor(build, theme, searching);
+      if (!host || !searching) {
+        if (searching) console.log('[Syndicate STW] the Save the World server is not up yet; answered with no sessions');
+        return res.json([]);
+      }
+      const session = stwSession(req.body);
+      console.log(`[Syndicate STW] offering the Save the World server (PID ${host.Pid}): ${JSON.stringify(session.attributes)}`);
+      return res.json([session]);
+    }
   }
   // Local tutorial (dev launcher, stw-local.txt): no host. Tell the client's SyndicateStudio.dll to open the
   // tutorial map in the player's own game, and offer no server.

@@ -582,7 +582,10 @@ public sealed partial class MainViewModel
     /// </summary>
     public void PlaceLobbyTile(GameModeToggle tile, int row, int index)
     {
-        if (!_lobbyTiles.Contains(tile) || _gameModeSeason is null) return;
+        // The tiles can be rebuilt while one is dragged (the season list refreshing reloads them): find the dragged
+        // mode among the current tiles by its id. A stale tile used to make the drop do nothing, so moves never saved.
+        if (_gameModeSeason is null || CurrentLobbyTile(tile) is not { } live) return;
+        tile = live;
         row = Math.Clamp(row, 0, LobbyRowCount - 1);
         var before = TilesInRow(row);
         int current = before.IndexOf(tile);                      // -1 when it comes from another row or is off
@@ -604,12 +607,16 @@ public sealed partial class MainViewModel
     /// <summary>Takes a tile out of the lobby (dropped on "Not in the lobby").</summary>
     public void TakeLobbyTileOut(GameModeToggle tile)
     {
-        if (!_lobbyTiles.Contains(tile) || tile.IsOff) return;
+        if (CurrentLobbyTile(tile) is not { } live || live.IsOff) return;
+        tile = live;
         SelectedLobbyTile = tile;
         tile.StateIndex = GameModeToggle.Off; // goes through OnGameModeStateChanged (keeps one Battle Royale mode on)
     }
 
-    public void SelectLobbyTile(GameModeToggle tile) => SelectedLobbyTile = tile;
+    public void SelectLobbyTile(GameModeToggle tile) => SelectedLobbyTile = CurrentLobbyTile(tile) ?? tile;
+
+    private GameModeToggle? CurrentLobbyTile(GameModeToggle tile) =>
+        _lobbyTiles.Contains(tile) ? tile : _lobbyTiles.FirstOrDefault(t => string.Equals(t.Id, tile.Id, StringComparison.OrdinalIgnoreCase));
 
     private void NudgeLobbyTile(int delta)
     {
