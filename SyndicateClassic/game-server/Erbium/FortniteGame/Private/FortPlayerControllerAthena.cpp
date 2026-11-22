@@ -24,6 +24,7 @@ extern uint64_t ApplyCharacterCustomization;
 #include "../Public/FortAthenaCreativePortal.h"
 uint8 SyndicateSquadIdFor(uint8 TeamIndex, uint8 TeamSquadId); // FortGameMode.cpp: squads inside large teams
 extern bool SyndicateRespawnKeepsItems; // FortGameMode.cpp: Team Rumble keeps items on death, drops materials
+void SyndicateTeamKill(AFortPlayerStateAthena* Killer, AFortPlayerStateAthena* Victim); // FortGameMode.cpp: Team Rumble score
 void SyndicateRecordStatText(AActor* PlayerController, long long StatEvent, int32 Count, const std::string& TargetJson, const std::string& SourceJson, const std::string& ContextJson);
 // Seasons 3 to 9: search challenges for things whose actor does not carry the tag the challenge looks for (supply
 // drops, vending machines, hidden battle stars, gnomes) never progressed. The backend gets that tag from the actor's
@@ -2085,6 +2086,9 @@ void AFortPlayerControllerAthena::ClientOnPawnDied(AFortPlayerControllerAthena* 
 			PlayerState->OnRep_DeathInfo();
 		}
 
+		// Team Rumble score: a player eliminated by the other side (bots are counted where they die, in SpectraBots).
+		if (KillerPlayerState && KillerPlayerState != PlayerState && !(PlayerState->HasbIsABot() && PlayerState->bIsABot))
+			SyndicateTeamKill(KillerPlayerState, PlayerState);
 		if (KillerPlayerState && KillerPawn && KillerPawn->Controller && KillerPawn->Controller != PlayerController)
 		{
 			if (KillerPlayerState->HasKillScore())

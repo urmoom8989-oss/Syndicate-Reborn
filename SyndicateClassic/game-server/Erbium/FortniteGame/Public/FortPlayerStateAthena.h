@@ -58,6 +58,7 @@ public:
     DEFINE_PROP(KillScore, int32);
     DEFINE_PROP(TeamKillScore, int32);
     DEFINE_PROP(TeamScore, int32);
+    DEFINE_PROP(TeamScorePlacement, int32);
     DEFINE_PROP(Place, int32);
     DEFINE_PROP(RespawnData, FFortRespawnData);
     DEFINE_PROP(SeasonLevelUIDisplay, int32);
@@ -73,6 +74,7 @@ public:
     DEFINE_FUNC(OnRep_Kills, void);
     DEFINE_FUNC(OnRep_TeamKillScore, void);
     DEFINE_FUNC(OnRep_TeamScore, void);
+    DEFINE_FUNC(OnRep_TeamScorePlacement, void);
     DEFINE_FUNC(ClientReportKill, void);
     DEFINE_FUNC(ClientReportTeamKill, void);
     DEFINE_FUNC(OnRep_Place, void);

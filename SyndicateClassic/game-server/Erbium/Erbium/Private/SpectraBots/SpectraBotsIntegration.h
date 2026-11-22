@@ -77,6 +77,9 @@ void SyndicateLateGameAdoptStormCenter(); // FortGameMode.cpp
 // FortPlayerControllerAthena.cpp: players who just dropped or swapped out Lean (the menu's instant heal marks it too).
 extern std::unordered_map<AFortPlayerControllerAthena*,ULONGLONG> SyndicateLeanDropped;
 extern int SyndicateTeamGoalScore;
+extern int SyndicateTeamKills[256];
+extern bool SyndicateRespawnKeepsItems;
+void SyndicateTeamKill(AFortPlayerStateAthena* Killer, AFortPlayerStateAthena* Victim);
 uint8 SyndicateSquadIdFor(uint8 TeamIndex, uint8 TeamSquadId); // FortGameMode.cpp: squads of four inside large teams
 namespace SpectraBots
 {
@@ -336,6 +339,7 @@ namespace SpectraBots
         float LootAge = 0.f, DoorCooldown = 0.f;
         bool PoiChosen = false, HasGun = false, BusPrepared = false;
         bool Eliminated = false, Firing = false;
+        float RespawnWait = 0.f; // Team Rumble: seconds since elimination, until the bot comes back
         bool DeathDispatching = false;
         TWeakObjectPtr<AFortPlayerStateAthena> DeathKiller;
         TWeakObjectPtr<AFortPlayerPawnAthena> DeathKillerPawn;
@@ -7079,15 +7083,22 @@ namespace SpectraBots
         if(GS->HasGamePhase() && End>=0 && GS->GamePhase==End)return;
         auto Off=GS->GetOffset("PlayerArray");if(Off==uint32(-1))return;
         auto& Players=GetFromOffset<TArray<AActor*>>(GS,Off);
-        int Score[256]={};
+        // Eliminations of the other side, counted as each death is handled (SyndicateTeamKill).
+        int Best=-1,BestScore=0;
+        for(int T=0;T<256;++T)if(::SyndicateTeamKills[T]>BestScore){BestScore=::SyndicateTeamKills[T];Best=T;}
+        if(GS->HasbIsLargeTeamGame() && !GS->bIsLargeTeamGame){GS->bIsLargeTeamGame=true;GS->ForceNetUpdate();}
         for(int I=0;I<Players.Num();++I){auto S=(AFortPlayerStateAthena*)Players[I];if(!S)continue;
-            Score[uint8(S->TeamIndex)]+=S->HasKillScore()?int(S->KillScore):int(S->Kills);}
-        int Winner=-1;
-        for(int I=0;I<Players.Num();++I){auto S=(AFortPlayerStateAthena*)Players[I];if(!S || !S->HasTeamScore())continue;
-            const int Team=uint8(S->TeamIndex);
-            if(S->TeamScore!=Score[Team]){S->TeamScore=Score[Team];S->OnRep_TeamScore();S->ForceNetUpdate();}
-            if(Score[Team]>=::SyndicateTeamGoalScore)Winner=Team;}
-        if(Winner<0)return;
+            const int Score=::SyndicateTeamKills[uint8(S->TeamIndex)];bool Changed=false;
+            if(S->HasTeamScore() && S->TeamScore!=Score){S->TeamScore=Score;S->OnRep_TeamScore();Changed=true;}
+            const int Place=Best<0 || uint8(S->TeamIndex)==Best?1:2;
+            if(S->HasTeamScorePlacement() && S->TeamScorePlacement!=Place){S->TeamScorePlacement=Place;S->OnRep_TeamScorePlacement();Changed=true;}
+            if(Changed)S->ForceNetUpdate();}
+        if(GS->HasCurrentHighScore() && GS->CurrentHighScore!=BestScore){
+            GS->CurrentHighScore=BestScore;if(GS->HasCurrentHighScoreTeam())GS->CurrentHighScoreTeam=Best;
+            GS->OnRep_CurrentHighScore();GS->ForceNetUpdate();}
+        if(Best<0 || BestScore<::SyndicateTeamGoalScore)return;
+        const int Winner=Best;
+        if(GS->HasWinningScore()){GS->WinningScore=BestScore;GS->OnRep_WinningScore();}
         for(int I=0;I<Mode->AlivePlayers.Num();++I){
             auto PC=(AFortPlayerControllerAthena*)Mode->AlivePlayers[I];
             auto State=PC?(AFortPlayerStateAthena*)PC->PlayerState:nullptr;
@@ -7104,12 +7115,78 @@ namespace SpectraBots
         if(GS->HasGamePhase() && End>=0 && End<256 && GS->GamePhase!=End){auto Old=GS->GamePhase;GS->GamePhase=uint8(End);GS->OnRep_GamePhase(Old);}
         GS->ForceNetUpdate();
         if(auto EndMatch=Mode->GetFunction("EndMatch"))Mode->ProcessEvent(EndMatch,nullptr);
-        AppendBotLog("victory: a side reached the goal score\n");
+        char L[96];snprintf(L,sizeof(L),"victory: team %d reached the goal score (%d)\n",Winner,BestScore);AppendBotLog(L);
+    }
+
+    // Team Rumble: eliminated bots come back like players do. Five seconds after the elimination the bot gets a
+    // fresh pawn and skydives in above a living teammate (its own side), so both sides can reach the goal score.
+    // Its old loot stays on the ground; it loots again after landing.
+    inline void RespawnTeamRumbleBots(float DT)
+    {
+        if(!::SyndicateRespawnKeepsItems || ::SyndicateTeamGoalScore<=0 || Bots.empty())return;
+        auto World=UWorld::GetWorld();auto Mode=World?(AFortGameMode*)World->AuthorityGameMode:nullptr;
+        auto GS=Mode?(AFortGameStateAthena*)Mode->GameState:nullptr;if(!Mode || !GS)return;
+        auto Phases=FindEnum("EAthenaGamePhase");auto End=Phases?Phases->GetValue("EndGame"):-1;
+        if(GS->HasGamePhase() && End>=0 && GS->GamePhase==End)return;
+        for(auto& B:Bots){
+            if(!B.Eliminated || !B.Controller || !B.State || !B.Driver){B.RespawnWait=0;continue;}
+            if((B.RespawnWait+=DT)<5.f)continue;
+            B.RespawnWait=0;
+            const uint8 Team=uint8(B.State->TeamIndex);
+            // Where to come down: above a living teammate, else where the bot died.
+            std::vector<FVector> Spots;
+            for(auto& O:Bots)if(&O!=&B && !O.Eliminated && O.bLanded && O.State && uint8(O.State->TeamIndex)==Team)
+                if(auto P=O.PawnRef.Get();P && !P->bActorIsBeingDestroyed)Spots.push_back(P->K2_GetActorLocation());
+            for(int I=0;I<Mode->AlivePlayers.Num();++I){auto PC=(AFortPlayerControllerAthena*)Mode->AlivePlayers[I];
+                auto PS=PC?(AFortPlayerStateAthena*)PC->PlayerState:nullptr;auto P=PC?PC->MyFortPawn:nullptr;
+                if(PS && P && !P->bActorIsBeingDestroyed && uint8(PS->TeamIndex)==Team && !BotPawns.count(P))Spots.push_back(P->K2_GetActorLocation());}
+            FVector Ground=B.LastPos;
+            if(!Spots.empty())Ground=Spots[OutfitRandom()%Spots.size()];
+            {const double A=(OutfitRandom()%3600)/10.0*3.14159265/180,D=1500.0+OutfitRandom()%3000;Ground.X+=float(cos(A)*D);Ground.Y+=float(sin(A)*D);}
+            auto Old=B.PawnRef.Get();
+            if(Old)BotPawns.erase(Old);
+            Mode->RestartPlayer(B.Controller);
+            auto NewPawn=(RoamingPawn*)B.Controller->MyFortPawn;
+            if(!NewPawn || NewPawn==Old || NewPawn->bActorIsBeingDestroyed){
+                if(Old)BotPawns.insert(Old);
+                AppendBotLog("team rumble: bot respawn declined; retrying\n");continue;}
+            if(Old && !Old->bActorIsBeingDestroyed)Old->K2_DestroyActor();
+            B.Pawn=NewPawn;B.PawnRef=NewPawn;BotPawns.insert(NewPawn);
+            B.Driver->PlayerState=B.State;B.Driver->Possess(NewPawn);
+            B.Controller->MyFortPawn=NewPawn;NewPawn->PlayerState=B.State;NewPawn->OnRep_PlayerState();
+            NewPawn->bReplicates=true;NewPawn->bReplicateMovement=true;
+            NewPawn->bAlwaysRelevant=false;NewPawn->bOnlyRelevantToOwner=false;
+            NewPawn->bNetUseOwnerRelevancy=false;NewPawn->NetCullDistanceSquared=625000000.f;
+            NewPawn->bCanBeDamaged=true;
+            if(VersionInfo.FortniteVersion>=4 && BotHealthSet(NewPawn))BotHealthSet(NewPawn)->Health.Minimum=0.f;
+            if(auto SetDown=NewPawn->GetFunction("SetUsesDBNO"))NewPawn->Call<void>(SetDown,TeamKnocksEnabled());
+            NewPawn->SetMaxHealth(100.f);NewPawn->SetHealth(100.f);
+            if(auto Max=NewPawn->GetFunction("SetMaxShield"))NewPawn->Call<void>(Max,100.f);
+            CommitBotDamageAttribute(NewPawn,"CurrentShield",0.f);
+            RestoreBotOutfit(B);
+            FVector Sky=Ground;Sky.Z=Ground.Z+12000.f;
+            NewPawn->K2_SetActorLocation(Sky,false,nullptr,true);
+            BeginBotSkydive(NewPawn);
+            // Fresh state: no knock, no target, no loot plan from the previous life.
+            ResetBotRevive(B);
+            B.Eliminated=false;B.DeathDispatching=false;B.BleedActive=false;B.KnockTimeout=false;
+            B.DeathKiller={};B.DeathKillerPawn={};B.KnockKiller={};B.KnockKillerPawn={};B.DeathCauser={};
+            B.Enemy={};B.LootTarget={};B.HasGun=false;B.Harvesting=false;B.Firing=false;
+            B.RecoveryElapsed=0;B.QuietTime=0;B.MovementInitialized=false;
+            B.LandSpot=Ground;B.LandSpot.Z=0;B.PoiChosen=true;B.GlideRolled=false;B.GliderSpread=false;
+            B.bLanded=false;B.bLanding=true;B.LastPos=Sky;B.Target=Ground;B.DirectionTime=60;
+            bool Listed=false;for(int I=0;I<Mode->AlivePlayers.Num();++I)if(Mode->AlivePlayers[I]==B.Controller){Listed=true;break;}
+            if(!Listed)Mode->AlivePlayers.Add(B.Controller);
+            if(GS->PlayersLeft!=Mode->AlivePlayers.Num()){GS->PlayersLeft=Mode->AlivePlayers.Num();GS->OnRep_PlayersLeft();}
+            B.State->ForceNetUpdate();GS->ForceNetUpdate();
+            char L[160];snprintf(L,sizeof(L),"team rumble: %ls respawned (team %d) at %.0f,%.0f\n",B.DisplayName.c_str(),int(Team),Sky.X,Sky.Y);AppendBotLog(L);
+        }
     }
 
     inline void UpdateSurvivingTeamVictory(AFortGameMode* Mode,AFortGameStateAthena* GS)
     {
         if(PlaygroundMatch())return;
+        if(::SyndicateRespawnKeepsItems && ::SyndicateTeamGoalScore>0)return; // Team Rumble: won by score only
         auto Phases=FindEnum("EAthenaGamePhase");auto End=Phases?Phases->GetValue("EndGame"):-1;
         if(GS->HasGamePhase() && End>=0 && GS->GamePhase==End)return;
         // Downed bots still belong to a surviving team until final elimination.
@@ -7267,6 +7344,7 @@ namespace SpectraBots
             Killer->OnRep_Kills();
             if (Killer->HasTeamKillScore()) { ++Killer->TeamKillScore; Killer->OnRep_TeamKillScore(); }
             SyndicateReportKill(Killer, Victim, B.DisplayName);
+            ::SyndicateTeamKill(Killer, Victim);
             if (Killer->HasTeamKillScore()) Killer->ClientReportTeamKill(Killer->TeamKillScore);
             Killer->ForceNetUpdate();QueueProgression(Killer,"kill");CountArenaHypeKill(Killer); // Bot victims do not trigger a celebration.
             if(auto KillerPC=HumanControllerFor(Killer))::SyndicateHumanStat(KillerPC,B.Pawn,0,1); // native kill stat for challenges
@@ -13273,6 +13351,7 @@ for(auto T=(const UStruct*)V->Class;T;T=T->GetSuper())Dump(T);
         { static float ScoreWait=0.f; ScoreWait-=DeltaSeconds;
           if(ScoreWait<=0.f){ScoreWait=0.5f;auto World=UWorld::GetWorld();auto Mode=World?(AFortGameMode*)World->AuthorityGameMode:nullptr;
             UpdateTeamGoalScore(Mode,Mode?(AFortGameStateAthena*)Mode->GameState:nullptr);} }
+        RespawnTeamRumbleBots(DeltaSeconds);
         if(CreativeMatch()){
             // Creative: only report occupancy and restart the host once everyone has left.
             auto World=UWorld::GetWorld();auto GS=World?(AFortGameStateAthena*)World->GameState:nullptr;

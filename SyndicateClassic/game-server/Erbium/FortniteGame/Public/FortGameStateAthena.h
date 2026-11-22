@@ -217,6 +217,10 @@ public:
     DEFINE_PROP(WarmupCountdownEndTime, float);
     DEFINE_PROP(PlayersLeft, int32);
     DEFINE_PROP(WinningTeam, int32);
+    DEFINE_PROP(WinningScore, int32);
+    DEFINE_PROP(CurrentHighScore, int32);
+    DEFINE_PROP(CurrentHighScoreTeam, int32);
+    DEFINE_BITFIELD_PROP(bIsLargeTeamGame);
     DEFINE_PROP(WinningPlayerState, AFortPlayerStateAthena*);
     DEFINE_PROP(GamePhase, uint8);
     DEFINE_PROP(GamePhaseStep, uint8);
@@ -240,6 +244,8 @@ public:
     DEFINE_FUNC(OnRep_AdditionalPlaylistLevelsStreamed, void);
     DEFINE_FUNC(IsRespawningAllowed, bool);
     DEFINE_FUNC(OnRep_WinningTeam, void);
+    DEFINE_FUNC(OnRep_CurrentHighScore, void);
+    DEFINE_FUNC(OnRep_WinningScore, void);
     DEFINE_FUNC(OnRep_WinningPlayerState, void);
     DEFINE_FUNC(OnRep_GamePhase, void);
     DEFINE_FUNC(OnRep_PlayersLeft, void);

@@ -3215,6 +3215,16 @@ static int SyndicateLargeTeamSquadSize = 4;
 bool SyndicateRespawnKeepsItems = false;
 // Team Rumble (FirstToGoalScore): eliminations a side needs to win; 0 when the playlist is not scored.
 int SyndicateTeamGoalScore = 0;
+// Team Rumble: eliminations of the other side, per side. Counted where each death is handled (bots in SpectraBots,
+// players in ClientOnPawnDied) instead of summing kill counters, which bot kills did not always reach.
+int SyndicateTeamKills[256] = {};
+void SyndicateTeamKill(AFortPlayerStateAthena* Killer, AFortPlayerStateAthena* Victim)
+{
+    if (SyndicateTeamGoalScore <= 0 || !Killer || !Victim || Killer == Victim) return;
+    if (uint8(Killer->TeamIndex) == uint8(Victim->TeamIndex)) return;
+    ++SyndicateTeamKills[uint8(Killer->TeamIndex)];
+    printf("[Syndicate] team score: team %d now %d of %d\n", int(uint8(Killer->TeamIndex)), SyndicateTeamKills[uint8(Killer->TeamIndex)], SyndicateTeamGoalScore);
+}
 // Large-team modes (Team Rumble, 50v50): a side is many squads. TeamIndex is the side; SquadId is the squad that
 // shows in the sidebar, with names and revives. Every MaxSquadSize players who join a side get their own SquadId,
 // unique across the match (side * 25 + squad), or the whole side showed as one squad.
@@ -3369,6 +3379,7 @@ void SetupPlaylist(AFortGameMode* GameMode, AFortGameStateAthena* GameState)
             {
                 const int Goal = Playlist->HasScoringData() ? int(Playlist->ScoringData.Value) : 0;
                 SyndicateTeamGoalScore = Goal > 0 && Goal < 10000 ? Goal : 100;
+                memset(SyndicateTeamKills, 0, sizeof(SyndicateTeamKills));
             }
             printf("[Syndicate] team game: large=%d squad=%d respawn=%d win=%d goal=%d\n", int(bIsLargeTeamGame),
                 int(Playlist->MaxSquadSize), int(Playlist->RespawnType), Win, SyndicateTeamGoalScore);

@@ -134,6 +134,9 @@ function metaValue(name, count, ctx) {
   if (/complete_?weekly_?challenges/.test(name)) return ctx.weeklyDone;
   let m = /cumulative_token0*(\d+)$/.exec(name); if (m) return ctx.weeksDone;
   m = /cumulative_final_quest0*(\d+)$/.exec(name); if (m) return ctx.cumulativeDone.has(Number(m[1])) ? 1 : 0;
+  // Season 8 Extra Credit skins (Quest_BR_S8_ExtraCredit_CompleteQuests_ChainTest_01a/02a/03a): "Reach tier 23 / 71 / 87"
+  // of the Battle Pass, so they follow the player's tier. Their style stages (01b/02b/03b) still count challenges.
+  if (/completequests/.test(name) && /_chaintest_\d+a$/.test(ctx.questId || '')) return ctx.tier;
   if (/completequests/.test(name)) return count > ctx.ownBundleSize ? ctx.allDone : ctx.ownBundleDone;
   return null;
 }
@@ -153,13 +156,13 @@ function progressMeta(profile, data, season) {
   for (const [id, item] of byId) if (done(item) && !isMeta(id) && !item.attributes?.tilted_daily) allDone++;
   const cumulativeDone = new Set();
   for (const [id, item] of byId) { const m = /cumulative_quest0*(\d+)$/.exec(id); if (m && done(item)) cumulativeDone.add(Number(m[1])); }
-  const ctx = {seasonXp: totalSeasonXp(a, season), weeklyDone, weeksDone, allDone, cumulativeDone, dailyDone: Math.max(0, Number(a.tilted_quest_dailies_completed) || 0)};
+  const ctx = {tier: Math.max(1, Number(a.book_level) || 1), seasonXp: totalSeasonXp(a, season), weeklyDone, weeksDone, allDone, cumulativeDone, dailyDone: Math.max(0, Number(a.tilted_quest_dailies_completed) || 0)};
   let stars = 0, changed = false;
   for (const [id, item] of byId) {
     if (item.attributes?.quest_state !== 'Active') continue;
     const definition = data.questMap.get(id); if (!definition) continue;
     const bundle = bundleOf.get(id), own = (bundle?.quests || []).filter(q => !isMeta(q));
-    ctx.ownBundleSize = own.length; ctx.ownBundleDone = own.filter(isDone).length;
+    ctx.questId = id; ctx.ownBundleSize = own.length; ctx.ownBundleDone = own.filter(isDone).length;
     for (const o of definition.objectives || []) {
       if (o.stats?.length) continue;
       const value = metaValue(o.name, o.count, ctx); if (value === null) continue;
