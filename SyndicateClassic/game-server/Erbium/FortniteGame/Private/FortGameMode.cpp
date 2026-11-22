@@ -3213,6 +3213,8 @@ bool bIsLargeTeamGame = false;
 static int SyndicateLargeTeamSquadSize = 4;
 // Team Rumble (large teams with respawns): you respawn with your items and lose only your materials.
 bool SyndicateRespawnKeepsItems = false;
+// Team Rumble (FirstToGoalScore): eliminations a side needs to win; 0 when the playlist is not scored.
+int SyndicateTeamGoalScore = 0;
 // Large-team modes (Team Rumble, 50v50): a side is many squads. TeamIndex is the side; SquadId is the squad that
 // shows in the sidebar, with names and revives. Every MaxSquadSize players who join a side get their own SquadId,
 // unique across the match (side * 25 + squad), or the whole side showed as one squad.
@@ -3358,6 +3360,13 @@ void SetupPlaylist(AFortGameMode* GameMode, AFortGameStateAthena* GameState)
         bIsLargeTeamGame = Playlist->bIsLargeTeamGame;
         if (Playlist->MaxSquadSize > 0) SyndicateLargeTeamSquadSize = Playlist->MaxSquadSize;
         SyndicateRespawnKeepsItems = Playlist->bIsLargeTeamGame && Playlist->RespawnType > 0;
+        if (SyndicateRespawnKeepsItems)
+            Playlist->RespawnType = 1; // InfiniteRespawn: Team Rumble respawns everyone, storm deaths too
+        if (Playlist->HasWinConditionType() && Playlist->WinConditionType == 3 && Playlist->HasScoringData())
+        {
+            const int Goal = int(Playlist->ScoringData.Value);
+            SyndicateTeamGoalScore = Goal > 0 ? Goal : 100;
+        }
 
         //if (GameState->HasAdditionalPlaylistLevelsStreamed())
         //    GameState->OnRep_AdditionalPlaylistLevelsStreamed();

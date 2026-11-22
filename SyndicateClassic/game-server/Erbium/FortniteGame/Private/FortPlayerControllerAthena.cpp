@@ -23,8 +23,9 @@ extern uint64_t ApplyCharacterCustomization;
 #include "../Public/FortAthenaCreativePortal.h"
 uint8 SyndicateSquadIdFor(uint8 TeamIndex, uint8 TeamSquadId); // FortGameMode.cpp: squads inside large teams
 extern bool SyndicateRespawnKeepsItems; // FortGameMode.cpp: Team Rumble keeps items on death, drops materials
-static bool SyndicateDropsOnDeath(UFortItemDefinition* Def)
+static bool SyndicateDropsOnDeath(const UFortItemDefinition* ConstDef)
 {
+    auto Def = const_cast<UFortItemDefinition*>(ConstDef);
     return Def && Def->CanBeDropped() && (!SyndicateRespawnKeepsItems || Def->IsA<UFortResourceItemDefinition>());
 }
 

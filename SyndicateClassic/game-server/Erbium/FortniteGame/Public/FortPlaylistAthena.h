@@ -84,6 +84,8 @@ public:
     DEFINE_PROP(bSkipAircraft, bool);
     DEFINE_PROP(bForceRespawnLocationInsideOfVolume, bool);
     DEFINE_PROP(bIsLargeTeamGame, bool);
+    DEFINE_PROP(WinConditionType, uint8);   // EAthenaWinCondition: 3 = FirstToGoalScore (Team Rumble)
+    DEFINE_PROP(ScoringData, FScalableFloat); // FWinConditionScoreData; its first member is GoalScore
     DEFINE_PROP(ModifierList, TArray<TSoftObjectPtr<UFortGameplayModifierItemDefinition>>);
     DEFINE_PROP(PreloadPersistentLevel, TSoftObjectPtr<UWorld>);
     DEFINE_PROP(UIDisplayName, FText);

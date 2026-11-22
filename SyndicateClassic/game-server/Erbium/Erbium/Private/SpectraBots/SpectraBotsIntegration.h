@@ -76,6 +76,7 @@ public:
 void SyndicateLateGameAdoptStormCenter(); // FortGameMode.cpp
 // FortPlayerControllerAthena.cpp: players who just dropped or swapped out Lean (the menu's instant heal marks it too).
 extern std::unordered_map<AFortPlayerControllerAthena*,ULONGLONG> SyndicateLeanDropped;
+extern int SyndicateTeamGoalScore; // FortGameMode.cpp: Team Rumble goal score (0 = not a scored playlist)
 namespace SpectraBots
 {
     // SDK::FindClass/FindEnum/FindStruct walk the whole object array on every call. The bot
@@ -7068,6 +7069,43 @@ namespace SpectraBots
         return true;
     }
 
+    // Team Rumble (FirstToGoalScore): a side's score is its members' eliminations, shown to every member as
+    // TeamScore (the scoreboard). The first side to the playlist's goal score wins the match.
+    inline void UpdateTeamGoalScore(AFortGameMode* Mode,AFortGameStateAthena* GS)
+    {
+        if(::SyndicateTeamGoalScore<=0 || !Mode || !GS)return;
+        auto Phases=FindEnum("EAthenaGamePhase");auto End=Phases?Phases->GetValue("EndGame"):-1;
+        if(GS->HasGamePhase() && End>=0 && GS->GamePhase==End)return;
+        auto Off=GS->GetOffset("PlayerArray");if(Off==uint32(-1))return;
+        auto& Players=GetFromOffset<TArray<AActor*>>(GS,Off);
+        int Score[256]={};
+        for(int I=0;I<Players.Num();++I){auto S=(AFortPlayerStateAthena*)Players[I];if(!S)continue;
+            Score[uint8(S->TeamIndex)]+=S->HasKillScore()?int(S->KillScore):int(S->Kills);}
+        int Winner=-1;
+        for(int I=0;I<Players.Num();++I){auto S=(AFortPlayerStateAthena*)Players[I];if(!S || !S->HasTeamScore())continue;
+            const int Team=uint8(S->TeamIndex);
+            if(S->TeamScore!=Score[Team]){S->TeamScore=Score[Team];S->OnRep_TeamScore();S->ForceNetUpdate();}
+            if(Score[Team]>=::SyndicateTeamGoalScore)Winner=Team;}
+        if(Winner<0)return;
+        for(int I=0;I<Mode->AlivePlayers.Num();++I){
+            auto PC=(AFortPlayerControllerAthena*)Mode->AlivePlayers[I];
+            auto State=PC?(AFortPlayerStateAthena*)PC->PlayerState:nullptr;
+            if(!State || uint8(State->TeamIndex)!=Winner)continue;
+            if(State->HasPlace()){State->Place=1;State->OnRep_Place();}
+            QueueProgression(State,"win");
+            SendHumanMatchResults(PC,1,(std::max)(1,(int)GS->PlayersLeft));
+            auto Pawn=PC->MyFortPawn;auto Weapon=Pawn?Pawn->CurrentWeapon:nullptr;
+            if(auto Fn=PC->GetFunction("ClientNotifyWon"))PC->Call<void>(Fn,Pawn,Weapon?((AFortWeapon*)Weapon)->WeaponData:nullptr,uint8(0));
+            if(auto Fn=PC->GetFunction("ClientNotifyTeamWon"))PC->Call<void>(Fn,Pawn,Weapon?((AFortWeapon*)Weapon)->WeaponData:nullptr,uint8(0));
+            State->ForceNetUpdate();
+        }
+        GS->WinningTeam=Winner;GS->OnRep_WinningTeam();
+        if(GS->HasGamePhase() && End>=0 && End<256 && GS->GamePhase!=End){auto Old=GS->GamePhase;GS->GamePhase=uint8(End);GS->OnRep_GamePhase(Old);}
+        GS->ForceNetUpdate();
+        if(auto EndMatch=Mode->GetFunction("EndMatch"))Mode->ProcessEvent(EndMatch,nullptr);
+        AppendBotLog("victory: a side reached the goal score\n");
+    }
+
     inline void UpdateSurvivingTeamVictory(AFortGameMode* Mode,AFortGameStateAthena* GS)
     {
         if(PlaygroundMatch())return;
@@ -13231,6 +13269,9 @@ for(auto T=(const UStruct*)V->Class;T;T=T->GetSuper())Dump(T);
         SyndicateHangWatch::Beat(); // game-thread hang watchdog (SyndicateHangWatch.h)
         ProcessDeathLootChecks();
         ClampNegativeShields();
+        { static float ScoreWait=0.f; ScoreWait-=DeltaSeconds;
+          if(ScoreWait<=0.f){ScoreWait=0.5f;auto World=UWorld::GetWorld();auto Mode=World?(AFortGameMode*)World->AuthorityGameMode:nullptr;
+            UpdateTeamGoalScore(Mode,Mode?(AFortGameStateAthena*)Mode->GameState:nullptr);} }
         if(CreativeMatch()){
             // Creative: only report occupancy and restart the host once everyone has left.
             auto World=UWorld::GetWorld();auto GS=World?(AFortGameStateAthena*)World->GameState:nullptr;
