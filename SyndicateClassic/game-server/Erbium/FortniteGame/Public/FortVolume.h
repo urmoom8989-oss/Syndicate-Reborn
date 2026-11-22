@@ -54,6 +54,10 @@ struct FFortPlaysetStreamingData
 public:
     USCRIPTSTRUCT_COMMON_MEMBERS(FFortPlaysetStreamingData);
 
+    DEFINE_STRUCT_PROP(PackageName, FName);
+    DEFINE_STRUCT_PROP(UniquePackageName, FName);
+    DEFINE_STRUCT_PROP(Location, FVector);
+    DEFINE_STRUCT_PROP(Rotation, FRotator);
     DEFINE_STRUCT_BITFIELD_PROP(bValid);
 };
 

@@ -3680,6 +3680,21 @@
                                                                 <TextBlock Text="Open locker editor" Margin="8,0,0,0" />
                                                             </StackPanel>
                                                         </Button>
+
+                                                        <Border Height="1" Background="#14FFFFFF" Margin="0,22,0,18" />
+
+                                                        <!-- News & tournaments (Views/NewsEditorView.xaml, MainViewModel.News.cs, backend Utils/syndicateNewsSettings.js) -->
+                                                        <TextBlock Text="News &amp; tournaments" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" />
+                                                        <TextBlock Text="Write your own posts for the game's News tab, with a picture, and make tournaments for the Compete tab (Seasons 8 to X and Chapter 2). A tournament can go in every season's News tab too."
+                                                                   FontSize="11.5" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                        <Button Style="{StaticResource GhostButton}" Height="40" Padding="16,0" HorizontalAlignment="Left" FontWeight="Bold"
+                                                                Command="{Binding OpenNewsEditorCommand}" AutomationProperties.Name="Open the news and tournaments editor">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="&#xE789;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
+                                                                <TextBlock Text="Open news editor" Margin="8,0,0,0" />
+                                                            </StackPanel>
+                                                        </Button>
+                                                        <TextBlock Text="{Binding NewsSummary}" FontSize="11" Foreground="{DynamicResource MutedTextBrush}" Margin="0,8,0,0" />
                                                     </StackPanel>
                                                 </Border>
 
@@ -5432,6 +5447,13 @@
         <Grid Panel.ZIndex="111" Background="#C406070C"
               Visibility="{Binding IsCosmeticsOpen, Converter={StaticResource BoolToVis}}">
             <views:CosmeticsView Margin="22" />
+        </Grid>
+
+        <!-- ======================= NEWS EDITOR ======================= -->
+        <!-- Settings > News & tournaments (Views/NewsEditorView.xaml, MainViewModel.News.cs). -->
+        <Grid Panel.ZIndex="112" Background="#C406070C"
+              Visibility="{Binding IsNewsEditorOpen, Converter={StaticResource BoolToVis}}">
+            <views:NewsEditorView Margin="22" />
         </Grid>
 
         <!-- ======================= LOBBY EDITOR ======================= -->

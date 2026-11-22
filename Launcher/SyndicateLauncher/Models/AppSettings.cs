@@ -132,6 +132,10 @@ public sealed class AppSettings
     public int ShopHours { get; set; } = 6;
     /// <summary>Settings &gt; Item shop: your own shop per season number; seasons without one stay automatic.</summary>
     public Dictionary<string, CustomShop> CustomShops { get; set; } = new();
+    /// <summary>Settings &gt; News &amp; tournaments: posts for the game's News tab (Services/NewsSettings.cs).</summary>
+    public List<NewsPost> News { get; set; } = new();
+    /// <summary>Settings &gt; News &amp; tournaments: tournaments for the Compete tab (8.50 to 12.50) and the News tab.</summary>
+    public List<CustomTournament> Tournaments { get; set; } = new();
 }
 
 /// <summary>
@@ -153,6 +157,34 @@ public sealed class SeasonLayout
 }
 
 /// <summary>A season's own item shop (Settings &gt; Item shop): template ids for its featured and daily slots.</summary>
+/// <summary>A post in the game's News tab. Builds empty = every season.</summary>
+public sealed class NewsPost
+{
+    public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Body { get; set; } = "";
+    /// <summary>File name inside %APPDATA%\SyndicateLauncher\NewsImages, or empty.</summary>
+    public string Image { get; set; } = "";
+    public List<string> Builds { get; set; } = new();
+}
+
+/// <summary>A tournament in the Compete tab (8.50 to 12.50), also posted in the News tab when PostInNews is on.</summary>
+public sealed class CustomTournament
+{
+    public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Subtitle { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string Schedule { get; set; } = "";
+    public string Mode { get; set; } = "solo";
+    public DateTime Begin { get; set; } = DateTime.Now;
+    public DateTime End { get; set; } = DateTime.Now.AddHours(3);
+    public string Image { get; set; } = "";
+    public string Color { get; set; } = "F81B2D";
+    public bool PostInNews { get; set; } = true;
+    public List<string> Builds { get; set; } = new();
+}
+
 public sealed class CustomShop
 {
     public List<string> Featured { get; set; } = new();

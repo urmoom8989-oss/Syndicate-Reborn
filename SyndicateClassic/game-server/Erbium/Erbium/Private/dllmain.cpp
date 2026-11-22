@@ -247,7 +247,7 @@ static void SyndicateStartServerWorld()
     // reservation then lands on this map, and Battle Royale setup stays out of the way (SyndicateStwZoneTravel).
     {
         wchar_t Flag[4]{};
-        if (VersionInfo.FortniteVersion < 2.0 && GetEnvironmentVariableW(L"SYNDICATE_STW_HOST", Flag, 4) == 1 && Flag[0] == L'1')
+        if (GetEnvironmentVariableW(L"SYNDICATE_STW_HOST", Flag, 4) == 1 && Flag[0] == L'1')
         {
             extern bool SyndicateStwZoneTravel;
             SyndicateStwZoneTravel = true;

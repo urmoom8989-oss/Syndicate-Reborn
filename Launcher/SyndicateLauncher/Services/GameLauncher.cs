@@ -400,6 +400,7 @@ public static class GameLauncher
             // Settings > Game modes: the backend reads the lobby's modes from here when Fortnite asks for its hotfixes.
             SeasonModes.WriteForBackend();
             ShopSettings.WriteForBackend();
+            NewsSettings.WriteForBackend();
             if (File.Exists(syndicateReadyFile)) File.Delete(syndicateReadyFile);
 
             syndicateRunId = Guid.NewGuid().ToString("N");
@@ -694,7 +695,9 @@ public static class GameLauncher
                 hostInfo.ArgumentList.Add("-AUTH_LOGIN=" + stwCode);
                 hostInfo.ArgumentList.Add("-AUTH_PASSWORD=" + stwCode);
             }
+            else
 #endif
+            if (syndicateServer && SeasonModes.IsEnabled(build.Version, "stw")) await SignInStwHostAsync(hostInfo, status, Record);
             var host = StartOwnedHidden(hostInfo); activeGame = host;
             if (syndicateServer)
             {
@@ -1033,6 +1036,30 @@ public static class GameLauncher
     /// <param name="standby">Fast queue: load the next match in the background. It does not touch server.json (the live
     /// match keeps it), runs at a lower priority and publishes its state to occupancy.&lt;pid&gt;.json until promoted.</param>
     /// <param name="started">Called with the new process before loading starts, so a background load can be cancelled.</param>
+    /// <summary>
+    /// Save the World on for this season (Settings &gt; Game modes): after the player reserves the match server for a
+    /// mission it travels to the mission's zone, and the zone asks the backend for the player's profile through the
+    /// server's own account. Without one every request fails ("Invalid user auth") and the player is sent back to
+    /// the menu, so the server signs in with an exchange code. A failure only leaves Save the World without it.
+    /// </summary>
+    private static async Task SignInStwHostAsync(ProcessStartInfo hostInfo, Action<string> status, Action<string> record)
+    {
+        try
+        {
+            var code = await SyndicateBackend.ExchangeCodeAsync("SyndicateHost", false, status);
+            for (int i = hostInfo.ArgumentList.Count - 1; i >= 0; i--)
+                if (hostInfo.ArgumentList[i].StartsWith("-AUTH_", StringComparison.OrdinalIgnoreCase))
+                    hostInfo.ArgumentList.RemoveAt(i);
+            hostInfo.ArgumentList.Add("-AUTH_TYPE=exchangecode");
+            hostInfo.ArgumentList.Add("-AUTH_LOGIN=" + code);
+            hostInfo.ArgumentList.Add("-AUTH_PASSWORD=" + code);
+        }
+        catch (Exception ex)
+        {
+            record("Save the World: the match server could not sign in (" + ex.Message + ")");
+        }
+    }
+
     private static async Task<Process> StartHostOnlyAsync(BuildInfo build, MatchOptions options,
         string sessionDirectory, string syndicateRuntime, Action<string> status, Action<string> record, int hostIndex,
         HostSlot slot, bool standby, Action<Process>? started)
@@ -1087,6 +1114,7 @@ public static class GameLauncher
         if (SeasonModes.IsEnabled(build.Version, "stw")) hostInfo.Environment["SYNDICATE_STW_DEV"] = "1";
         else hostInfo.Environment.Remove("SYNDICATE_STW_DEV");
 #endif
+        if (!standby && SeasonModes.IsEnabled(build.Version, "stw")) await SignInStwHostAsync(hostInfo, status, record);
         var studio = standby ? null : Studio.StudioSession.Current();
         string playlist = MatchOptions.ModeFromServerPlaylist(Studio.StudioSession.Apply(hostInfo, studio, record));
         if (!standby) HostLog = hostLog;

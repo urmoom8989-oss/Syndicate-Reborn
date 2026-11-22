@@ -12,6 +12,7 @@ import Profile from '../User/Mongodb/Schema/profiles.js';
 import {publishCharacter,preseasonMatchProfile} from '../Utils/syndicateLocker.js';
 import express from "express";
 import fs from "node:fs";
+import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import { verifyToken } from "../User/tokenManager/tokenVerify.js";
 import User from "../User/Mongodb/Schema/user.js";
@@ -249,6 +250,19 @@ app.post("/fortnite/api/matchmaking/session/matchMakingRequest", (req, res) => {
   // beacon and the server loaded the mission (the tutorial) for it. Dev launcher: offer the local host as that
   // empty server, matching every criterion, so the next step (the beacon reservation) can be seen and built.
   const wantsEmpty = (req.body?.criteria || []).some(c => c?.key === 'GAMEMODE_s' && c?.value === 'FORTEMPTY');
+  // The mission the player picked (any season): its zone theme tells the match server which map and game mode to
+  // load when the empty server is reserved (Erbium Misc.cpp SyndicateStwRequestedTheme reads stw-zone.json).
+  if (stwOn) {
+    try {
+      const zone = (req.body?.criteria || []).find(c => c?.key === 'ZONEINSTANCEID_s')?.value;
+      const theme = zone ? JSON.parse(zone)?.zoneThemeClass : '';
+      if (typeof theme === 'string' && /^\/Game\/[A-Za-z0-9_\/.]+$/.test(theme)) {
+        fs.mkdirSync(playlists.runtime, {recursive: true});
+        fs.writeFileSync(path.join(playlists.runtime, 'stw-zone.json'), JSON.stringify({zoneThemeClass: theme, at: Date.now()}));
+        console.log('[Syndicate STW] mission zone theme ' + theme);
+      }
+    } catch {}
+  }
   // Local tutorial (dev launcher, stw-local.txt): no host. Tell the client's SyndicateStudio.dll to open the
   // tutorial map in the player's own game, and offer no server.
   const stwShared = process.env.LOCALAPPDATA ? process.env.LOCALAPPDATA + '/ProjectTilted' : '';

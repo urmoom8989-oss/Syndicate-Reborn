@@ -919,6 +919,48 @@ void SyndicateStwTravelTick()
 	else SyndicateStwLog("[Syndicate STW] OpenLevel not found\n");
 }
 
+static void SyndicateStwDumpClass(const wchar_t* WPath);
+static void SyndicateStwDumpClassSafe(const wchar_t* WPath) { __try { SyndicateStwDumpClass(WPath); } __except (1) { SyndicateStwLog("[Syndicate STW] recon of the mission's zone theme crashed (caught)\n"); } }
+// The zone theme of the mission the player picked: the backend (Routes/matchmaking.js) writes it to
+// Runtime\Server\stw-zone.json from the client's ZONEINSTANCEID, next to this host's ready file.
+static std::wstring SyndicateStwRequestedTheme()
+{
+	wchar_t Ready[MAX_PATH]{};
+	if (!GetEnvironmentVariableW(L"TILTED_SERVER_READY_FILE", Ready, MAX_PATH)) return L"";
+	std::wstring File(Ready);
+	auto Slash = File.find_last_of(L"\\/");
+	if (Slash == std::wstring::npos) return L"";
+	File = File.substr(0, Slash + 1) + L"stw-zone.json";
+	FILE* F = nullptr;
+	if (_wfopen_s(&F, File.c_str(), L"rb") != 0 || !F) return L"";
+	char Buf[2048]{};
+	size_t Read = fread(Buf, 1, sizeof(Buf) - 1, F);
+	fclose(F);
+	std::string Text(Buf, Read);
+	auto Key = Text.find("\"zoneThemeClass\"");
+	if (Key == std::string::npos) return L"";
+	auto Colon = Text.find(':', Key);
+	auto Start = Colon == std::string::npos ? std::string::npos : Text.find('"', Colon + 1);
+	auto End = Start == std::string::npos ? std::string::npos : Text.find('"', Start + 1);
+	if (End == std::string::npos) return L"";
+	std::string Theme = Text.substr(Start + 1, End - Start - 1);
+	if (Theme.size() < 6 || Theme[0] != '/') return L"";
+	return std::wstring(Theme.begin(), Theme.end());
+}
+static void SyndicateStwPickMissionZone()
+{
+	auto Theme = SyndicateStwRequestedTheme();
+	if (Theme.empty()) return;
+	auto OldMap = SyndicateStwZoneMap, OldMode = SyndicateStwZoneMode;
+	SyndicateStwZoneMap.clear();
+	SyndicateStwZoneMode.clear();
+	SyndicateStwDumpClassSafe(Theme.c_str());
+	if (SyndicateStwZoneMap.empty()) { SyndicateStwZoneMap = OldMap; SyndicateStwZoneMode = OldMode; }
+	if (SyndicateStwZoneMode.empty()) SyndicateStwZoneMode = OldMode;
+	SyndicateStwLog("[Syndicate STW] mission zone theme %ls: map %ls, game mode %ls\n", Theme.c_str(),
+		SyndicateStwZoneMap.empty() ? L"(none)" : SyndicateStwZoneMap.c_str(), SyndicateStwZoneMode.empty() ? L"(default)" : SyndicateStwZoneMode.c_str());
+}
+
 static int (*SyndicateReserveOG)(void*, void*, void*) = nullptr;
 static int SyndicateReserveHook(void* Host, void* Request, void* Client)
 {
@@ -926,6 +968,8 @@ static int SyndicateReserveHook(void* Host, void* Request, void* Client)
 	SyndicateStwLog("[Syndicate STW] beacon: empty-server reservation returned %d%s\n", Result, Result == 8 ? "" : ", reported as accepted (8)");
 	// The empty server now becomes the tutorial. The client reconnects to this beacon a few seconds later to
 	// confirm the reservation, so travel only after that (SyndicateStwTravelTick, called from TickFlush).
+	if (!SyndicateStwZoneTravel && !SyndicateStwTravelAt)
+		SyndicateStwPickMissionZone();
 	if (!SyndicateStwZoneTravel && !SyndicateStwTravelAt && !SyndicateStwZoneMap.empty())
 		SyndicateStwTravelAt = GetTickCount64() + 12000;
 	return 8;
@@ -977,8 +1021,14 @@ static void SyndicateStwDumpClass(const wchar_t* WPath)
 			}
 			else if (Cdo && (Type == "AssetObjectProperty" || Type == "AssetClassProperty" || Type == "SoftObjectProperty" || Type == "SoftClassProperty"))
 			{
-				auto& Str = GetFromOffset<FString>(Cdo, Off + 0x10);
-				Value = std::string(Str.ToString().c_str());
+				// UE 4.16/4.17 keep the path as an FString; from 4.18 on (FSoftObjectPath) it is an FName.
+				if (VersionInfo.EngineVersion >= 4.18)
+					Value = std::string(GetFromOffset<FName>(Cdo, Off + 0x10).ToSDKString().c_str());
+				else
+				{
+					auto& Str = GetFromOffset<FString>(Cdo, Off + 0x10);
+					Value = std::string(Str.ToString().c_str());
+				}
 			}
 			else if (Cdo && Type == "NameProperty") Value = std::string(GetFromOffset<FName>(Cdo, Off).ToSDKString().c_str());
 			std::string PropName(Prop->GetName().ToSDKString().c_str());
@@ -1210,11 +1260,9 @@ void SyndicateStwBeaconStart()
 		fflush(stdout);
 		return;
 	}
-	if (VersionInfo.FortniteVersion >= 2.0)
-	{
-		SyndicateStwLog("[Syndicate STW] beacon: skipped, Save the World dev mode is Pre-season/Season 1 only\n");
-		return;
-	}
+	// Every season now (it was Pre-season/Season 1 only). Later seasons pick the zone from the mission the player
+	// chose (stw-zone.json, see SyndicateStwRequestedTheme) instead of the 1.7.2 tutorial's theme.
+	SyndicateStwLog("[Syndicate STW] beacon: starting on Fortnite %.2f\n", (double)VersionInfo.FortniteVersion);
 
 	SyndicateStwReconSafe();
 	SyndicateStwPassNoGameChecksSafe();

@@ -1,6 +1,7 @@
 import express from "express";
 import {clientBuild} from "../Utils/syndicateBuild.js";
 import {modeImage,modeImages} from "../Utils/syndicateSeasonModes.js";
+import {customNews,customTournaments,newsImageFile} from "../Utils/syndicateNewsSettings.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -61,6 +62,40 @@ app.get("/content/api/pages/*", async (req, res) => {
   const soloInfo=Array.isArray(tournaments)&&tournaments.find(t=>t.tournament_display_id==='LG_ARENA_SOLO');
   if(soloInfo&&!tournaments.some(t=>t.tournament_display_id==='LG_ARENA_DUOS'))
     tournaments.push({...soloInfo,tournament_display_id:'LG_ARENA_DUOS'});
+  // News and tournaments from the launcher (Settings > News & tournaments, Utils/syndicateNewsSettings.js).
+  {
+    const newsBuild=clientBuild(req.headers['user-agent']);
+    const newsHost=String(req.socket.localAddress||'127.0.0.1').replace(/^::ffff:/,'');
+    const newsBase='http://'+(newsHost.includes(':')?'['+newsHost+']':newsHost)+':'+req.socket.localPort;
+    const picture=name=>name&&newsImageFile(name)?`${newsBase}/syndicate/newsimage/${encodeURIComponent(name)}`:'';
+    const cups=customTournaments(newsBuild);
+    if(cups.length&&Contentpages.tournamentinformation?.tournament_info){
+      const list=Contentpages.tournamentinformation.tournament_info.tournaments??=[];
+      const base=list.find(t=>t.tournament_display_id==='LG_ARENA_SOLO')||{};
+      for(const t of cups){
+        const art=picture(t.image)||base.poster_front_image||'';
+        list.push({...base,_type:'Tournament Display Info',tournament_display_id:t.displayId,
+          title_line_1:t.title,title_line_2:t.subtitle,long_format_title:[t.title,t.subtitle].filter(Boolean).join(' '),
+          short_format_title:t.title,schedule_info:t.schedule,flavor_description:t.description,details_description:t.description,
+          pin_earned_text:'',background_left_color:t.color,background_right_color:t.color,poster_fade_color:t.color,
+          poster_front_image:art,poster_back_image:art,loading_screen_image:art,playlist_tile_image:art});
+      }
+    }
+    const posts=[...customNews(newsBuild).map(n=>({...n,image:picture(n.image)})),
+      ...cups.filter(t=>t.postInNews).map(t=>({id:t.displayId,title:t.title+(t.subtitle?' '+t.subtitle:''),
+        body:[t.schedule,t.description,'Play it from the Compete tab.'].filter(Boolean).join('\n\n'),image:picture(t.image)}))];
+    // Seasons 1 to 10 show news.messages; later ones (and 9.x/10.x's MOTD panel) show motds.
+    if(posts.length){
+      const now=new Date().toISOString();
+      const messages=posts.map(p=>({image:p.image,hidden:false,messagetype:'normal',_type:'CommonUI Simple Message Base',adspace:'',title:p.title,body:p.body,spotlight:false}));
+      const motds=posts.map((p,i)=>({entryType:'Text',image:p.image,tileImage:p.image,videoMute:false,hidden:false,tabTitleOverride:p.title.slice(0,20),
+        _type:'CommonUI Simple Message MOTD',title:p.title,body:p.body,videoLoop:false,videoStreamingEnabled:false,sortingPriority:posts.length-i,
+        id:'Syndicate_'+p.id+'_'+i,videoAutoplay:false,videoFullscreen:false,spotlight:false}));
+      const page=title=>({_title:title,header:'',style:'None',_noIndex:false,alwaysShow:false,_activeDate:'2018-08-06T19:00:26.217Z',lastModified:now,_locale:'en-US'});
+      Contentpages.battleroyalenews={...page('battleroyalenews'),news:{_type:'Battle Royale News',messages,motds}};
+      Contentpages.battleroyalenewsv2={...page('battleroyalenewsv2'),news:{motds}};
+    }
+  }
   // Pictures chosen in the launcher's lobby editor go on the game's mode tiles, served by this backend.
   const pictures=modeImages(clientBuild(req.headers['user-agent']));
   if(!pictures.length)return res.json(Contentpages);
@@ -85,6 +120,12 @@ app.get("/content/api/pages/*", async (req, res) => {
     playlists.push({image:`${base}/syndicate/modeimage/${encodeURIComponent(tileBuild)}/${p.mode}?v=${stamp}`,playlist_name:p.playlist,hidden:false,special_border:'None',_type:'FortPlaylistInfo'});
   }
   res.json({...Contentpages,tournamentinformation:{...Contentpages.tournamentinformation,tournament_info:{...Contentpages.tournamentinformation?.tournament_info,tournaments:tournamentList}},playlistinformation:{...Contentpages.playlistinformation,playlist_info:{...info,playlists}}});
+});
+
+app.get("/syndicate/newsimage/:name", (req, res) => {
+  const file=newsImageFile(req.params.name);
+  if(!file)return res.status(404).end();
+  res.sendFile(file);
 });
 
 app.get("/syndicate/modeimage/:build/:mode", (req, res) => {

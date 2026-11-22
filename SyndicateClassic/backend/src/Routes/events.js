@@ -1,6 +1,7 @@
 import express from "express";
 import {clientBuild} from "../Utils/syndicateBuild.js";
 import {enabledModes} from "../Utils/syndicateSeasonModes.js";
+import {customTournaments} from "../Utils/syndicateNewsSettings.js";
 import fs from "fs";
 import axios from "axios";
 import { MongoClient } from "mongodb";
@@ -157,6 +158,8 @@ app.get("/api/v1/events/Fortnite/download/:accountid", verifyToken, async (req, 
             // tile shows the division and Hype too. Both share the one Hype score the backend keeps.
             { const build = clientBuild(String(req.headers['user-agent'] || ''));
               if (enabledModes(build).includes('arenaduos')) SyndicateAddArenaDuos(events); }
+            // Tournaments made in the launcher (Settings > News & tournaments).
+            SyndicateAddCustomTournaments(events, clientBuild(String(req.headers['user-agent'] || '')));
         } catch (parseErr) {
             log.error("Error parsing JSON:", parseErr);
             res.status(500).send('Error parsing JSON!!!');
@@ -173,6 +176,37 @@ app.get("/api/v1/events/Fortnite/download/:accountid", verifyToken, async (req, 
         log.arena("Arena is disabled, not sending json data!");
     }
 });
+
+// A launcher tournament: its own public event in the Compete tab, open to everyone between its begin and end time,
+// playing the chosen mode's playlist and scored like Arena (placement and eliminations). It never touches Hype.
+function SyndicateAddCustomTournaments(data, build) {
+    const solo = (data.events || []).find(e => e.displayDataId === 'LG_ARENA_SOLO');
+    const soloTemplate = (data.templates || []).find(t => t.playlistId === 'Playlist_ShowdownAlt_Solo');
+    for (const t of customTournaments(build)) {
+        if (data.events.some(e => e.displayDataId === t.displayId)) continue;
+        const windowId = 'Syndicate_' + t.id + '_Window1';
+        const begin = t.begin.toISOString(), end = t.end.toISOString();
+        const window = {
+            ...(solo?.eventWindows?.[0] || {}), additionalRequirements: [], beginTime: begin, endTime: end, countdownBeginTime: begin,
+            blackoutPeriods: [], canLiveSpectate: false, eventTemplateId: windowId, eventWindowId: windowId, isTBD: false,
+            metadata: {RoundType: 'Qualifiers'}, payoutDelay: 1, requireAllTokens: [], requireAllTokensCaller: [], requireAnyTokens: [],
+            requireAnyTokensCaller: [], requireNoneTokensCaller: [], round: 0,
+            scoreLocations: [{scoreMode: 'window', scoreId: windowId, leaderboardId: windowId, useIndividualScores: false}],
+            teammateEligibility: 'any', visibility: 'public',
+        };
+        data.events.push({
+            ...(solo || {}), gameId: 'Fortnite', eventId: 'syndicate_cup_' + t.id.toLowerCase(), displayDataId: t.displayId,
+            announcementTime: begin, beginTime: begin, endTime: end, eventGroup: '', link: null,
+            metadata: {TrackedStats: ['PLACEMENT_STAT_INDEX', 'TEAM_ELIMS_STAT_INDEX', 'MATCH_PLAYED_STAT'], minimumAccountLevel: 0},
+            eventWindows: [window],
+        });
+        data.templates.push({
+            eventTemplateId: windowId, gameId: 'Fortnite', matchCap: -1, playlistId: t.playlist,
+            payoutTable: {ranks: [], scoreId: windowId, scoringType: 'value'},
+            scoringRules: soloTemplate?.scoringRules || [],
+        });
+    }
+}
 
 function SyndicateAddArenaDuos(data) {
     const solo = (data.events || []).find(e => e.displayDataId === 'LG_ARENA_SOLO');

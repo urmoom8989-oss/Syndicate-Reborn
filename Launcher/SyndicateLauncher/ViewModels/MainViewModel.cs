@@ -112,6 +112,7 @@ public sealed partial class MainViewModel : ViewModelBase
         InitializeCustomBotNames();
         InitializeGameModes();
         InitializeItemShop();
+        InitializeNews();
         foreach (var profile in _settings.Profiles)
         {
             ProfileAvatars.Ensure(profile);

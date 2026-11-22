@@ -19,6 +19,106 @@ static bool SafeLoadPlayset(void (*Load)(UPlaysetLevelStreamComponent*), UPlayse
 	__except (EXCEPTION_EXECUTE_HANDLER) { return false; }
 }
 
+// The island's level, streamed in on the server with the engine's own LoadLevelInstance and handed to the clients
+// through the component's ClientPlaysetData, which is what LoadPlayset does. Used where the scanned LoadPlayset is not
+// safe (the UE4 builds, Seasons 7 to X): before this the island existed nowhere and the player fell into the sea.
+static bool SyndicateStreamPlayset(UPlaysetLevelStreamComponent* Component, UObject* Playset, AActor* Volume)
+{
+	auto World = UWorld::GetWorld();
+	if (!World || !Component || !Playset || !Volume)
+		return false;
+	auto PlaysetOff = Playset->GetOffset("PlaysetToSpawn");
+	if (PlaysetOff == uint32(-1))
+	{
+		printf("[Creative] stream: the playset has no PlaysetToSpawn\n");
+		return false;
+	}
+	// TSoftObjectPtr<UWorld>: weak pointer and tag, then the soft object path, whose first field is the asset's FName.
+	std::string AssetPath = ((FName*)((uint8*)Playset + PlaysetOff + 0x10))->ToString().c_str();
+	std::string Package = AssetPath.substr(0, AssetPath.find('.'));
+	if (Package.empty() || Package == "None")
+	{
+		printf("[Creative] stream: the playset names no level\n");
+		return false;
+	}
+
+	FVector Location = Volume->K2_GetActorLocation();
+	FRotator Rotation = Volume->K2_GetActorRotation();
+	{
+		auto UseOff = Playset->GetOffset("bUseLocationOffset"), OffsetOff = Playset->GetOffset("LocationOffset");
+		if (UseOff != uint32(-1) && OffsetOff != uint32(-1) && *((const uint8*)Playset + UseOff))
+		{
+			auto Offset = *(const FVector*)((const uint8*)Playset + OffsetOff);
+			Location.X += Offset.X; Location.Y += Offset.Y; Location.Z += Offset.Z;
+		}
+	}
+
+	auto LSClass = FindClass("LevelStreamingDynamic");
+	auto LSDefault = LSClass ? LSClass->GetDefaultObj() : nullptr;
+	auto Fn = LSDefault ? LSDefault->GetFunction("LoadLevelInstance") : nullptr;
+	if (!Fn)
+	{
+		printf("[Creative] stream: LoadLevelInstance is missing\n");
+		return false;
+	}
+	auto Meta = Fn->GetParamsNamed();
+	std::vector<uint8> Buf(Meta.Size, 0);
+	std::wstring WidePackage(Package.begin(), Package.end());
+	uint32 SuccessOff = uint32(-1), ReturnOff = uint32(-1);
+	for (auto& P : Meta.NameOffsetMap)
+	{
+		if (P.Name == "WorldContextObject" && P.Offset + sizeof(void*) <= Buf.size())
+			*(UObject**)(Buf.data() + P.Offset) = World;
+		else if (P.Name == "LevelName" && P.Offset + sizeof(FString) <= Buf.size())
+			new (Buf.data() + P.Offset) FString(WidePackage.c_str());
+		else if (P.Name == "Location" && P.Offset + sizeof(FVector) <= Buf.size())
+			memcpy(Buf.data() + P.Offset, &Location, sizeof(FVector));
+		else if (P.Name == "Rotation" && P.Offset + sizeof(FRotator) <= Buf.size())
+			memcpy(Buf.data() + P.Offset, &Rotation, sizeof(FRotator));
+		else if (P.Name == "bOutSuccess")
+			SuccessOff = P.Offset;
+		else if (P.Name == "ReturnValue")
+			ReturnOff = P.Offset;
+	}
+	LSDefault->ProcessEvent(Fn, Buf.data());
+	bool Success = SuccessOff != uint32(-1) && SuccessOff < Buf.size() && Buf[SuccessOff] != 0;
+	UObject* Streamed = ReturnOff != uint32(-1) && ReturnOff + sizeof(void*) <= Buf.size() ? *(UObject**)(Buf.data() + ReturnOff) : nullptr;
+	if (!Success || !Streamed)
+	{
+		printf("[Creative] stream: LoadLevelInstance(%s) failed\n", Package.c_str());
+		return false;
+	}
+	// The instance's own package name ("<level>_LevelInstance_N"): clients must stream it under the same name so the
+	// island's actors replicate onto their copy.
+	std::string Unique = Package;
+	{
+		auto WorldAssetOff = Streamed->GetOffset("WorldAsset");
+		if (WorldAssetOff != uint32(-1))
+		{
+			std::string Name = ((FName*)((uint8*)Streamed + WorldAssetOff + 0x10))->ToString().c_str();
+			if (!Name.empty() && Name != "None") Unique = Name.substr(0, Name.find('.'));
+		}
+	}
+	// Load it now, so the island has collision before the player comes through the rift.
+	if (auto Statics = FindClass("GameplayStatics"))
+		if (auto Flush = Statics->GetDefaultObj()->GetFunction("FlushLevelStreaming"))
+			Statics->GetDefaultObj()->Call<void>(Flush, World);
+
+	auto& Data = Component->ClientPlaysetData;
+	std::wstring WideUnique(Unique.begin(), Unique.end());
+	if (FFortPlaysetStreamingData::HasPackageName()) Data.PackageName = FName(WidePackage.c_str());
+	if (FFortPlaysetStreamingData::HasUniquePackageName()) Data.UniquePackageName = FName(WideUnique.c_str());
+	if (FFortPlaysetStreamingData::HasLocation()) Data.Location = Location;
+	if (FFortPlaysetStreamingData::HasRotation()) Data.Rotation = Rotation;
+	Data.bValid = true;
+	if (auto StreamedOff = Component->GetOffset("StreamedLevel"); StreamedOff != uint32(-1))
+		*(UObject**)((uint8*)Component + StreamedOff) = Streamed;
+	Volume->ForceNetUpdate();
+	printf("[Creative] stream: island level %s loaded as %s at (%.0f,%.0f,%.0f)\n", Package.c_str(), Unique.c_str(),
+		(double)Location.X, (double)Location.Y, (double)Location.Z);
+	return true;
+}
+
 AFortAthenaCreativePortal* AFortAthenaCreativePortal::Create(AFortPlayerControllerAthena* PlayerController)
 {
 	auto GameState = (AFortGameStateAthena*)UWorld::GetWorld()->GameState;
@@ -145,6 +245,9 @@ AFortAthenaCreativePortal* AFortAthenaCreativePortal::Create(AFortPlayerControll
 	if (Allowed && LoadPlayset && IslandPlayset && LevelStreamComponent->HasCurrentPlayset() && LevelStreamComponent->CurrentPlayset)
 		Loaded = SafeLoadPlayset(LoadPlayset, LevelStreamComponent);
 	printf("[Creative] playset set by SetPlayset=%d, LoadPlayset %s\n", (int)HadPlayset, !LoadPlayset ? "not found" : !Allowed ? "skipped on this build" : Loaded ? "ran" : "FAULTED or skipped (island not loaded)");
+	// Where the game's LoadPlayset can't be used, stream the island ourselves.
+	if (!Loaded && IslandPlayset)
+		Loaded = SyndicateStreamPlayset(LevelStreamComponent, (UObject*)IslandPlayset, Portal->LinkedVolume);
 	// The island volume's own playset is what the client streams in; it was never set, so the
 	// island existed on the server only and the player fell into empty sea.
 	if (Portal->LinkedVolume->HasCurrentPlayset())

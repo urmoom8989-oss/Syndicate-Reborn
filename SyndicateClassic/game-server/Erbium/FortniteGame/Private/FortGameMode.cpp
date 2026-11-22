@@ -3369,9 +3369,35 @@ void SetupPlaylist(AFortGameMode* GameMode, AFortGameStateAthena* GameState)
 
         bIsLargeTeamGame = Playlist->bIsLargeTeamGame;
         if (Playlist->MaxSquadSize > 0) SyndicateLargeTeamSquadSize = Playlist->MaxSquadSize;
-        SyndicateRespawnKeepsItems = Playlist->bIsLargeTeamGame && Playlist->RespawnType > 0;
+        // Team Rumble: two large teams racing to an elimination score, everyone respawns. 10.40 marks it with a respawn
+        // type, but older builds (8.50) leave the respawn to the live hotfix, so a large team game won by goal score
+        // (MutatorControlledGoalScore) counts too.
+        {
+            const int WinType = Playlist->HasWinConditionType() ? int(Playlist->WinConditionType) : -1;
+            SyndicateRespawnKeepsItems = Playlist->bIsLargeTeamGame && (Playlist->RespawnType > 0 || WinType == 6);
+        }
         if (SyndicateRespawnKeepsItems)
+        {
+            if (Playlist->RespawnType == 0)
+            {
+                // Respawn the way the live playlist did: back in the air after a few seconds.
+                if (Playlist->HasbRespawnInAir())
+                    Playlist->bRespawnInAir = true;
+                if (Playlist->HasRespawnHeight() && Playlist->RespawnHeight.Value <= 0.f)
+                {
+                    Playlist->RespawnHeight.Curve.CurveTable = nullptr;
+                    Playlist->RespawnHeight.Curve.RowName = FName();
+                    Playlist->RespawnHeight.Value = 20000;
+                }
+                if (Playlist->HasRespawnTime() && Playlist->RespawnTime.Value <= 0.f)
+                {
+                    Playlist->RespawnTime.Curve.CurveTable = nullptr;
+                    Playlist->RespawnTime.Curve.RowName = FName();
+                    Playlist->RespawnTime.Value = 5;
+                }
+            }
             Playlist->RespawnType = 1; // InfiniteRespawn: Team Rumble respawns everyone, storm deaths too
+        }
         // Scored by eliminations: FirstToGoalScore (3) or MutatorControlledGoalScore (6), and Team Rumble itself.
         {
             const int Win = Playlist->HasWinConditionType() ? int(Playlist->WinConditionType) : -1;
