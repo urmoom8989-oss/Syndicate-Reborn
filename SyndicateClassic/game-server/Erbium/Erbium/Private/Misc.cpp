@@ -1040,6 +1040,7 @@ static void SyndicateWelcomeHook(void* Host, uint8_t* Response, uint64_t WeakCon
 // so the tutorial zone theme shows which map and game mode it uses.
 static void SyndicateStwDumpClass(const wchar_t* WPath)
 {
+	if (VersionInfo.FortniteVersion >= 2.0) return; // 1.7.2 field layout only (see SyndicateStwListFunctions)
 	char Path[300]; snprintf(Path, sizeof(Path), "%ls", WPath);
 	auto Cls = (const UClass*)StaticLoadObject(WPath, UClass::StaticClass());
 	if (!Cls) { SyndicateStwLog("[Syndicate STW] recon: %s not loaded\n", Path); return; }
@@ -1110,6 +1111,8 @@ static void SyndicateStwExplainSafe(uintptr_t Rva) { __try { SyndicateStwExplain
 
 static void SyndicateStwListFunctions(const char* Name)
 {
+	// Walks the class's fields with the 1.7.2 layout: on later builds it reads garbage and crashed the 8.50 server.
+	if (VersionInfo.FortniteVersion >= 2.0) return;
 	auto Cls = FindClass(Name);
 	if (!Cls) { SyndicateStwLog("[Syndicate STW] functions of %s: class missing\n", Name); return; }
 	for (auto C = Cls; C; C = GetFromOffset<const UClass*>(C, 0x30))
@@ -1409,7 +1412,7 @@ void SyndicateStwBeaconStart()
 					// Denied", and the client's reconnect then finds nothing). Point it at the same state.
 					auto& Empty = *(void**)((uint8_t*)Party + 0x510);
 					auto State = *(void**)((uint8_t*)Party + O);
-					if (!Empty && State) { Empty = State; SyndicateStwLog("[Syndicate STW] party+0x510 set to the party state %p\n", State); }
+					if (VersionInfo.FortniteVersion < 2.0 && !Empty && State) { Empty = State; SyndicateStwLog("[Syndicate STW] party+0x510 set to the party state %p\n", State); }
 				}
 				SyndicateStwDump("InitHostBeacon", InitParty);
 			}
@@ -1518,7 +1521,8 @@ void SyndicateStwBeaconStart()
 							SyndicateStwLog("[Syndicate STW] beacon: lobby state Role was %d (+0x%x), set to 3\n", int(Role), O);
 							Role = 3;
 						}
-						// FLobbyPlayerStateInfoArray::AddPlayer calls the state's CreateNewPlayer (vtable +0x5f0).
+						// FLobbyPlayerStateInfoArray::AddPlayer calls the state's CreateNewPlayer (vtable +0x5f0, 1.7.2 only).
+						if (VersionInfo.FortniteVersion < 2.0)
 						{
 							auto Create = (*(uintptr_t**)St)[0x5f0 / 8];
 							SyndicateStwLog("[Syndicate STW] beacon: lobby state CreateNewPlayer exe+0x%llx, players parent %p\n", (unsigned long long)(Create - Exe), *(void**)((uint8_t*)St + 0x3a8 + 0xc0));
@@ -1539,7 +1543,13 @@ void SyndicateStwBeaconStart()
 						// mission generator, the way AFortLobbyBeaconState's setter does once the zone is ready.
 						{
 							auto OPath = St->GetOffset("MissionGeneratorClassPath"), OReq = St->GetOffset("MissionGeneratorDetailsRequirement");
-							if (OPath != uint32(-1) && OReq != uint32(-1))
+							if (VersionInfo.FortniteVersion >= 2.0 && OReq != uint32(-1))
+							{
+								// Not the 1.7.2 tutorial's generator: tell the client none is needed, the zone brings its own.
+								GetFromOffset<uint8_t>(St, OReq) = 1;
+								SyndicateStwLog("[Syndicate STW] beacon: lobby mission generator requirement = 1 (+0x%x)\n", OReq);
+							}
+							else if (OPath != uint32(-1) && OReq != uint32(-1))
 							{
 								GetFromOffset<FString>(St, OPath) = FString(L"/Game/World/MissionGens/MissionGen_Onboarding_Fort.MissionGen_Onboarding_Fort_C");
 								GetFromOffset<uint8_t>(St, OReq) = 2;
@@ -1561,7 +1571,9 @@ void SyndicateStwBeaconStart()
 					// ALobbyBeaconHost::ProcessLogin (1.7.2 exe+0x3afab70) first checks the client's session id
 					// against the host's online session (mov rdx,rax; mov rcx,r14; xor r12b,r12b; call; test al,al; je).
 					// This host has no online session: make that session check always pass.
-					if (auto Login = SyndicateFunctionUsingStringSafe(L"ProcessLogin %s SessionId", true))
+					if (VersionInfo.FortniteVersion >= 2.0)
+						SyndicateStwLog("[Syndicate STW] beacon: lobby login patches are 1.7.2 only; skipped on %.2f\n", (double)VersionInfo.FortniteVersion);
+					else if (auto Login = SyndicateFunctionUsingStringSafe(L"ProcessLogin %s SessionId", true))
 					{
 						bool Hooked = false;
 						for (size_t o = 0; o < 0x400 && !Hooked; o++)
