@@ -7088,16 +7088,16 @@ namespace SpectraBots
         for(int T=0;T<256;++T)if(::SyndicateTeamKills[T]>BestScore){BestScore=::SyndicateTeamKills[T];Best=T;}
         if(GS->HasbIsLargeTeamGame() && !GS->bIsLargeTeamGame){GS->bIsLargeTeamGame=true;GS->ForceNetUpdate();}
         for(int I=0;I<Players.Num();++I){auto S=(AFortPlayerStateAthena*)Players[I];if(!S)continue;
-            const int Score=::SyndicateTeamKills[uint8(S->TeamIndex)];bool Changed=false;
+            int Score=::SyndicateTeamKills[uint8(S->TeamIndex)];bool Changed=false;
             if(S->HasTeamScore() && S->TeamScore!=Score){S->TeamScore=Score;S->OnRep_TeamScore();Changed=true;}
-            const int Place=Best<0 || uint8(S->TeamIndex)==Best?1:2;
+            int Place=Best<0 || uint8(S->TeamIndex)==Best?1:2;
             if(S->HasTeamScorePlacement() && S->TeamScorePlacement!=Place){S->TeamScorePlacement=Place;S->OnRep_TeamScorePlacement();Changed=true;}
             if(Changed)S->ForceNetUpdate();}
         if(GS->HasCurrentHighScore() && GS->CurrentHighScore!=BestScore){
             GS->CurrentHighScore=BestScore;if(GS->HasCurrentHighScoreTeam())GS->CurrentHighScoreTeam=Best;
             GS->OnRep_CurrentHighScore();GS->ForceNetUpdate();}
         if(Best<0 || BestScore<::SyndicateTeamGoalScore)return;
-        const int Winner=Best;
+        int Winner=Best;
         if(GS->HasWinningScore()){GS->WinningScore=BestScore;GS->OnRep_WinningScore();}
         for(int I=0;I<Mode->AlivePlayers.Num();++I){
             auto PC=(AFortPlayerControllerAthena*)Mode->AlivePlayers[I];
