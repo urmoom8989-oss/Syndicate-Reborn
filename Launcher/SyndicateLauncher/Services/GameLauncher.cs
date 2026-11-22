@@ -399,6 +399,7 @@ public static class GameLauncher
                 JsonSerializer.Serialize(new { Build = build.Version }));
             // Settings > Game modes: the backend reads the lobby's modes from here when Fortnite asks for its hotfixes.
             SeasonModes.WriteForBackend();
+            ShopSettings.WriteForBackend();
             if (File.Exists(syndicateReadyFile)) File.Delete(syndicateReadyFile);
 
             syndicateRunId = Guid.NewGuid().ToString("N");

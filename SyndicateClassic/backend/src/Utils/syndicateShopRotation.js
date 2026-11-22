@@ -1,6 +1,7 @@
 import {available111} from './syndicateCosmetics111.js';
 import {catalog as passCatalog} from './syndicatePassShop.js';
 import {REDEEM_ONLY} from './syndicateRedeemItems.js';
+import {shopWindowMs,customShop} from './syndicateShopSettings.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -107,7 +108,7 @@ export function shopPoolSize(season){const p=seasonPools(season);return p?{outfi
 // Consecutive windows cover the entire pool, even when its size and slot count share factors.
 export function rotatingShop(now=new Date(),season=4){
  const selected=season>=5?(seasonPools(season)||season5Pools):pools;
- const day=Math.floor(now.getTime()/21600000);
+ const day=Math.floor(now.getTime()/shopWindowMs());
  if(!Number.isFinite(day))throw new Error('Invalid shop date');
  const take=(pool,count)=>{
   if(!Array.isArray(pool)||pool.length<count)throw new Error('Shop pool is incomplete');
@@ -117,10 +118,37 @@ export function rotatingShop(now=new Date(),season=4){
  const category=type=>selected.accessories.filter(offer=>offer.itemGrants[0].toLowerCase().startsWith(type.toLowerCase()+':'));
  const pickaxes=take(category('AthenaPickaxe'),season>=5?1:2),gliders=take(category('AthenaGlider'),2),emotes=take(category('AthenaDance'),2);
  const backblings=season>=5?category('AthenaBackpack'):[];
- return {daily1:pickaxes[0],daily2:backblings.length?take(backblings,1)[0]:pickaxes[1],daily3:gliders[0],daily4:gliders[1],
- daily5:emotes[0],daily6:emotes[1],featured1:outfits[0],featured2:outfits[1],featured3:outfits[2],featured4:outfits[3]};
+ return withCustomShop({daily1:pickaxes[0],daily2:backblings.length?take(backblings,1)[0]:pickaxes[1],daily3:gliders[0],daily4:gliders[1],
+ daily5:emotes[0],daily6:emotes[1],featured1:outfits[0],featured2:outfits[1],featured3:outfits[2],featured4:outfits[3]},season);
 }
-export function nextShopRefresh(now=new Date()){return new Date((Math.floor(now.getTime()/21600000)+1)*21600000).toISOString();}
+export function nextShopRefresh(now=new Date()){const w=shopWindowMs();return new Date((Math.floor(now.getTime()/w)+1)*w).toISOString();}
+
+// Launcher Settings > Item shop: the season's own picks replace the automatic items slot by slot (featured first,
+// then daily); slots the auto shop leaves empty stay empty, so the season's layout never overflows.
+function withCustomShop(selected,season){
+ const custom=customShop(season);if(!custom)return selected;
+ const offers=allShopOffers();
+ const offerFor=id=>{const key=id.toLowerCase();const known=offers.find(o=>o.itemGrants[0].toLowerCase()===key);
+  return known?{itemGrants:[...known.itemGrants],price:known.price}:{itemGrants:[id],price:/^AthenaCharacter:/i.test(id)?1200:/^AthenaDance:/i.test(id)?500:800};};
+ for(const [list,prefix] of [[custom.featured,'featured'],[custom.daily,'daily']]){
+  const slots=Object.keys(selected).filter(k=>k.startsWith(prefix)&&selected[k]).sort((a,b)=>Number(a.slice(prefix.length))-Number(b.slice(prefix.length)));
+  list.slice(0,slots.length).forEach((id,i)=>{selected[slots[i]]=offerFor(id);});
+ }
+ return selected;
+}
+// Every item the season's shop can sell, with its name and price (launcher Settings > Item shop picker).
+const cosmeticNames=JSON.parse(fs.readFileSync(new URL('../local/syndicate-cosmetic-names.json',import.meta.url),'utf8'));
+export function shopItemsFor(season){
+ let list;
+ if(season>=5){const p=seasonPools(season)||season5Pools;list=[...p.outfits,...p.accessories];}
+ else if(season===4)list=[...pools.outfits,...pools.accessories];
+ else{const own=season>=3?exported(season):new Set();list=[...pools.outfits,...pools.accessories].filter(o=>available111(o.itemGrants[0])||own.has(o.itemGrants[0].toLowerCase()));}
+ const seen=new Set();
+ return list.filter(o=>{const k=o.itemGrants[0].toLowerCase();if(seen.has(k))return false;seen.add(k);return true;}).map(o=>{
+  const id=o.itemGrants[0],key=(id.split(':')[1]||'').toLowerCase();
+  return {id,name:cosmeticNames[key]||key,type:id.split(':')[0].replace(/^Athena/,'').replace('SkyDiveContrail','Contrail').replace('Dance','Emote').replace('Character','Outfit').replace('Backpack','Back bling'),price:o.price};
+ });
+}
 
 // Items a build has, from its game server's export (Runtime/Server/cosmetics/season-N.json), else none.
 function exported(season){
@@ -131,7 +159,7 @@ function exported(season){
 // 1.11 and 3.5.1. Season 3 also keeps what its own build exported, so an outfit's back bling (Raptor ->
 // BID_005_Raptor) is no longer stripped by the 1.11 list, which has no back blings.
 export function rotatingShop2(now=new Date(),season=2){
- const window=Math.floor(now.getTime()/21600000);if(!Number.isFinite(window))throw Error('Invalid shop date');
+ const window=Math.floor(now.getTime()/shopWindowMs());if(!Number.isFinite(window))throw Error('Invalid shop date');
  const own=season>=3?exported(season):new Set();
  const has=id=>available111(id) || own.has(String(id).toLowerCase());
  const safe=pool=>pool.filter(o=>available111(o.itemGrants[0])).map(o=>({...o,itemGrants:o.itemGrants.filter(has)}));
@@ -146,7 +174,7 @@ export function rotatingShop2(now=new Date(),season=2){
  // of the two rotating featured outfits so the two-panel layout 3.5.1 expects is unchanged (a third overflows).
  // alwaysShow in dev builds (TILTED_DEVKIT=1) so it is visible even on an Unlock-All account that already owns it.
  if(season===3)selected.featured1={itemGrants:['AthenaCharacter:CID_090_Athena_Commando_M_Tactical','AthenaBackpack:BID_030_TacticalRogue'],price:1200,alwaysShow:process.env.TILTED_DEVKIT==='1'};
- return selected;
+ return withCustomShop(selected,season);
 }
 
 // Every cosmetic the item shop can sell, across all seasons (the launcher's hidden shop): the

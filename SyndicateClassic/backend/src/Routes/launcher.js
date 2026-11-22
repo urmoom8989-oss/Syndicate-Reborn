@@ -1,4 +1,5 @@
 import {catalog as secretShopCatalog,purchase as buySecretShop} from '../Utils/syndicateSecretShop.js';
+import {shopItemsFor} from '../Utils/syndicateShopRotation.js';
 import {openTravel,finishTravel,travelActive} from '../Utils/syndicateTravel.js';
 import {view as passView,purchase as buyPass} from '../Utils/syndicatePassShop.js';
 import express from 'express';
@@ -274,6 +275,12 @@ for(const operation of ['catalog','purchase'])router.post(`/launcher/passes/${op
  }catch(error){res.status(400).json({message:error.message});}
 }));
 // Syndicate: the launcher's hidden item shop (every item-shop cosmetic, unlocked by a key code in the launcher).
+// Syndicate: Settings > Item shop picker: everything a season's item shop can sell.
+router.post('/launcher/itemshop/items',safe(async(req,res)=>{
+  const season=Number(req.body?.season);
+  if(!Number.isInteger(season)||season<1||season>20)return res.status(400).json({message:'Choose a season.'});
+  res.json({items:shopItemsFor(season)});
+}));
 for(const operation of ['catalog','purchase'])router.post(`/launcher/shop/${operation}`,safe(async(req,res)=>{
  const entry=sessions.get((req.headers.authorization||'').replace(/^Bearer /,''));
  if(!entry || entry.expires<=Date.now())return res.status(401).json({message:'Please sign in again.'});

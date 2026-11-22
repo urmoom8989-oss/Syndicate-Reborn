@@ -128,6 +128,10 @@ public sealed class AppSettings
     /// <summary>Settings &gt; Match &amp; bots &gt; Game modes: how Fortnite's mode selector lays out each build's modes
     /// (order, default, badges, locked tiles), keyed by build. A build that is not listed keeps its usual layout.</summary>
     public Dictionary<string, SeasonLayout> SeasonLayouts { get; set; } = new();
+    /// <summary>Settings &gt; Item shop: how many hours each item shop lasts (1 to 168).</summary>
+    public int ShopHours { get; set; } = 6;
+    /// <summary>Settings &gt; Item shop: your own shop per season number; seasons without one stay automatic.</summary>
+    public Dictionary<string, CustomShop> CustomShops { get; set; } = new();
 }
 
 /// <summary>
@@ -146,4 +150,11 @@ public sealed class SeasonLayout
     public Dictionary<string, int> Rows { get; set; } = new();
     /// <summary>Mode id to a picture the player chose for its tile (a copy in %APPDATA%\SyndicateLauncher\ModeImages).</summary>
     public Dictionary<string, string> Images { get; set; } = new();
+}
+
+/// <summary>A season's own item shop (Settings &gt; Item shop): template ids for its featured and daily slots.</summary>
+public sealed class CustomShop
+{
+    public List<string> Featured { get; set; } = new();
+    public List<string> Daily { get; set; } = new();
 }
