@@ -76,7 +76,8 @@ public:
 void SyndicateLateGameAdoptStormCenter(); // FortGameMode.cpp
 // FortPlayerControllerAthena.cpp: players who just dropped or swapped out Lean (the menu's instant heal marks it too).
 extern std::unordered_map<AFortPlayerControllerAthena*,ULONGLONG> SyndicateLeanDropped;
-extern int SyndicateTeamGoalScore; // FortGameMode.cpp: Team Rumble goal score (0 = not a scored playlist)
+extern int SyndicateTeamGoalScore;
+uint8 SyndicateSquadIdFor(uint8 TeamIndex, uint8 TeamSquadId); // FortGameMode.cpp: squads of four inside large teams
 namespace SpectraBots
 {
     // SDK::FindClass/FindEnum/FindStruct walk the whole object array on every call. The bot
@@ -10407,7 +10408,7 @@ if(GetEnvironmentVariableW(L"TILTED_KNOCK_VISIBILITY_TEST",nullptr,0) && B.Bleed
             State->bIsABot = true;
         State->TeamIndex = AFortGameMode::PickTeam(Mode, 0, Controller);
         if (State->HasSquadId())
-            State->SquadId = State->TeamIndex - (VersionInfo.FortniteVersion<9.f||VersionInfo.EngineVersion<4.23?0:VersionInfo.EngineVersion<4.24?3:2);
+            State->SquadId = SyndicateSquadIdFor(State->TeamIndex, State->TeamIndex - (VersionInfo.FortniteVersion<9.f||VersionInfo.EngineVersion<4.23?0:VersionInfo.EngineVersion<4.24?3:2));
 
         if (GameState && GameState->HasGameMemberInfoArray())
         {
@@ -12280,7 +12281,7 @@ for(auto T=(const UStruct*)V->Class;T;T=T->GetSuper())Dump(T);
             if(Old==New)continue;
             if(B.FillOriginalTeam<0)B.FillOriginalTeam=Old;
             B.Enemy={};B.FireThreat={};B.FireThreatTime=0;B.CombatSense=0; // old targets may be new teammates
-            bool Released=New==B.FillOriginalTeam;B.State->TeamIndex=uint8(New);if(B.State->HasSquadId())B.State->SquadId=uint8(New-(VersionInfo.FortniteVersion<9.f||VersionInfo.EngineVersion<4.23?0:VersionInfo.EngineVersion<4.24?3:2));
+            bool Released=New==B.FillOriginalTeam;B.State->TeamIndex=uint8(New);if(B.State->HasSquadId())B.State->SquadId=SyndicateSquadIdFor(uint8(New),uint8(New-(VersionInfo.FortniteVersion<9.f||VersionInfo.EngineVersion<4.23?0:VersionInfo.EngineVersion<4.24?3:2)));
             if(GS && GS->HasGameMemberInfoArray())for(int J=0;J<GS->GameMemberInfoArray.Members.Num();++J){auto& M=GS->GameMemberInfoArray.Members.Get(J,FGameMemberInfo::Size());
                 if(FUniqueNetIdRepl::Size()==40 && GetFromOffset<void*>(&M.MemberUniqueId,8)==GetFromOffset<void*>(&B.State->UniqueId,8)){M.TeamIndex=B.State->TeamIndex;M.SquadId=B.State->SquadId;GS->GameMemberInfoArray.MarkItemDirty(M);}}
             for(auto N:{"OnRep_TeamIndex","OnRep_SquadId"})if(auto F=B.State->GetFunction(N))if(F->GetParamsNamed().Size==0)B.State->ProcessEvent(F,nullptr);

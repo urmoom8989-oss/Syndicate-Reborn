@@ -3362,10 +3362,16 @@ void SetupPlaylist(AFortGameMode* GameMode, AFortGameStateAthena* GameState)
         SyndicateRespawnKeepsItems = Playlist->bIsLargeTeamGame && Playlist->RespawnType > 0;
         if (SyndicateRespawnKeepsItems)
             Playlist->RespawnType = 1; // InfiniteRespawn: Team Rumble respawns everyone, storm deaths too
-        if (Playlist->HasWinConditionType() && Playlist->WinConditionType == 3 && Playlist->HasScoringData())
+        // Scored by eliminations: FirstToGoalScore (3) or MutatorControlledGoalScore (6), and Team Rumble itself.
         {
-            const int Goal = int(Playlist->ScoringData.Value);
-            SyndicateTeamGoalScore = Goal > 0 ? Goal : 100;
+            const int Win = Playlist->HasWinConditionType() ? int(Playlist->WinConditionType) : -1;
+            if (Win == 3 || Win == 6 || SyndicateRespawnKeepsItems)
+            {
+                const int Goal = Playlist->HasScoringData() ? int(Playlist->ScoringData.Value) : 0;
+                SyndicateTeamGoalScore = Goal > 0 && Goal < 10000 ? Goal : 100;
+            }
+            printf("[Syndicate] team game: large=%d squad=%d respawn=%d win=%d goal=%d\n", int(bIsLargeTeamGame),
+                int(Playlist->MaxSquadSize), int(Playlist->RespawnType), Win, SyndicateTeamGoalScore);
         }
 
         //if (GameState->HasAdditionalPlaylistLevelsStreamed())
