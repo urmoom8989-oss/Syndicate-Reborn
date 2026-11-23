@@ -2442,7 +2442,7 @@ namespace {
     }
 }
 
-// Backend redirect guard, Chapter 2 (11.00 and later) only.
+// Backend redirect guard: Chapter 2 (11.00 and later) does the redirect here; Chapter 1 gets a backstop behind cobalt.
 // cobalt.dll sends the game's web requests to Syndicate's backend (127.0.0.1:3551) by hooking curl_easy_setopt
 // with a page-guard (VEH) hook. That kind of hook is one-shot per page: while one thread trips it, another
 // thread calling curl_easy_setopt runs unhooked. 11.00 sends several requests at once during login, so one
@@ -2487,6 +2487,33 @@ namespace {
         return CurlEasySetOptOriginal(Handle, Option, Value);
     }
 
+    // Chapter 1 backstop. cobalt.dll stays (the menu and the rest expect it), and this hooks the function
+    // curl_easy_setopt hands every option to (Curl_setopt, in another part of libcurl), so it never touches cobalt's
+    // guarded function. Options cobalt already rewrote arrive here rewritten and pass through; one that slipped past
+    // its page-guard hook (several requests at once: opening Save the World sends eight profile queries together, and
+    // one going to Epic logged the player out, "Connection to the server failed") is redirected here instead.
+    using CurlSetoptFn = int (*)(void*, int, va_list);
+    CurlSetoptFn CurlSetoptOriginal = nullptr;
+    volatile LONG BackstopCaught = 0;
+    int CurlSetoptDetour(void* Handle, int Option, va_list Param) {
+        if (Handle && (Option == CurlOptSslVerifyPeer || Option == CurlOptSslVerifyHost)) {
+            void* Slot[2] = { nullptr, nullptr };
+            return CurlSetoptOriginal(Handle, Option, (va_list)Slot);
+        }
+        if (Handle && Option == CurlOptUrl && Param) {
+            std::string Redirected;
+            if (RedirectUrl(*(const char* const*)Param, Redirected)) {
+                if (InterlockedIncrement(&BackstopCaught) <= 5) {
+                    std::string Line = "redirect backstop: caught a request cobalt missed: " + Redirected.substr(0, 160);
+                    Log(Line.c_str());
+                }
+                const char* Slot[2] = { Redirected.c_str(), nullptr };
+                return CurlSetoptOriginal(Handle, Option, (va_list)Slot); // curl copies the string
+            }
+        }
+        return CurlSetoptOriginal(Handle, Option, Param);
+    }
+
     // Fortnite's major version from the build string in the game exe (L"++Fortnite+Release-11.00"), or -1.
     int GameMajorVersion() {
         auto Base = (uint8_t*)GetModuleHandleW(nullptr);
@@ -2511,7 +2538,25 @@ namespace {
 
     DWORD WINAPI RedirectGuard(void*) {
         const int Major = GameMajorVersion();
-        if (Major < 11) return 0; // Chapter 1 seasons: cobalt alone has been reliable, leave them as they are
+        if (Major < 11) {
+            // Chapter 1: cobalt does the redirect; this only backs it up (see CurlSetoptDetour).
+            if (Major < 1 || !GetModuleHandleW(L"cobalt.dll") || GetFileAttributesW(DataFile(L"redirect-backstop-off.txt").c_str()) != INVALID_FILE_ATTRIBUTES) return 0;
+            uint8_t* Easy = nullptr;
+            for (int Attempt = 0; Attempt < 50 && !Easy; ++Attempt) {
+                Easy = (uint8_t*)Memcury::Scanner::FindPattern("89 54 24 10 4C 89 44 24 18 4C 89 4C 24 20 48 83 EC 28 48 85 C9 75 08 8D 41 2B 48 83 C4 28 C3 4C", false).Get();
+                if (!Easy) Sleep(200);
+            }
+            // curl_easy_setopt: ... ret; lea r8,[rsp+40h]; call Curl_setopt
+            static const uint8_t Lea[] = { 0x4C, 0x8D, 0x44, 0x24, 0x40 };
+            if (!Easy || memcmp(Easy + 31, Lea, sizeof(Lea)) != 0 || Easy[36] != 0xE8) { Log("redirect backstop: Curl_setopt not found (cobalt only)"); return 0; }
+            uint8_t* Setopt = Easy + 41 + *(int32_t*)(Easy + 37);
+            const MH_STATUS Init = MH_Initialize();
+            const MH_STATUS Made = MH_CreateHook(Setopt, (void*)CurlSetoptDetour, (void**)&CurlSetoptOriginal);
+            const MH_STATUS On = Made == MH_OK ? MH_EnableHook(Setopt) : Made;
+            char Line[192]; snprintf(Line, sizeof(Line), "redirect backstop (Fortnite %d): %s (Curl_setopt at exe+0x%llX, init %d, create %d, enable %d)", Major, On == MH_OK ? "on" : "FAILED",
+                (unsigned long long)(Setopt - (uint8_t*)GetModuleHandleW(nullptr)), int(Init), int(Made), int(On)); Log(Line);
+            return 0;
+        }
         // The launcher no longer loads cobalt.dll for Chapter 2: this hook is the only redirect there. With cobalt.dll
         // in the process as well (its page-guard hook on the same function) the game closed shortly after launch, so
         // then it stays off unless redirect-guard-on.txt asks for it.
