@@ -6,7 +6,9 @@ import {ownedSnapshot,addedLoot,addRewardGift,grantMissingSetPieces,SET_PIECE_FI
 import {purchaseSeason2Item} from '../Utils/syndicateSeason2Purchase.js';
 import {applyProgression} from '../Utils/syndicateProgressionCore.js';
 import {season2PassOffer,season2TierOffer,purchaseSeason2} from '../Utils/syndicateSeason2Pass.js';
-import {activateSeason,activeSeason,ensureSharedDefaults,applyHideDefaults,unlockSeasonPass} from '../Utils/syndicateSeasonState.js';
+import {activateSeason,activeSeason,ensureSharedDefaults,applyHideDefaults,unlockSeasonPass,syncPassOwnership} from '../Utils/syndicateSeasonState.js';
+import {purchasePass} from '../Utils/syndicatePassPurchase.js';
+import {noteCheckoutAccount,redeemReceipt,pendingReceipts} from '../Utils/syndicateVbucksStore.js';
 import {applyHideWinUmbrellas} from '../Utils/syndicateVictoryRewards.js';
 import {ensureSeasonChallenges,ensureDailyChallenges,rerollDailyChallenge,rewardOnClaim} from '../Utils/syndicateSeasonChallenges.js';
 import {applyUnlockAll} from '../Utils/syndicateUnlockAll.js';
@@ -22,7 +24,7 @@ import {project111Profile,project111Response} from '../Utils/syndicateLegacy111P
 import {ensureSeason4Styles,applyOwnedVariant} from '../Utils/syndicateSeason4Styles.js';
 import {ensureChallenges} from '../Utils/syndicateChallenges.js';
 import {legacyAthenaStats} from '../Utils/syndicateCareerCore.js';
-import {tierOfferId,season5TierOfferId,purchaseTiers,tierOfferIds,tierSeason} from '../Utils/syndicateTierPurchase.js';
+import {tierOfferId,season5TierOfferId,purchaseTiers,tierOfferIds,tierSeason,passOfferKind} from '../Utils/syndicateTierPurchase.js';
 import { debitShopWallet,ensureSharedWallet } from '../Utils/syndicateShopWallet.js';
 import {travelActive} from '../Utils/syndicateTravel.js';
 import {acquireAccountLock} from '../Utils/syndicateAccountLock.js';
@@ -76,6 +78,8 @@ app.use('/fortnite/api/game/v2/profile/:accountId', (req,res,next)=>{
 const LOCKER_OPERATIONS=new Set(['MarkItemSeen','EquipBattleRoyaleCustomization','SetCosmeticLockerSlot','SetItemFavoriteStatus','SetItemFavoriteStatusBatch','SetItemArchivedStatusBatch','SetBattleRoyaleBanner','SetCosmeticLockerBanner','SetCosmeticLockerName','PutModularCosmeticLoadout']);
 app.use('/fortnite/api/game/v2/profile/:accountId',verifyToken,async(req,res,next)=>{
  if(req.user.accountId!==req.params.accountId)return res.status(403).end();
+ // Who plays on this PC, for the V-Bucks checkout page (the game's checkout browser has no sign-in).
+ if(req.path.includes('/client/'))noteCheckoutAccount(req.socket?.remoteAddress,req.user.accountId);
  const release=await acquireAccountLock(req.params.accountId);let done=false;
  const finish=()=>{if(!done){done=true;release();}};res.once('finish',finish);res.once('close',finish);
  if(res.destroyed){finish();return;}
@@ -132,6 +136,8 @@ app.use('/fortnite/api/game/v2/profile/:accountId',verifyToken,async(req,res,nex
     // Bought this season's complete pass in the launcher: the Battle Pass is owned with every tier.
     const passIds=season===11?['chapter2-season1','season11']:season===12?['chapter2-season2','season12']:['season'+season];
     const passUnlocked=passIds.some(id=>!!doc.syndicatePassPurchases?.[id]) && unlockSeasonPass(p,season);
+    // The Battle Pass is owned only when it was bought (in the game, or the launcher's complete pass just above).
+    const passSynced=syncPassOwnership(p,season);
     // Challenges for this season (Season 4 keeps its own route below).
     const challenges=season===5?ensureSeason5Bundles(p):ensureSeasonChallenges(p,season);
     // Season X and Chapter 2 challenge check: what the profile holds (schedules, bundles, quests), for comparing with the game.
@@ -157,7 +163,7 @@ app.use('/fortnite/api/game/v2/profile/:accountId',verifyToken,async(req,res,nex
     // The Battle Pass itself is never free: it is bought in the game.
     const a3=p.stats.attributes,reached3=Math.max(1,a3.book_level||1);
     const freePass=build==='3.5.1' && ((a3.tilted_season3_free_reward_tier||0)<reached3 || (!!a3.book_purchased && (a3.tilted_season3_paid_reward_tier||0)<reached3));
-    if(switched||defaults||freePass||challenges||dailies||unlocked||maxed||passUnlocked||packsTopped||tierSynced||passFixed||bundleFixed||defaultsHidden||umbrellasHidden){const cr=doc.profiles.common_core.rvn;
+    if(switched||defaults||freePass||challenges||dailies||unlocked||maxed||passUnlocked||passSynced||packsTopped||tierSynced||passFixed||bundleFixed||defaultsHidden||umbrellasHidden){const cr=doc.profiles.common_core.rvn;
      if(freePass)applyProgression(doc.profiles,0);else {p.rvn++;p.commandRevision++;p.updated=new Date().toISOString();}
      const updates={'profiles.athena':p};if(freePass)updates['profiles.common_core']=doc.profiles.common_core;
      const result=await Profile.collection.updateOne({accountId:req.user.accountId,'profiles.athena.rvn':rvn,'profiles.common_core.rvn':cr},{$set:updates});
@@ -1160,6 +1166,49 @@ app.post("/fortnite/api/game/v2/profile/*/client/PurchaseCatalogEntry",verifyTok
   return res.json({profileRevision:p.rvn,profileId:req.query.profileId,profileChangesBaseRevision:c,profileChanges:[{changeType:'fullProfileUpdate',profile:p}],profileCommandRevision:p.commandRevision,multiUpdate:[{profileRevision:doc.profiles.athena.rvn,profileId:'athena',profileChangesBaseRevision:a,profileChanges:[{changeType:'fullProfileUpdate',profile:doc.profiles.athena}],profileCommandRevision:doc.profiles.athena.commandRevision}],serverTime:new Date().toISOString(),responseVersion:1});
   }
  }catch(error){return res.status(400).json({errorCode:'errors.com.syndicate.tier_purchase',errorMessage:error.message});}
+});
+// Battle Pass and Battle Bundle, Seasons 3 to 12 (syndicatePassPurchase.js). The generic handler below did not
+// know these offers (no item grants, so "already owned"): the pass could not be bought in the game.
+app.post('/fortnite/api/game/v2/profile/*/client/PurchaseCatalogEntry',verifyToken,async(req,res,next)=>{
+ const build=clientBuild(req.headers['user-agent']);
+ if(isSeasonTwoBuild(build)||['1.7.2','1.8.2'].includes(build))return next();
+ const season=tierSeason(build),kind=passOfferKind(season,req.body?.offerId);
+ if(!kind)return next();
+ if(!['common_core','profile0'].includes(req.query.profileId))return res.status(400).json({errorCode:'errors.com.syndicate.invalid_profile',errorMessage:'Buy the Battle Pass on common_core.'});
+ try{
+  // Retried when a lobby refresh saved the profile at the same moment, like the tier purchase above.
+  for(let attempt=0;;attempt++){
+   const doc=await Profile.collection.findOne({accountId:req.user.accountId});
+   if(!doc)throw Error('Account profile missing.');
+   const a=doc.profiles.athena.rvn,c=doc.profiles.common_core.rvn;
+   const before=ownedSnapshot(doc.profiles.athena);
+   purchasePass(doc.profiles,season,req.body.offerId,req.body.purchaseQuantity);
+   const loot=addedLoot(doc.profiles.athena,before),tier=doc.profiles.athena.stats.attributes.book_level;
+   addRewardGift(doc.profiles.common_core,loot,'BATTLE PASS',kind==='bundle'?`Battle Bundle purchased. You are now tier ${tier}.`:'Battle Pass purchased.');
+   const saved=await Profile.collection.updateOne({accountId:req.user.accountId,'profiles.athena.rvn':a,'profiles.common_core.rvn':c},{$set:{'profiles.athena':doc.profiles.athena,'profiles.common_core':doc.profiles.common_core}});
+   if(!saved.modifiedCount){if(attempt<4)continue;throw Error('Profile changed. Please retry.');}
+   console.log(`[Syndicate] Season ${season} ${kind==='bundle'?'Battle Bundle':'Battle Pass'} bought by ${req.user.accountId} (tier ${tier}).`);
+   const p=doc.profiles.common_core;
+   return res.json({profileRevision:p.rvn,profileId:req.query.profileId,profileChangesBaseRevision:c,profileChanges:[{changeType:'fullProfileUpdate',profile:p}],profileCommandRevision:p.commandRevision,multiUpdate:[{profileRevision:doc.profiles.athena.rvn,profileId:'athena',profileChangesBaseRevision:a,profileChanges:[{changeType:'fullProfileUpdate',profile:doc.profiles.athena}],profileCommandRevision:doc.profiles.athena.commandRevision}],notifications:[{type:'CatalogPurchase',primary:true,lootResult:{items:loot}}],serverTime:new Date().toISOString(),responseVersion:1});
+  }
+ }catch(error){return res.status(400).json({errorCode:'errors.com.syndicate.pass_purchase',errorMessage:error.message,numericErrorCode:16027});}
+});
+// V-Bucks packs from the STORE tab (syndicateVbucksStore.js). The V-Bucks were added when Confirm was pressed on
+// Syndicate's checkout page; the game's receipt check here only reports the purchase, and it never fails (a failure
+// shows a purchase error even though the V-Bucks arrived).
+app.post(['/fortnite/api/game/v2/profile/*/client/VerifyRealMoneyPurchase','/fortnite/api/game/v2/profile/*/client/RedeemRealMoneyPurchases'],verifyToken,async(req,res)=>{
+ const operation=req.path.split('/').pop(),profileId=['common_core','profile0'].includes(req.query.profileId)?req.query.profileId:'common_core';
+ const doc=await Profile.collection.findOne({accountId:req.user.accountId});
+ const profile=doc?.profiles?.[profileId];
+ if(!profile)return res.status(404).json({errorCode:'errors.com.epicgames.modules.profiles.profile_not_found',errorMessage:'No '+profileId+' profile.'});
+ const redeemed=[];
+ if(operation==='VerifyRealMoneyPurchase'){const r=redeemReceipt(req.user.accountId,{receiptId:req.body?.receiptId,appStoreId:req.body?.appStoreId});if(r)redeemed.push(r);}
+ else for(const id of [].concat(req.body?.receiptIds||[]).slice(0,20)){const r=redeemReceipt(req.user.accountId,{receiptId:String(id)});if(r)redeemed.push(r);}
+ if(operation==='RedeemRealMoneyPurchases'&&!redeemed.length&&!(req.body?.receiptIds||[]).length)for(const r of pendingReceipts(req.user.accountId))redeemed.push(redeemReceipt(req.user.accountId,{receiptId:r.receiptId}));
+ console.log(`[Syndicate] ${operation} (${profileId}): ${redeemed.length} V-Bucks purchase(s) reported. Request: ${JSON.stringify(req.body||{}).slice(0,240)}`);
+ res.json({profileRevision:profile.rvn||0,profileId,profileChangesBaseRevision:profile.rvn||0,profileChanges:[{changeType:'fullProfileUpdate',profile}],profileCommandRevision:profile.commandRevision||0,
+  notifications:redeemed.filter(Boolean).map(r=>({type:'CatalogPurchase',primary:true,lootResult:{items:[{itemType:'Currency:MtxPurchased',itemGuid:'Currency:MtxPurchased',itemProfile:'common_core',quantity:r.quantity}]}})),
+  serverTime:new Date().toISOString(),responseVersion:1});
 });
 
 // Pre-season / Season 1 Season Shop (syndicateSeason1Shop.js): each item needs its Season Level. The generic handler

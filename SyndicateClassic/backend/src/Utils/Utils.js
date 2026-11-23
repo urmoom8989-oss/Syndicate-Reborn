@@ -3,6 +3,7 @@ import {scheduleTokenSave} from './syndicateTokenStore.js';
 import {season2PassCatalog} from './syndicateSeason2Pass.js';
 import {clientBuild,isSeasonTwoBuild} from './syndicateBuild.js';
 import {tierCatalog,tierSeason} from './syndicateTierPurchase.js';
+import {vbucksStorefront} from './syndicateVbucksStore.js';
 import {rotatingShop,rotatingShop2,nextShopRefresh} from './syndicateShopRotation.js';
 import axios from "axios";
 import dotenv from "dotenv";
@@ -821,6 +822,8 @@ export default class Utils {
       }
 
       storefronts.push(['1.8.2','1.7.2'].includes(clientBuild(userAgent))?season1Store(Utils.createCatalogEntry):legacy?season2PassCatalog(Utils.createCatalogEntry):tierCatalog(tierSeason(clientBuild(userAgent))));
+      // The STORE tab's V-Bucks packs, every season (syndicateVbucksStore.js; bought for free on Syndicate's checkout page).
+      storefronts.push(vbucksStorefront());
       // EXPERIMENT (dev builds, Season 3 only): a placeholder real-money Starter Pack, to test whether the
       // STORE tab (AthenaStore) renders anything the backend sends. See /catalog/api/shared/bulk/offers.
       if (process.env.TILTED_DEVKIT === "1" && clientBuild(userAgent) === "3.5.1") {

@@ -1,3 +1,4 @@
+import { pendingReceipts } from "../Utils/syndicateVbucksStore.js";
 import { stwDevEnabled, stwWorldInfo } from '../Utils/syndicateStwDev.js';
 import Profile from '../User/Mongodb/Schema/profiles.js';
 import {careerStats,legacyCareer} from '../Utils/syndicateCareerCore.js';
@@ -152,7 +153,10 @@ app.post(
   }
 );
 app.get("/fortnite/api/receipts/v1/account/*/receipts", (req, res) => {
-  res.json([]);
+  // V-Bucks packs bought on Syndicate's checkout page and not yet reported to the game (syndicateVbucksStore.js).
+  // The game redeems them with VerifyRealMoneyPurchase; the V-Bucks themselves were added at Confirm.
+  const accountId = String(req.params[0] || "").split("/")[0];
+  res.json(pendingReceipts(accountId).map((r) => ({ appStore: "EpicPurchasingService", appStoreId: r.appStoreId, receiptId: r.receiptId, receiptInfo: "ENTITLEMENT" })));
 });
 app.get("/fortnite/api/game/v2/leaderboards/cohort/*", (req, res) => {
   res.json([]);

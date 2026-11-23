@@ -9,14 +9,29 @@ export const season5TierOfferId=passes[5].tierOfferId;
 export const tierOfferIds=Object.freeze(Object.fromEntries(Object.entries(passes).map(([n,p])=>[n,p.tierOfferId])));
 // Client build -> its Battle Pass season (builds without a detected release default to Season 4).
 export function tierSeason(build){return ({'3.5.1':3,'4.5':4,'5.10':5,'6.20':6,'7.40':7,'8.50':8,'9.40':9,'10.31':10,'10.40':10,'11.00':11,'12.50':12})[build]||4;}
+const passTexts=JSON.parse(fs.readFileSync(new URL('../local/Battlepass/PassOffers.json',import.meta.url),'utf8'));
+// The season's Battle Pass storefront: the Battle Pass (950 V-Bucks), the Battle Bundle (the pass and 25 tiers,
+// 2,800 V-Bucks) and single tiers (150). Bought in the game (Routes/Fortnite.js, syndicatePassPurchase.js).
 export function tierCatalog(season=4){
- const selected=passes[season]||passes[4],n=passes[season]?season:4;
- return {name:`BRSeason${n}`,catalogEntries:[{
-  offerId:selected.tierOfferId,devName:`Season${n}.SingleTier.01`,offerType:'StaticPrice',
-  prices:[{currencyType:'MtxCurrency',currencySubType:'',regularPrice:150,finalPrice:150,basePrice:150}],
+ const selected=passes[season]||passes[4],n=passes[season]?season:4,texts=passTexts[n]||{};
+ const entry=(offerId,devName,price,regular,extra)=>({
+  offerId,devName,offerType:'StaticPrice',
+  prices:[{currencyType:'MtxCurrency',currencySubType:'',regularPrice:regular,finalPrice:price,basePrice:price,
+   ...(regular>price?{saleType:'PercentOff'}:{}),saleExpiration:'9999-12-31T23:59:59.999Z'}],
   itemGrants:[],requirements:[],categories:[],metaInfo:[],dailyLimit:-1,weeklyLimit:-1,monthlyLimit:-1,
-  refundable:false,giftInfo:{bIsEnabled:false},appStoreId:[],fulfillmentIds:[],title:'Battle Pass Tier'
- }]};
+  refundable:false,giftInfo:{bIsEnabled:false},appStoreId:[],fulfillmentIds:[],catalogGroup:'',catalogGroupPriority:0,sortPriority:0,...extra
+ });
+ const text=t=>({title:t.title,shortDescription:t.shortDescription||'',description:t.description||'',displayAssetPath:t.displayAssetPath||''});
+ const entries=[];
+ if(selected.battleBundleOfferId&&texts.bundle)entries.push(entry(selected.battleBundleOfferId,`BR.Season${n}.BattleBundle.01`,2800,4700,text(texts.bundle)));
+ if(selected.battlePassOfferId&&texts.pass)entries.push(entry(selected.battlePassOfferId,`BR.Season${n}.BattlePass.01`,950,950,{...text(texts.pass),sortPriority:1}));
+ entries.push(entry(selected.tierOfferId,`Season${n}.SingleTier.01`,150,150,{title:'Battle Pass Tier',shortDescription:'',description:'Get great rewards now!',displayAssetPath:''}));
+ return {name:`BRSeason${n}`,catalogEntries:entries};
+}
+// 'pass' or 'bundle' when the offer is this season's Battle Pass or Battle Bundle, otherwise null.
+export function passOfferKind(season,offerId){
+ const p=passes[season];if(!p||typeof offerId!=='string')return null;
+ return offerId===p.battlePassOfferId?'pass':offerId===p.battleBundleOfferId?'bundle':null;
 }
 export function purchaseTiers(profiles,quantity){
  const a=profiles.athena,c=profiles.common_core,s=a.stats.attributes;

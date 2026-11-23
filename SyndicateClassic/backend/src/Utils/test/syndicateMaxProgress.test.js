@@ -64,9 +64,18 @@ test('every maxed season is restored, the active one and the stored ones', () =>
 
 test('a season with no challenges granted yet ends with all of them complete', () => {
   const p = structuredClone(defaults);
-  p.stats.attributes.tilted_unlock_all = true; p.stats.attributes.season_num = 4;
+  p.stats.attributes.tilted_unlock_all = true; p.stats.attributes.season_num = 4; p.stats.attributes.tilted_passes_bought = {4: true};
   applyMaxProgress(p, 4);
   assert.ok(quests(p).length > 50);
+  assert.equal(quests(p).filter(q => q.attributes.quest_state === 'Active').length, 0);
+});
+
+test('Unlock all does not give the Battle Pass', () => {
+  const p = structuredClone(defaults);
+  p.stats.attributes.tilted_unlock_all = true; p.stats.attributes.season_num = 4;
+  applyMaxProgress(p, 4);
+  assert.equal(p.stats.attributes.book_purchased, false);
+  assert.equal(p.stats.attributes.book_level, 100);
   assert.equal(quests(p).filter(q => q.attributes.quest_state === 'Active').length, 0);
 });
 

@@ -8,6 +8,7 @@ import Friends from "../User/Mongodb/Schema/friends.js";
 import Utils from "../Utils/Utils.js";
 import { verifyToken } from "../User/tokenManager/tokenVerify.js";
 import fs from "fs";
+import { vbucksBulkOffers, vbucksPrices, noteCheckoutAccount } from "../Utils/syndicateVbucksStore.js";
 
 const keychain = JSON.parse(
   fs.readFileSync("./src/local/KeyChain/keychain.json", "utf8")
@@ -118,50 +119,29 @@ app.get("/fortnite/api/storefront/v2/keychain", (req, res) => {
   res.json(keychain);
 });
 app.get("/catalog/api/shared/bulk/offers", (req, res) => {
+  // The STORE tab's V-Bucks packs (syndicateVbucksStore.js): the store entry of each pack the game asks for.
+  const packs = vbucksBulkOffers(req.query.id);
   // EXPERIMENT (dev builds only): answer the commerce lookup for the placeholder Rogue Agent Starter Pack,
   // so the STORE tab has something to render. Logs the request so we can see what the client actually asks for.
   if (process.env.TILTED_DEVKIT === "1") {
     console.log("[Syndicate] bulk/offers query:", JSON.stringify(req.query));
-    return res.json(Utils.devBulkOffers());
+    return res.json({ ...Utils.devBulkOffers(), ...packs });
   }
-  res.json({});
+  res.json(packs);
 });
 
 // EXPERIMENT (dev builds only): the price lookup the STORE tab makes after bulk/offers. Without this the
 // placeholder offer has no price and the tab drops it ("No Offers Available"). Returns a price for each
 // requested line offer. Logs the body so we can match the real client's exact shape.
 function devPriceEngine(req, res) {
-  if (process.env.TILTED_DEVKIT !== "1") return res.json({});
-  console.log("[Syndicate] priceengine body:", JSON.stringify(req.body));
-  const lineOffers = Array.isArray(req.body?.lineOffers) ? req.body.lineOffers : [];
-  const money = (amount) => ({
-    currencyCode: "USD",
-    currencySymbolPlacement: "LEFT",
-    originalPrice: amount,
-    discountPrice: amount,
-    discount: 0,
-    basePayoutCurrencyCode: "USD",
-    basePayoutPrice: amount,
-    payoutCurrencyExchangeRate: 1,
-    vat: 0,
-    voucherDiscount: 0,
-  });
-  const amount = 499; // $4.99 placeholder
-  res.json({
-    totalPrice: money(amount),
-    totalPaymentPrice: {
-      paymentCurrencyCode: "USD",
-      paymentCurrencySymbol: "$",
-      paymentCurrencyAmount: amount,
-      paymentCurrencyExchangeRate: 1,
-      paymentCurrencySymbolPlacement: "LEFT",
-    },
-    lineOffers: lineOffers.map((o) => ({
-      offerId: o?.offerId || "app-SyndicateRogueStarterKit",
-      quantity: o?.quantity || 1,
-      price: money(amount),
-    })),
-  });
+  // The V-Bucks packs' prices ($9.99 to $99.99, syndicateVbucksStore.js). Note the account: the checkout page
+  // adds the V-Bucks to the account playing on this PC.
+  noteCheckoutAccount(req.socket?.remoteAddress, req.body?.accountId);
+  // EXPERIMENT (dev builds only): the placeholder Rogue Agent Pack is priced too ($4.99). Without a price the
+  // STORE tab drops an offer ("No Offers Available"). Logs the body so we can match the real client's exact shape.
+  const dev = process.env.TILTED_DEVKIT === "1";
+  if (dev) console.log("[Syndicate] priceengine body:", JSON.stringify(req.body));
+  res.json(vbucksPrices(req.body, dev ? 499 : 0) || {});
 }
 app.post("/priceengine/api/shared/offers/price", devPriceEngine);
 app.post("/priceengine/api/shared/offer/price", devPriceEngine);

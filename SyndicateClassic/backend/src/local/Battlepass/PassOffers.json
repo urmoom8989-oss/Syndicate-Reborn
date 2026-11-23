@@ -1,0 +1,171 @@
+{
+ "2": {
+  "pass": {
+   "devName": "BR.Season2.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "",
+   "description": "Season 2: Dec 14 - Feb 20\n\nInstantly get these items valued at over 2000 V-Bucks.\n  • Blue Squire Outfit\n  • 50% Bonus Season Match XP\n  • 10% Bonus Season Friend Match XP\n  • Extra Battle Pass Daily Challenge\n\nPlay to level up your Battle Pass, unlocking up to 65+ rewards worth 12,000 V-Bucks (typically takes 75 to 150 hours of play). Want it all faster? You can use V-Bucks to buy levels any time!\n  • Black Knight plus 2 other outfits\n  • 3 Harvesting Tools\n  • 2 Gliders\n  • 1000 V-Bucks\n  • 60% Bonus Season Match XP\n  • 20% Bonus Season Friend Match XP\n  • 2 Animated Emotes\n  • 13 2D Emotes\n  • and more!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season2_BattlePass.DA_BR_Season2_BattlePass"
+  }
+ },
+ "3": {
+  "bundle": {
+   "devName": "BR.Season3.BattleBundle.01",
+   "title": "Battle Bundle",
+   "shortDescription": "Battle pass + 25 tiers!",
+   "description": "Season 3: Feb 22 - April 30\n\nInstantly get these items valued at over 8000 V-Bucks.\n  • Mission Specialist Outfit\n  • Rust Lord Outfit\n  • Sawtooth Harvesting Tool\n  • Rainbow Rider Glider\n  • Rainbow Skydiving Trail\n  • 70% Bonus Season Match XP\n  • 20% Bonus Season Friend Match XP\n  • Access to Weekly Challenges\n  • and more!\n\nPlay to level up your Battle Pass, unlocking up to 75+ more rewards (typically takes 75 to 150 hours of play). Want it all faster? You can use V-Bucks to buy tiers any time!\n  • The Reaper plus 3 other outfits\n  • 1 Harvesting Tool\n  • 1 Glider\n  • 2 Back Blings\n  • 4 Skydiving Trails\n  • 1300 V-Bucks\n  • and so much more!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season3_BattlePassWithLevels.DA_BR_Season3_BattlePassWithLevels"
+  },
+  "pass": {
+   "devName": "BR.Season3.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "Season 3",
+   "description": "Season 3: Feb 22 - April 30\n\nInstantly get these items valued at over 2000 V-Bucks.\n  • Mission Specialist Outfit\n  • 50% Bonus Season Match XP\n  • 10% Bonus Season Friend Match XP\n  • Access to Weekly Challenges\n\nPlay to level up your Battle Pass, unlocking up to 100 rewards (typically takes 75 to 150 hours of play). Want it all faster? You can use V-Bucks to buy tiers any time!\n  • The Reaper plus 4 other outfits\n  • 2 Harvesting Tools\n  • 2 Gliders\n  • 2 Back Blings\n  • 5 Skydiving Trails\n  • 1300 V-Bucks\n  • and so much more!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season3_BattlePass.DA_BR_Season3_BattlePass"
+  }
+ },
+ "4": {
+  "bundle": {
+   "devName": "BR.Season4.BattleBundle.01",
+   "title": "Battle Bundle",
+   "shortDescription": "Battle Pass + 25 tiers!",
+   "description": "Season 4: Now thru July 9\n\nInstantly get these items valued at over 10,000 V-Bucks.\n  • Carbide Outfit\n  • Battlehawk Outfit\n  • Teknique Outfit \n  • Gale Force Pickaxe\n  • Sugar Crash Glider\n  • Standard Issue Back Bling\n  • 4 Sprays\n  • Retro Sci-fi Skydiving Trail\n  • 70% Bonus Season Match XP\n  • 20% Bonus Season Friend Match XP\n  • Access to Weekly Challenges\n  • Access to Blockbuster Challenges\n  • Access to Carbide Challenges\n  • and more!\n\nPlay to level up your Battle Pass, unlocking up to 75+ more rewards (typically takes 75 to 150 hours of play). Want it all faster? You can use V-Bucks to buy tiers any time!\n\n  • Omega plus 3 other outfits\n  • 3 Pickaxes\n  • 4 Emotes\n  • 2 Gliders\n  • 1 Back Bling\n  • 4 Skydiving Trails\n  • 16 Sprays\n  • 1300 V-Bucks\n  • and so much more!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season4_BattlePassWithLevels.DA_BR_Season4_BattlePassWithLevels"
+  },
+  "pass": {
+   "devName": "BR.Season4.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "Season 4",
+   "description": "Season 4: Now thru July 9\n\nInstantly get these items valued at over 3,500 V-Bucks.\n  • Carbide Outfit\n  • Battlehawk Outfit\n  • 50% Bonus Season Match XP\n  • 10% Bonus Season Friend Match XP\n  • Access to Weekly Challenges\n  • Access to Blockbuster Challenges\n  • Access to Carbide Challenges\n\nPlay to level up your Battle Pass, unlocking over  100 rewards (typically takes 75 to 150 hours of play). Want it all faster? You can use V-Bucks to buy tiers any time!\n  • Omega plus 4 other outfits\n  • 4 Pickaxes\n  • 5 Emotes\n  • 3 Gliders\n  • 2 Back Blings\n  • 5 Skydiving Trails\n  • 20 Sprays\n  • 1300 V-Bucks\n  • and so much more!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season4_BattlePass.DA_BR_Season4_BattlePass"
+  }
+ },
+ "5": {
+  "bundle": {
+   "devName": "BR.Season5.BattleBundle.01",
+   "title": "Battle Bundle",
+   "shortDescription": "Battle Pass + 25 tiers!",
+   "description": "Season 5: Now thru Sept 25\n\nInstantly get these items valued at over 10,000 V-Bucks.\n  • “Huntress” Outfit\n  • “Drift” Outfit\n  • “Redline” Outfit\n  • “Balloon Axe” Pickaxe\n  • “Uplink” Back Bling\n  • “Lanterns” Skydiving Trail\n  • 2 Gliders\n  • 4 Sprays\n  • 70% Bonus Season Match XP\n  • 20% Bonus Season Friend Match XP\n  • Extra Weekly Challenges\n  • Drift Progressive Challenges\n  • and more!\n\nPlay to level up your Battle Pass, unlocking up to 75+ more rewards (typically takes 75 to 150 hours of play). Want it all faster? You can use V-Bucks to buy tiers any time!\n  • “Ragnarok” plus 4 other outfits\n  • 3 Pickaxes\n  • 4 Emotes\n  • 2 Gliders\n  • 4 Back Blings\n  • 4 Skydiving Trails\n  • 11 Sprays\n  • 1,300 V-Bucks\n  • and so much more!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season5_BattlePassWithLevels.DA_BR_Season5_BattlePassWithLevels"
+  },
+  "pass": {
+   "devName": "BR.Season5.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "Season 5",
+   "description": "Season 5: Now thru Sept 25\n\nInstantly get these items valued at over 3,500 V-Bucks.\n  • Huntress Outfit\n  • Drift Outfit\n  • 50% Bonus Season Match XP\n  • 10% Bonus Season Friend Match XP\n  • Extra Weekly Challenges\n  • Drift Progressive Challenges\n\nPlay to level up your Battle Pass, unlocking over 100 rewards (typically takes 75 to 150 hours of play). Want it all faster? You can use V-Bucks to buy tiers any time!\n  • “Ragnarok” plus 5 other outfits\n  • 4 Pickaxes\n  • 5 Emotes\n  • 4 Gliders\n  • 5 Back Blings\n  • 5 Skydiving Trails\n  • 15 Sprays\n  • 1,300 V-Bucks\n  • and so much more!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season5_BattlePass.DA_BR_Season5_BattlePass"
+  }
+ },
+ "6": {
+  "bundle": {
+   "devName": "BR.Season6.BattleBundle.01",
+   "title": "Battle Bundle",
+   "shortDescription": "Battle Pass + 25 tiers!",
+   "description": "Season 6: Now thru Dec 6\n\nInstantly get these items valued at over 10,000 V-Bucks.\n  • Calamity Outfit\n  • DJ Yonder Outfit\n  • Giddy-up Outfit\n  • Smash-Up Pickaxe\n  • Picnic Glider\n  • Fabled Cape Back Bling\n  • 3 Sprays\n  • Bonesy Pet\n  • Exhaust Skydiving Trail\n  • 70% Bonus Season Match XP\n  • 20% Bonus Season Friend Match XP\n  • Extra Weekly Challenges\n  • Calamity Challenges\n  • and more!\n\nPlay to level up your Battle Pass, unlocking up to 75+ more rewards (typically takes 75 to 150 hours of play). Want it all faster? You can use V-Bucks to buy tiers any time!\n  • Dire plus 3 other outfits\n  • 2 Pets\n  • 2 Pickaxes\n  • 4 Emotes\n  • 2 Gliders\n  • 4 Back Blings\n  • 4 Skydiving Trails\n  • 11 Sprays\n  • 1,300 V-Bucks\n  • and so much more!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season6_BattlePassWithLevels.DA_BR_Season6_BattlePassWithLevels"
+  },
+  "pass": {
+   "devName": "BR.Season6.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "Season 6",
+   "description": "Season 6: Now thru Dec 6\n\nInstantly get these items valued at over 3,500 V-Bucks.\n  • Calamity Outfit\n  • DJ Yonder Outfit\n  • 50% Bonus Season Match XP\n  • 10% Bonus Season Friend Match XP\n  • Extra Weekly Challenges\n  • Calamity Progressive Challenges\n\nPlay to level up your Battle Pass, unlocking over  100 rewards (typically takes 75 to 150 hours of play). Want it all faster? You can use V-Bucks to buy tiers any time!\n  • Dire plus 4 other outfits\n  • 3 Pets\n  • 3 Pickaxes\n  • 5 Emotes\n  • 4 Gliders\n  • 4 Back Blings\n  • 5 Skydiving Trails\n  • 14 Sprays\n  • 2 Toys\n  • 3 Music Tracks\n  • 1,300 V-Bucks\n  • and so much more!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season6_BattlePass.DA_BR_Season6_BattlePass"
+  }
+ },
+ "7": {
+  "bundle": {
+   "devName": "BR.Season7.BattleBundle.01",
+   "title": "Battle Bundle",
+   "shortDescription": "Battle Pass + 25 tiers!",
+   "description": "Season 7: Now thru Feb 28\n\nInstantly get these items <Bold>valued at over 10,000 V-Bucks</>.\n  • <ItemName>Zenith</> Progressive Outfit\n  • <ItemName>Lynx</> Progressive Outfit\n  • <ItemName>Sgt. Winter</> Outfit and Style Challenges\n  • <ItemName>Hamirez</> Pet\n  • <ItemName>Tactical Sleigh</> Glider\n  • <ItemName>Arctic Camo</> Wrap\n  • <ItemName>Perfect Present</> Back Bling\n  • <ItemName>String Lights</> Contrail\n  • 300 V-Bucks\n  • 1 Music Track\n  • <Bold>70% Bonus</> Season Match XP\n  • <Bold>20% Bonus</> Season Friend Match XP\n  • <Bold>Extra Weekly Challenges</>\n  • and more!\n\nPlay to level up your Battle Pass, unlocking <Bold>over 75 rewards</> (typically takes 75 to 150 hours of play).\n  • <Bold>4 more Outfits</>\n  • <Bold>1,300 V-Bucks</>\n  • 6 Emotes\n  • 3 Gliders\n  • 4 Back Blings\n  • 4 Wraps\n  • 4 Harvesting Tools\n  • 4 Contrails\n  • 1 Pet\n  • 12 Sprays\n  • 2 Music Tracks\n  • and so much more!\nWant it all faster? You can use V-Bucks to buy tiers any time!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season7_BattlePassWithLevels.DA_BR_Season7_BattlePassWithLevels"
+  },
+  "pass": {
+   "devName": "BR.Season7.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "Season 7",
+   "description": "Season 7: Now thru Feb 28\n\nInstantly get these items <Bold>valued at over 3,500 V-Bucks</>.\n  • <ItemName>Zenith</> Progressive Outfit\n  • <ItemName>Lynx</> Progressive Outfit\n  • <Bold>50% Bonus</> Season Match XP\n  • <Bold>10% Bonus</> Season Friend Match XP\n  • <Bold>Extra Weekly Challenges</>\n\nPlay to level up your Battle Pass, unlocking <Bold>over 100 rewards</> (typically takes 75 to 150 hours of play).\n  • <ItemName>Sgt. Winter</> and <Bold>4 more Outfits</>\n  • <Bold>1,300 V-Bucks</>\n  • 2 Pets\n  • 6 Wraps\n  • 4 Harvesting Tools\n  • 7 Emotes\n  • 2 Toys\n  • 4 Gliders\n  • 6 Back Blings\n  • 5 Contrails\n  • 13 Sprays\n  • 3 Music Tracks\n  • and so much more!\nWant it all faster? You can use V-Bucks to buy tiers any time!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season7_BattlePass.DA_BR_Season7_BattlePass"
+  }
+ },
+ "8": {
+  "bundle": {
+   "devName": "BR.Season8.BattleBundle.01",
+   "title": "Battle Bundle",
+   "shortDescription": "Battle Pass + 25 tiers!",
+   "description": "Season 8 Now thru May 8\n\nInstantly get these items <Bold>valued at over 10,000 V-Bucks</>.\n  • <ItemName>Blackheart</> Progressive Outfit\n  • <ItemName>Hybrid</> Progressive Outfit\n  • <ItemName>Sidewinder</> Outfit\n  • <ItemName>Tropical Camo</> Wrap\n  • <ItemName>Woodsy</> Pet\n  • <ItemName>Sky Serpents</> Glider\n  • <ItemName>Cobra</> Back Bling\n  • <ItemName>Flying Standard</> Contrail\n  • 300 V-Bucks\n  • 1 Music Track\n  • <Bold>70% Bonus</> Season Match XP\n  • <Bold>20% Bonus</> Season Friend Match XP\n  • <Bold>Extra Weekly Challenges</>\n  • and more!\n\nPlay to level up your Battle Pass, unlocking <Bold>over 75 rewards</> (typically takes 75 to 150 hours of play).\n  • <Bold>4 more Outfits</>\n  • <Bold>1,000 V-Bucks</>\n  • 6 Emotes\n  • 5 Wraps\n  • 3 Gliders\n  • 3 Back Blings\n  • 4 Harvesting Tools\n  • 4 Contrails\n  • 1 Pet\n  • 12 Sprays\n  • 2 Music Tracks\n  • and so much more!\nWant it all faster? You can use V-Bucks to buy tiers any time!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season8_BattlePassWithLevels.DA_BR_Season8_BattlePassWithLevels"
+  },
+  "pass": {
+   "devName": "BR.Season8.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "Season 8",
+   "description": "Season 8 Now thru May 8 \n\nInstantly get these items <Bold>valued at over 3,500 V-Bucks</>.\n  • <ItemName>Blackheart</> Progressive Outfit\n  • <ItemName>Hybrid</> Progressive Outfit\n  • <Bold>50% Bonus</> Season Match XP\n  • <Bold>10% Bonus</> Season Friend Match XP\n  • <Bold>Extra Weekly Challenges</>\n\nPlay to level up your Battle Pass, unlocking <Bold>over 100 rewards</> (typically takes 75 to 150 hours of play).\n  • <ItemName>Sidewinder</> and <Bold>4 more Outfits</>\n  • <Bold>1,300 V-Bucks</>\n  • 7 Emotes\n  • 6 Wraps\n  • 2 Pets\n  • 5 Harvesting Tools\n  • 4 Gliders\n  • 4 Back Blings\n  • 5 Contrails\n  • 14 Sprays\n  • 3 Music Tracks\n  • 1 Toy\n  • 20 Loading Screens\n  • and so much more!\nWant it all faster? You can use V-Bucks to buy tiers any time!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season8_BattlePass.DA_BR_Season8_BattlePass"
+  }
+ },
+ "9": {
+  "bundle": {
+   "devName": "BR.Season9.BattleBundle.01",
+   "title": "Battle Bundle",
+   "shortDescription": "Battle Pass + 25 tiers!",
+   "description": "Season 9 Now through August 1.\n\nInstantly get these items <Bold>valued at over 10,000 V-Bucks</>.\n  • <ItemName>Rox</> Progressive Outfit\n  • <ItemName>Sentinel</> Outfit\n  • <ItemName>Bunker Jonesy</> Outfit\n  • <ItemName>Sentinel</> Wrap\n  • <ItemName>Ripe Rippers</> Harvesting Tool\n  • <ItemName>Turbo Spin</> Glider\n  • <ItemName>Ripe</> Wrap\n  • 300 V-Bucks\n  • 1 Music Track\n  • <Bold>70% Bonus</> Season Match XP\n  • <Bold>20% Bonus</> Season Friend Match XP\n  • <Bold>Extra Weekly Challenges</>\n  • and more!\n\nPlay to level up your Battle Pass, unlocking <Bold>over 75 rewards</> (typically takes 75 to 150 hours of play).\n  • <Bold>4 more Outfits</>\n  • <Bold>1,000 V-Bucks</>\n  • 6 Emotes\n  • 4 Wraps\n  • 2 Gliders\n  • 6 Back Blings\n  • 6 Harvesting Tools\n  • 4 Contrails\n  • 1 Pet\n  • 2 Music Tracks\n  • and so much more!\nWant it all faster? You can use V-Bucks to buy tiers any time!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season9_BattlePassWithLevels.DA_BR_Season9_BattlePassWithLevels"
+  },
+  "pass": {
+   "devName": "BR.Season9.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "Season 9",
+   "description": "Season 9 Now through August 1.\n\nInstantly get these items <Bold>valued at over 3,500 V-Bucks</>.\n  • <ItemName>Rox</> Progressive Outfit\n  • <ItemName>Sentinel</> Outfit\n  • <Bold>50% Bonus</> Season Match XP\n  • <Bold>60% Bonus</> Season Friend Match XP\n  • <Bold>Extra Weekly Challenges</>\n\nPlay to level up your Battle Pass, unlocking <Bold>over 100 rewards</> (typically takes 75 to 150 hours of play).\n  • <ItemName>Bunker Jonesy</> and <Bold>4 more Outfits</>\n  • <Bold>1,300 V-Bucks</>\n  • 7 Emotes\n  • 6 Wraps\n  • 7 Harvesting Tools\n  • 1 Pet\n  • 4 Gliders\n  • 6 Back Blings\n  • 5 Contrails\n  • 13 Sprays\n  • 3 Music Tracks\n  • 1 Toy\n  • 20 Loading Screens\n  • and so much more!\nWant it all faster? You can use V-Bucks to buy tiers any time!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season9_BattlePass.DA_BR_Season9_BattlePass"
+  }
+ },
+ "10": {
+  "pass": {
+   "devName": "BR.Season10.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "Season X",
+   "description": "Season X Now through October 6.\n\nInstantly get these items <Bold>valued at over 3,500 V-Bucks</>.\n  • <ItemName>X-Lord</> Outfit\n  • <ItemName>Catalyst</> Outfit\n  • <Bold>50% Bonus</> Season Match XP\n  • <Bold>60% Bonus</> Season Friend Match XP\n\nPlay to level up your Battle Pass, unlocking <Bold>over 100 rewards</> (typically takes 75 to 150 hours of play).\n  • <ItemName>Ultima Knight</> and <Bold>4 more Outfits</>\n  • <Bold>1,300 V-Bucks</>\n  • 7 Emotes\n  • 6 Wraps\n  • 6 Harvesting Tools\n  • 1 Pet\n  • 7 Gliders\n  • 7 Back Blings\n  • 5 Contrails\n  • 17 Sprays\n  • 3 Music Tracks\n  • 1 Toy\n  • 27 Loading Screens\n  • and so much more!\nWant it all faster? You can use V-Bucks to buy tiers any time!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season10_BattlePass.DA_BR_Season10_BattlePass"
+  },
+  "bundle": {
+   "devName": "BR.Season10.BattleBundle.01",
+   "title": "Battle Bundle",
+   "shortDescription": "Battle Pass + 25 tiers!",
+   "description": "Season X Now through October 6.\n\nInstantly get these items <Bold>valued at over 10,000 V-Bucks</>.\n  • <ItemName>X-Lord</> Outfit\n  • <ItemName>Catalyst</> Outfit\n  • <ItemName>Tilted Teknique</> Outfit\n  • <ItemName>Junk Bucket</> Glider\n  • <ItemName>Emote Camo </> Wrap\n  • <ItemName> Rift Lightning </> Contrails\n  • 300 V-Bucks\n  • <ItemName>The Final Showdown </> Music Track\n  • <Bold>70% Bonus</> Season Match XP\n  • <Bold>80% Bonus</> Season Friend Match XP\n  • and more!\n\nPlay to level up your Battle Pass, unlocking <Bold>over 75 rewards</> (typically takes 75 to 150 hours of play).\n  • <Bold>4 more Outfits</>\n  • <Bold>1,000 V-Bucks</>\n  • 6 Emotes\n  • 4 Wraps\n  • 5 Harvesting Tools\n  • 1 Pet\n  • 6 Gliders\n  • 7 Back Blings\n  • 3 Contrails\n  • 13 Sprays\n  • 2 Music Tracks\n  • 1 Toy\n  • 23 Loading Screens\n  • and so much more!\nWant it all faster? You can use V-Bucks to buy tiers any time!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season10_BattlePassWithLevels.DA_BR_Season10_BattlePassWithLevels"
+  }
+ },
+ "11": {
+  "pass": {
+   "devName": "BR.Season11.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "Chapter 2 - Season 1",
+   "description": "Chapter 2 - Season 1 through February 6. \n\nInstantly get these items\n  • <ItemName>Turk | Riptide</> Outfit\n  • <ItemName>Journey | Hazard</> Outfit\n\n\nPlay to level up your Battle Pass, unlocking <Bold>over 100 rewards</> !\n  • <ItemName>Fusion</> and <Bold>4 more Outfits</>\n  • <Bold>1,500 V-Bucks</>\n  • 7 Emotes\n  • 6 Wraps\n  • 6 Harvesting Tools\n  • 5 Gliders\n  • 6 Back Blings\n  • 5 Contrails\n  • 8 Sprays\n  • 3 Music Tracks\n  • 16 Loading Screens\n  • and so much more!\nWant it all faster? You can use V-Bucks to buy rewards any time!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season11_BattlePass.DA_BR_Season11_BattlePass"
+  },
+  "bundle": {
+   "devName": "BR.Season11.BattleBundle.01",
+   "title": "Battle Bundle",
+   "shortDescription": "Battle Pass + 25 tiers!",
+   "description": "Chapter 2 - Season 1 through February 6.\n\nInstantly get these items\n  •  <ItemName>Turk | Riptide</> Outfit\n  • <ItemName>Journey | Hazard</> Outfit\n  • <ItemName>Rippley | Sludge</> Outfit\n  • <ItemName>Respect The Peace</> Emote\n  • <ItemName>Sky Trawler</> Glider\n  • <ItemName>Riptide </> Wrap\n  • <ItemName> Slurpstream</> Contrails\n  • <ItemName>Storm Shredder </> Music Track\n  •  400 V-Bucks  \n  • and more!\n\nPlay to level up your Battle Pass, unlocking <Bold>over 75 rewards</>!\n  • <Bold>4 more Outfits</>\n  • <Bold>1,200 V-Bucks</>\n  • 5 Emotes\n  • 5 Wraps\n  • 5 Harvesting Tools\n  • 4 Gliders\n  • 4 Back Blings\n  • 4 Contrails\n  • 5 Sprays\n  • 2 Music Tracks\n  • 13 Loading Screens\n  • and so much more!\nWant it all faster? You can use V-Bucks to buy rewards any time!",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season11_BattlePassWithLevels.DA_BR_Season11_BattlePassWithLevels"
+  }
+ },
+ "12": {
+  "pass": {
+   "devName": "BR.Season12.BattlePass.01",
+   "title": "Battle Pass",
+   "shortDescription": "Chapter 2 - Season 2",
+   "description": "Chapter 2 - Season 2 through April 16.",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season12_BattlePass.DA_BR_Season12_BattlePass"
+  },
+  "bundle": {
+   "devName": "BR.Season12.BattleBundle.01",
+   "title": "Battle Bundle",
+   "shortDescription": "Battle Pass + 25 tiers!",
+   "description": "Chapter 2 - Season 2 through April 16.",
+   "displayAssetPath": "/Game/Catalog/DisplayAssets/DA_BR_Season12_BattlePassWithLevels.DA_BR_Season12_BattlePassWithLevels"
+  }
+ }
+}

@@ -81,6 +81,7 @@ export function unlockSeasonPass(p,season){
  const a=p.stats.attributes,cap=season===2?70:100,key='tilted_season'+season+'_';let changed=false;
  const set=(k,v)=>{if(a[k]!==v){a[k]=v;changed=true;}};
  set('book_purchased',true);
+ if(markPassBought(p,season))changed=true;
  // Chapter 2's Battle Pass tier is its season level, so raise the level too. Chapter 1
  // keeps its real season level and only gets the tier.
  if(season>=11){set('level',100);set('xp',0);}
@@ -91,12 +92,29 @@ export function unlockSeasonPass(p,season){
 }
 // Launcher "Unlock all": the active season at its last level and Battle Pass tier, with XP that matches
 // (none toward a next level). The reward trackers move to the last tier too, so no tier reward is ever
-// claimed for it (turning Unlock all off puts the real trackers back). True when something changed.
+// claimed for it (turning Unlock all off puts the real trackers back). It does not give the Battle Pass:
+// that is bought (syncPassOwnership). True when something changed.
 export function holdSeasonMax(p,season){
  const a=p.stats.attributes,cap=season===2?70:100,key='tilted_season'+season+'_';let changed=false;
  const set=(k,v)=>{if(a[k]!==v){a[k]=v;changed=true;}};
- set('level',100);set('xp',0);set('book_level',cap);set('book_xp',0);set('book_purchased',true);
+ set('level',100);set('xp',0);set('book_level',cap);set('book_xp',0);set('book_purchased',passBought(p,season));
  for(const track of ['free','paid'])set(key+track+'_reward_tier',cap);
  if(season===4)set('tilted_season4_reward_tier',cap);
  return changed;
+}
+// Battle Passes the account bought, by season: in the game with V-Bucks (syndicatePassPurchase.js) or the
+// launcher's complete pass (unlockSeasonPass). Account-wide, not a season field, so a season switch, Reset
+// season or Unlock all never gives or takes one.
+export function passBought(p,season){const m=p?.stats?.attributes?.tilted_passes_bought;return !!(m&&typeof m==='object'&&m[season]);}
+export function markPassBought(p,season){
+ const a=p.stats.attributes;const m=a.tilted_passes_bought&&typeof a.tilted_passes_bought==='object'?a.tilted_passes_bought:(a.tilted_passes_bought={});
+ if(m[season])return false;m[season]=true;return true;
+}
+// The active season's Battle Pass is owned only when it was bought: a season never starts with it, and
+// Unlock all does not give it. Fixes saves that got it for free before. True when something changed.
+export function syncPassOwnership(p,season){
+ if(activeSeason(p)!==season)return false;
+ const a=p.stats.attributes,owned=passBought(p,season);
+ if(a.book_purchased===owned)return false;
+ a.book_purchased=owned;return true;
 }

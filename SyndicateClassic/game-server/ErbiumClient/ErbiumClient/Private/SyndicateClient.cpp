@@ -9,6 +9,7 @@
 #include <cwctype>
 #include <cstring>
 #include "MouseCoalesce.h"
+#include <shellapi.h>
 
 // SyndicateClient.dll: client-side mods the launcher loads into Fortnite when one of them is turned on.
 //   * Custom field of view, every season (below).
@@ -61,13 +62,16 @@ namespace {
         if (!GetEnvironmentVariableW(L"LOCALAPPDATA", Base, MAX_PATH)) return L"";
         return std::wstring(Base) + L"\\ProjectTilted\\" + Name;
     }
-    void Log(const char* Text) {
-        static int Lines = 0; if (++Lines > 400) return; // a few lines per launch is all that is needed
+    void LogLine(const char* Text) {
         FILE* Out = nullptr; auto File = DataFile(L"syndicate-client.log");
         if (!File.empty() && _wfopen_s(&Out, File.c_str(), L"a") == 0 && Out) {
             SYSTEMTIME T; GetLocalTime(&T);
             fprintf(Out, "%02d:%02d:%02d pid=%lu %s\n", T.wHour, T.wMinute, T.wSecond, GetCurrentProcessId(), Text); fclose(Out);
         }
+    }
+    void Log(const char* Text) {
+        static int Lines = 0; if (++Lines > 400) return; // a few lines per launch is all that is needed
+        LogLine(Text);
     }
 
     // All actors of a class: the parameters are laid out by name and the game's own result array is copied out and
@@ -2331,6 +2335,118 @@ namespace {
         if (!Told) { Told = true; char Line[128]; snprintf(Line, sizeof(Line), "console: in-game console ready (Fortnite %.2f); press ~ to open it", double(VersionInfo.FortniteVersion)); Log(Line); }
     }
 
+    // ---- V-Bucks checkout (every season) -------------------------------------------------------------------------
+    // The STORE tab sells V-Bucks packs (backend: syndicateVbucksStore.js). Buying one makes the game open Epic's
+    // checkout in its in-game browser (the PurchaseFlow plugin, Chromium Embedded Framework in libcef.dll). Epic's
+    // real store must never open, so that browser is pointed at Syndicate's own checkout page instead
+    // (http://127.0.0.1:3551/syndicate/checkout, backend Routes/syndicateCheckout.js): nothing to fill in, nothing
+    // is paid, Confirm adds the V-Bucks and hands the game its receipt through the page's purchase bridge.
+    // The game creates the browser with libcef's cef_browser_host_create_browser_sync (libcef.dll is delay-loaded,
+    // so the hook goes in once it is loaded). A page that names an offer ("offers=", a Syndicate V-Bucks pack) or an
+    // Epic store purchase is replaced; nothing else is touched. A build that sends the purchase to an outside browser
+    // or the Epic Games Launcher (ShellExecute) gets the same page in the default browser. The first pages are written
+    // to syndicate-client.log. checkout-hook-off.txt turns this off.
+    struct CefStringUtf16 { wchar_t* Str; size_t Length; void (*Dtor)(wchar_t*); }; // cef_string_t on Windows
+    using CefCreateBrowserFn = void* (*)(const void*, void*, const CefStringUtf16*, const void*, void*, void*); // url is the 3rd argument in every CEF 3 version
+    CefCreateBrowserFn CefCreateSyncOriginal = nullptr, CefCreateAsyncOriginal = nullptr;
+    using ShellExecuteWFn = HINSTANCE (WINAPI*)(HWND, LPCWSTR, LPCWSTR, LPCWSTR, LPCWSTR, INT);
+    using ShellExecuteExWFn = BOOL (WINAPI*)(SHELLEXECUTEINFOW*);
+    ShellExecuteWFn ShellExecuteWOriginal = nullptr;
+    ShellExecuteExWFn ShellExecuteExWOriginal = nullptr;
+    volatile LONG CheckoutLines = 0;
+
+    std::string CheckoutUtf8(const wchar_t* Text, size_t Length) {
+        if (!Text || !Length) return std::string();
+        const int Size = WideCharToMultiByte(CP_UTF8, 0, Text, int(Length), nullptr, 0, nullptr, nullptr);
+        std::string Out(size_t(Size > 0 ? Size : 0), '\0');
+        if (Size > 0) WideCharToMultiByte(CP_UTF8, 0, Text, int(Length), &Out[0], Size, nullptr, nullptr);
+        return Out;
+    }
+    bool CheckoutIsPurchase(const std::wstring& Url) {
+        std::wstring Low = Url; for (auto& C : Low) C = wchar_t(towlower(C));
+        const auto Has = [&](const wchar_t* Part) { return Low.find(Part) != std::wstring::npos; };
+        if (Has(L"/syndicate/checkout")) return false;
+        return Has(L"offers=") || Has(L"offers%3d") || Has(L"app-syndicatevbucks") || Has(L"com.epicgames.launcher://store")
+            || (Has(L"purchase") && (Has(L"epicgames.com") || Has(L"unrealengine.com")));
+    }
+    std::wstring CheckoutUrlFor(const std::wstring& Original) {
+        static const char Hex[] = "0123456789ABCDEF";
+        std::wstring Out = L"http://127.0.0.1:3551/syndicate/checkout?from=";
+        for (unsigned char C : CheckoutUtf8(Original.c_str(), Original.size())) {
+            if (isalnum(C) || C == '-' || C == '_' || C == '.' || C == '~') Out += wchar_t(C);
+            else { Out += L'%'; Out += wchar_t(Hex[C >> 4]); Out += wchar_t(Hex[C & 15]); }
+        }
+        return Out;
+    }
+    void CheckoutLog(const char* Where, const std::wstring& Url, bool Replaced) {
+        if (InterlockedIncrement(&CheckoutLines) > 30) return;
+        std::string Line = std::string("checkout: ") + Where + (Replaced ? " purchase page sent to the Syndicate checkout: " : " opens ") + CheckoutUtf8(Url.c_str(), Url.size()).substr(0, 300);
+        LogLine(Line.c_str()); // not counted against Log's limit: a purchase comes late in a session
+    }
+    // The URL the game wants, or a replacement when it is a purchase page. False: leave the call alone.
+    bool CheckoutReplace(const char* Where, const wchar_t* Text, size_t Length, std::wstring& Out) {
+        if (!Text || !Length || Length > 16384) return false;
+        std::wstring Url(Text, Length);
+        const bool Purchase = CheckoutIsPurchase(Url);
+        CheckoutLog(Where, Url, Purchase);
+        if (Purchase) Out = CheckoutUrlFor(Url);
+        return Purchase;
+    }
+    void* CefCreateBrowser(CefCreateBrowserFn Original, const void* Info, void* Client, const CefStringUtf16* Url, const void* Settings, void* A5, void* A6) {
+        std::wstring New;
+        if (Url && CheckoutReplace("in-game browser", Url->Str, Url->Length, New)) {
+            CefStringUtf16 Replacement{ &New[0], New.size(), nullptr }; // CEF copies the string
+            return Original(Info, Client, &Replacement, Settings, A5, A6);
+        }
+        return Original(Info, Client, Url, Settings, A5, A6);
+    }
+    void* CefCreateSyncDetour(const void* Info, void* Client, const CefStringUtf16* Url, const void* Settings, void* A5, void* A6) { return CefCreateBrowser(CefCreateSyncOriginal, Info, Client, Url, Settings, A5, A6); }
+    void* CefCreateAsyncDetour(const void* Info, void* Client, const CefStringUtf16* Url, const void* Settings, void* A5, void* A6) { return CefCreateBrowser(CefCreateAsyncOriginal, Info, Client, Url, Settings, A5, A6); }
+    HINSTANCE WINAPI ShellExecuteWDetour(HWND Window, LPCWSTR Verb, LPCWSTR File, LPCWSTR Params, LPCWSTR Dir, INT Show) {
+        std::wstring New;
+        if ((File && CheckoutReplace("ShellExecute", File, wcslen(File), New)) || (Params && CheckoutReplace("ShellExecute (arguments)", Params, wcslen(Params), New)))
+            return ShellExecuteWOriginal(Window, L"open", New.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+        return ShellExecuteWOriginal(Window, Verb, File, Params, Dir, Show);
+    }
+    BOOL WINAPI ShellExecuteExWDetour(SHELLEXECUTEINFOW* Info) {
+        std::wstring New;
+        if (Info && ((Info->lpFile && CheckoutReplace("ShellExecuteEx", Info->lpFile, wcslen(Info->lpFile), New))
+            || (Info->lpParameters && CheckoutReplace("ShellExecuteEx (arguments)", Info->lpParameters, wcslen(Info->lpParameters), New)))) {
+            SHELLEXECUTEINFOW Copy = *Info;
+            Copy.lpVerb = L"open"; Copy.lpFile = New.c_str(); Copy.lpParameters = nullptr; Copy.lpDirectory = nullptr; Copy.nShow = SW_SHOWNORMAL;
+            Copy.fMask &= ~(SEE_MASK_INVOKEIDLIST | SEE_MASK_IDLIST | SEE_MASK_CLASSNAME | SEE_MASK_CLASSKEY);
+            const BOOL Result = ShellExecuteExWOriginal(&Copy);
+            Info->hInstApp = Copy.hInstApp; if (Info->fMask & SEE_MASK_NOCLOSEPROCESS) Info->hProcess = Copy.hProcess;
+            return Result;
+        }
+        return ShellExecuteExWOriginal(Info);
+    }
+    bool CheckoutHook(const wchar_t* Module, const char* Name, void* Detour, void** Original) {
+        void* Target = nullptr;
+        const MH_STATUS Made = MH_CreateHookApiEx(Module, Name, Detour, Original, &Target);
+        const MH_STATUS On = Made == MH_OK ? MH_EnableHook(Target) : Made;
+        char Line[160]; snprintf(Line, sizeof(Line), "checkout: %s hook %s (create %d, enable %d)", Name, On == MH_OK ? "on" : "not set", int(Made), int(On)); Log(Line);
+        return On == MH_OK;
+    }
+    // Background thread, once a second: the shell hooks at once, the browser hooks when libcef.dll is loaded.
+    void CheckoutHooksTick() {
+        static bool ShellDone = false, CefDone = false, Off = false;
+        if (Off || (ShellDone && CefDone)) return;
+        if (FlagFile(L"checkout-hook-off.txt")) { Off = true; Log("checkout: off (checkout-hook-off.txt)"); return; }
+        MH_Initialize(); // already initialized by the redirect guard is fine
+        if (!ShellDone) {
+            ShellDone = true;
+            CheckoutHook(L"shell32.dll", "ShellExecuteW", (void*)&ShellExecuteWDetour, (void**)&ShellExecuteWOriginal);
+            CheckoutHook(L"shell32.dll", "ShellExecuteExW", (void*)&ShellExecuteExWDetour, (void**)&ShellExecuteExWOriginal);
+        }
+        if (!CefDone && GetModuleHandleW(L"libcef.dll")) {
+            CefDone = true;
+            const bool Sync = CheckoutHook(L"libcef.dll", "cef_browser_host_create_browser_sync", (void*)&CefCreateSyncDetour, (void**)&CefCreateSyncOriginal);
+            const bool Async = CheckoutHook(L"libcef.dll", "cef_browser_host_create_browser", (void*)&CefCreateAsyncDetour, (void**)&CefCreateAsyncOriginal);
+            if (!Sync && !Async) Log("checkout: the in-game browser could not be redirected; V-Bucks packs cannot be bought in this session");
+        }
+    }
+
     // Separate from OnMessage: that function uses __try, which cannot share a function with a std::wstring.
     void CleanExit() {
         if (GetFileAttributesW(DataFile(L"clean-exit-off.txt").c_str()) != INVALID_FILE_ATTRIBUTES) return;
@@ -2415,7 +2531,7 @@ namespace {
                 if (!GameWindow) { Sleep(400); EnumWindows(FindGameWindow, 0); if (!GameWindow) CleanExit(); }
                 if (!GameWindow) { Sleep(1000); continue; }
             }
-            if (GetTickCount64() >= NextRead) { NextRead = GetTickCount64() + 1000; ReadSetting(); ReadStretch(); ReadTurbo(); ReadEdit(); ReadDevCamera(); ReadInputRole(); if (InputRole) HookXInput();
+            if (GetTickCount64() >= NextRead) { NextRead = GetTickCount64() + 1000; ReadSetting(); ReadStretch(); ReadTurbo(); ReadEdit(); ReadDevCamera(); ReadInputRole(); if (InputRole) HookXInput(); CheckoutHooksTick();
                 static int AudioRound = 0; if (++AudioRound % 3 == 1) InterlockedExchange(&AudioKeepDue, 1);
                 if (MessageHook && ConsoleDue >= 0 && !FlagFile(L"console-off.txt")) { InterlockedExchange(&ConsoleDue, 1); PostMessageW(GameWindow, ConsoleMessage, 0, 0); } }
             if (!MessageHook) MessageHook = SetWindowsHookExW(WH_GETMESSAGE, OnMessage, nullptr, GetWindowThreadProcessId(GameWindow, nullptr));
