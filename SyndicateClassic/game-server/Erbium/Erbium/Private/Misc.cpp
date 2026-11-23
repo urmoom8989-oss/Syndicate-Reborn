@@ -874,13 +874,29 @@ static UObject* SyndicateStwJoinClient = nullptr;   // a lobby client that logge
 static ULONGLONG SyndicateStwJoinAt = 0;
 static ULONGLONG SyndicateStwTravelAt = 0;     // when to leave for the zone (after the client's beacon reconnect)
 static std::wstring SyndicateStwZoneMap, SyndicateStwZoneMode; // from the onboarding zone theme (recon)
+// Seasons 4+ (replication graph builds), see SyndicateStwBeaconTick: when the lobby state's channel to the joining
+// client opened, and which client was last told to join (resent while it has not answered).
+static bool SyndicateStwBeaconTicking = false;
+static ULONGLONG SyndicateStwStateSeenAt = 0;
+static UObject* SyndicateStwJoinSentTo = nullptr;
+static ULONGLONG SyndicateStwJoinSentAt = 0;
+static int SyndicateStwJoinResends = 0;
+static bool SyndicateStwJoinAcked = false;
 void SyndicateStwTravelTick()
 {
 	// A second after a lobby login: start the lobby and tell the client to join the game (ALobbyBeaconClient::
 	// ClientJoinGame). The client then travels to the session's address, this zone's game port.
+	// Seasons 4+: the client only joins once it has the lobby state saying the world record is loaded, so wait
+	// until that state's channel to the client is open (at most 15 seconds).
+	if (SyndicateStwJoinClient && GetTickCount64() >= SyndicateStwJoinAt && SyndicateStwBeaconTicking &&
+		!(SyndicateStwStateSeenAt && GetTickCount64() >= SyndicateStwStateSeenAt + 1000) && GetTickCount64() < SyndicateStwJoinAt + 15000)
+		return;
 	if (SyndicateStwJoinClient && GetTickCount64() >= SyndicateStwJoinAt)
 	{
 		auto Client = SyndicateStwJoinClient;
+		if (SyndicateStwBeaconTicking && !SyndicateStwStateSeenAt)
+			SyndicateStwLog("[Syndicate STW] lobby: the lobby state has not reached the client after 15 seconds; telling it to join anyway\n");
+		SyndicateStwJoinSentTo = Client; SyndicateStwJoinSentAt = GetTickCount64(); SyndicateStwJoinResends = 0; SyndicateStwJoinAcked = false;
 		SyndicateStwJoinClient = nullptr;
 		if (SyndicateStwLobbyState)
 		{
@@ -917,6 +933,66 @@ void SyndicateStwTravelTick()
 	auto Statics = (UObject*)UGameplayStatics::GetDefaultObj();
 	if (auto OpenLevel = Statics->GetFunction("OpenLevel")) Statics->ProcessEvent(OpenLevel, &Params);
 	else SyndicateStwLog("[Syndicate STW] OpenLevel not found\n");
+}
+
+// Seasons 4+ (replication graph builds), called from the beacon net driver's tick. The beacon driver replicates the
+// beacon client actors itself, but the lobby state spawned below was registered for the driver its NetDriverName
+// names, not this beacon's driver, so it never reached the client: "Attempting JoinFromLobby before the lobby beacon
+// says the server world record is loaded", and the client sat on "traveling to lobby". Move the state to this driver
+// the way the engine moves a new beacon client actor (NetDriverName, then SetReplicates false/true, which adds it to
+// the driver's network list), note when its channel to the joining client is open, and repeat ClientJoinGame
+// while the client has not answered.
+void SyndicateStwBeaconTick(UNetDriver* Driver)
+{
+	SyndicateStwBeaconTicking = true;
+	auto State = SyndicateStwLobbyState;
+	if (!State || !Driver) return;
+	static UNetDriver* Registered = nullptr;
+	if (Registered != Driver)
+	{
+		Registered = Driver;
+		auto O = State->GetOffset("NetDriverName");
+		if (O == uint32(-1)) { SyndicateStwLog("[Syndicate STW] lobby replication: the lobby state has no NetDriverName\n"); return; }
+		auto& Name = GetFromOffset<FName>(State, O);
+		SyndicateStwLog("[Syndicate STW] lobby replication: lobby state driver %s, beacon driver %s\n", std::string(Name.ToString().c_str()).c_str(), std::string(Driver->NetDriverName.ToString().c_str()).c_str());
+		Name = Driver->NetDriverName;
+		// Loaded from the start, so the state already says so when it reaches the client (the join below follows it).
+		if (auto W = State->GetOffset("bWorldRecordLoaded"); W != uint32(-1)) GetFromOffset<bool>(State, W) = true;
+		if (auto Prop = State->GetProperty("bAlwaysRelevant"); Prop && State->GetOffset("bAlwaysRelevant") != uint32(-1))
+			GetFromOffset<uint8_t>(State, State->GetOffset("bAlwaysRelevant")) |= Prop->GetFieldMask();
+		if (auto Set = State->GetFunction("SetReplicates"))
+		{
+			bool Value = false; State->ProcessEvent(Set, &Value);
+			Value = true; State->ProcessEvent(Set, &Value);
+			SyndicateStwLog("[Syndicate STW] lobby replication: the lobby state now replicates on the beacon driver\n");
+		}
+		else SyndicateStwLog("[Syndicate STW] lobby replication: SetReplicates not found\n");
+		((AActor*)State)->ForceNetUpdate();
+	}
+	for (auto Conn : Driver->ClientConnections)
+	{
+		if (!Conn || !Conn->OwningActor) continue;
+		auto Owner = (UObject*)Conn->OwningActor;
+		if (!SyndicateStwStateSeenAt && Owner == SyndicateStwJoinClient)
+			for (auto Chan : Conn->OpenChannels)
+				if (Chan && Chan->Class == UActorChannel::StaticClass() && (UObject*)Chan->Actor == State)
+				{
+					SyndicateStwStateSeenAt = GetTickCount64();
+					SyndicateStwLog("[Syndicate STW] lobby replication: the lobby state reached the client\n");
+					break;
+				}
+		// Still connected to the lobby and not joining after 8 seconds: tell it again (twice at most).
+		if (Owner == SyndicateStwJoinSentTo && !SyndicateStwJoinAcked && SyndicateStwJoinResends < 2 && GetTickCount64() >= SyndicateStwJoinSentAt + 8000)
+		{
+			SyndicateStwJoinResends++; SyndicateStwJoinSentAt = GetTickCount64();
+			if (auto Join = Owner->GetFunction("ClientJoinGame"))
+			{
+				uint8_t Params[64]{};
+				Owner->ProcessEvent(Join, Params);
+				SyndicateStwLog("[Syndicate STW] lobby: the client has not joined yet; told it again\n");
+			}
+		}
+	}
 }
 
 // A server started for Save the World (launcher: the "stw" playlist, or stw-host.txt on the dev launcher).
@@ -1212,6 +1288,7 @@ static void (*SyndicateLobbyJoiningOG)(UObject*, FFrame&, void*) = nullptr;
 static void SyndicateLobbyJoiningHook(UObject* Context, FFrame& Stack, void* Result)
 {
 	if (Stack.Code) { SyndicateLobbyJoiningOG(Context, Stack, Result); return; }
+	if (Context == SyndicateStwJoinSentTo) SyndicateStwJoinAcked = true;
 	if (auto Ack = Context->GetFunction("ClientAckJoiningServer"))
 	{
 		uint8_t Params[64]{};

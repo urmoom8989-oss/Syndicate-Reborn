@@ -947,6 +947,7 @@ void UNetDriver::TickFlush__RepGraph(UNetDriver* Driver, float DeltaSeconds)
     {
         extern bool SyndicateStwZoneTravel;
         void SyndicateStwTravelTick();
+        void SyndicateStwBeaconTick(UNetDriver* Driver);
         if (SyndicateStwZoneTravel)
         {
             auto World = UWorld::GetWorld();
@@ -956,6 +957,10 @@ void UNetDriver::TickFlush__RepGraph(UNetDriver* Driver, float DeltaSeconds)
                 if (Driver->ReplicationDriver && Driver->ClientConnections.Num() > 0)
                     ((void (*)(UObject*, float)) ServerReplicateActors_)(Driver->ReplicationDriver, DeltaSeconds);
             }
+            // The lobby beacon's driver (its own replication sends the beacon client actors): make it send the
+            // lobby state too, or the client never joins ("traveling to lobby").
+            else if (World && Driver->World == World && Driver->ClientConnections.Num() > 0)
+                SyndicateStwBeaconTick(Driver);
             return TickFlushOG(Driver, DeltaSeconds);
         }
     }

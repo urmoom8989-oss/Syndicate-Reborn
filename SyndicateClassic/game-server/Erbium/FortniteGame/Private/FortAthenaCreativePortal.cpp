@@ -295,11 +295,9 @@ AFortAthenaCreativePortal* AFortAthenaCreativePortal::Create(AFortPlayerControll
 	// On the UE4 builds (Seasons 7-X) the function found by the string scan crashes inside (null
 	// read, 7.40), and the crash reporter ends the process before the __except can catch it. Off
 	// there unless TILTED_CREATIVE_LOADPLAYSET=1 is set for testing.
-	// Season 8: the game's own LoadPlayset is used too. Streaming the island ourselves (below) loads it on the server,
-	// but the player's game never loaded it ("the island never loads"), even with the component replicating; the
-	// game's function is what real servers ran. The crash above was on 7.40 with no CurrentPlayset, which is set now.
-	bool Allowed = VersionInfo.EngineVersion >= 5.0 || (VersionInfo.FortniteVersion >= 8.0 && VersionInfo.FortniteVersion < 9.0)
-		|| GetEnvironmentVariableW(L"TILTED_CREATIVE_LOADPLAYSET", nullptr, 0) != 0;
+	// Season 8 crashes there too, with CurrentPlayset set: the call jumps to a bad address and the host exits right
+	// after "match ready" (8.50, 2026-11-23). So it stays off on every UE4 build.
+	bool Allowed = VersionInfo.EngineVersion >= 5.0 || GetEnvironmentVariableW(L"TILTED_CREATIVE_LOADPLAYSET", nullptr, 0) != 0;
 	SyndicateCreativeDumpCode((UObject*)LevelStreamComponent, (uintptr_t)LoadPlayset);
 	if (Allowed && LoadPlayset && IslandPlayset && LevelStreamComponent->HasCurrentPlayset() && LevelStreamComponent->CurrentPlayset)
 	{
