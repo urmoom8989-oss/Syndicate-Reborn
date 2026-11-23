@@ -941,6 +941,24 @@ void UNetDriver::TickFlush(UNetDriver* Driver, float DeltaSeconds)
 uint64_t ServerReplicateActors_;
 void UNetDriver::TickFlush__RepGraph(UNetDriver* Driver, float DeltaSeconds)
 {
+    // Save the World zone (Seasons 4 and later run this path): the lobby's join step (SyndicateStwTravelTick, which
+    // tells a logged-in lobby client to join the game) and the game's own replication; none of the Battle Royale
+    // logic below applies. Without the tick the client sat on the loading screen after its lobby login.
+    {
+        extern bool SyndicateStwZoneTravel;
+        void SyndicateStwTravelTick();
+        if (SyndicateStwZoneTravel)
+        {
+            auto World = UWorld::GetWorld();
+            if (World && Driver == World->NetDriver)
+            {
+                SyndicateStwTravelTick();
+                if (Driver->ReplicationDriver && Driver->ClientConnections.Num() > 0)
+                    ((void (*)(UObject*, float)) ServerReplicateActors_)(Driver->ReplicationDriver, DeltaSeconds);
+            }
+            return TickFlushOG(Driver, DeltaSeconds);
+        }
+    }
     // Season 4 uses this replication path, rather than the legacy tick.
     if (UWorld::GetWorld() && Driver == UWorld::GetWorld()->NetDriver)
         { auto T0=SyndicateNowMs(); SpectraBots::Tick(DeltaSeconds); SyndicateNativeHenchmanTick(); SyndicateOutfitWatchdog(); SyndicateLeanTick(); SyndicateSeasonXClientTick(); SyndicateChallengeTick(DeltaSeconds); SyndicateSettleLandedGliders(Driver,DeltaSeconds); SyndicateTuneBandwidth(Driver); SpectraBots::PerfBotMs+=SyndicateNowMs()-T0; ++SpectraBots::PerfFrames; SpectraBots::PerfRepPath="repgraph"; }

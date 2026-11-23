@@ -1206,6 +1206,21 @@ static void SyndicateLobbyLoginHook(UObject* Context, FFrame& Stack, void* Resul
 
 // After the client's reconnect is answered, the dedicated server tells it to come in with the client RPC
 // FortPartyBeaconClient::ClientAllowedToProceedFromReservation; without it the client waits forever.
+// After ClientJoinGame the client sends ServerNotifyJoiningServer; the engine's ProcessJoinServer reads the
+// client's lobby player state, which the login above never made (a null read). Acknowledge it directly.
+static void (*SyndicateLobbyJoiningOG)(UObject*, FFrame&, void*) = nullptr;
+static void SyndicateLobbyJoiningHook(UObject* Context, FFrame& Stack, void* Result)
+{
+	if (Stack.Code) { SyndicateLobbyJoiningOG(Context, Stack, Result); return; }
+	if (auto Ack = Context->GetFunction("ClientAckJoiningServer"))
+	{
+		uint8_t Params[64]{};
+		Context->ProcessEvent(Ack, Params);
+		SyndicateStwLog("[Syndicate STW] lobby: the client is joining the game; acknowledged\n");
+	}
+	else SyndicateStwLog("[Syndicate STW] lobby: ClientAckJoiningServer not found\n");
+}
+
 static void (*SyndicateReconnectOG)(UObject*, FFrame&, void*) = nullptr;
 static void SyndicateReconnectHook(UObject* Context, FFrame& Stack, void* Result)
 {
@@ -1406,6 +1421,11 @@ void SyndicateStwBeaconStart()
 				{
 					Utils::ExecHook((UFunction*)Fn, SyndicateLobbyLoginHook, SyndicateLobbyLoginOG);
 					SyndicateStwLog("[Syndicate STW] beacon: lobby logins are accepted (%s)\n", Name);
+					if (auto Joining = Client->GetFunction("ServerNotifyJoiningServer"))
+					{
+						Utils::ExecHook((UFunction*)Joining, SyndicateLobbyJoiningHook, SyndicateLobbyJoiningOG);
+						SyndicateStwLog("[Syndicate STW] beacon: joining the game is acknowledged\n");
+					}
 					LoginHooked = true;
 					break;
 				}
