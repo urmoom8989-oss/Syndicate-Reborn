@@ -2749,10 +2749,25 @@ namespace {
     }
 }
 
+// Fortnite 2.5 runs without the client mods (the launcher's legacy loading). The launcher still loads this module
+// there, with client-checkout-only-<pid>.txt, for the STORE tab's V-Bucks checkout: then only the checkout hooks
+// start (no SDK, no message hook, no redirect guard, no fault breadcrumbs).
+namespace {
+    DWORD WINAPI CheckoutOnly(void*) {
+        Log("checkout-only mode (Fortnite 2.5): only the V-Bucks checkout hooks");
+        for (;;) { CheckoutHooksTick(); Sleep(1000); }
+    }
+}
+
 BOOL APIENTRY DllMain(HMODULE Module, DWORD Reason, LPVOID) {
     if (Reason == DLL_PROCESS_ATTACH) {
         SelfModule = Module;
         DisableThreadLibraryCalls(Module);
+        wchar_t CheckoutFlag[64]; swprintf_s(CheckoutFlag, L"client-checkout-only-%lu.txt", GetCurrentProcessId());
+        if (FlagFile(CheckoutFlag)) {
+            if (auto Thread = CreateThread(nullptr, 0, CheckoutOnly, nullptr, 0, nullptr)) CloseHandle(Thread);
+            return TRUE;
+        }
         AddVectoredExceptionHandler(1, FaultBreadcrumb);
         if (auto Thread = CreateThread(nullptr, 0, RedirectGuard, nullptr, 0, nullptr)) CloseHandle(Thread); // first: login starts soon after launch
         if (auto Thread = CreateThread(nullptr, 0, Start, nullptr, 0, nullptr)) CloseHandle(Thread);

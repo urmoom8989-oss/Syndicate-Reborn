@@ -136,6 +136,34 @@ public static class GameLauncher
         return File.Exists(bundled) ? bundled : FindSyndicateFile(@"Launcher\" + oldName, oldName);
     }
 
+    // Fortnite 2.5 runs without the client mods (legacy loading), but the STORE tab's V-Bucks checkout needs
+    // SyndicateClient.dll's checkout hooks. client-checkout-only-<pid>.txt makes the module start only those (no
+    // SDK, no game hooks). Only a SyndicateClient.dll that knows that mode is loaded; otherwise none, as before.
+    private static string CheckoutOnlyFlag(int pid) =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ProjectTilted", "client-checkout-only-" + pid + ".txt");
+
+    private static string CheckoutOnlyClientModule(int pid, Action<string> record)
+    {
+        try
+        {
+            string flag = CheckoutOnlyFlag(pid);
+            Directory.CreateDirectory(Path.GetDirectoryName(flag)!);
+            var module = Path.Combine(Runtime, "dlls", ClientModsModule);
+            bool knowsMode = File.Exists(module) && ContainsUtf16(File.ReadAllBytes(module), "client-checkout-only-");
+            if (!knowsMode) { TryDelete(flag); record("Fortnite 2.5: SyndicateClient.dll has no checkout-only mode; V-Bucks checkout off."); return ""; }
+            File.WriteAllText(flag, "1");
+            record("Fortnite 2.5: SyndicateClient.dll in checkout-only mode (V-Bucks checkout only).");
+            return module;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { record("Fortnite 2.5: V-Bucks checkout off (" + error.Message + ")."); return ""; }
+    }
+
+    private static bool ContainsUtf16(byte[] data, string text)
+    {
+        var needle = System.Text.Encoding.Unicode.GetBytes(text);
+        return data.AsSpan().IndexOf(needle) >= 0;
+    }
+
     private static string FindSyndicateFile(params string[] relative)
     {
         // The dev kit carries these next to the launcher so a developer does not need a
@@ -578,7 +606,8 @@ public static class GameLauncher
                     // Syndicate's client modules read the gameplay/display switches (turbo build,
                     // edit on release, FOV, stretched, controller assists) from the same
                     // SyndicateClassic flag folder as Syndicate itself.
-                    string clientMods = useClientExtras ? FindClientModule(ClientModsModule, "TiltedClient.dll") : "";
+                    if (useClientExtras) TryDelete(CheckoutOnlyFlag(process.Id)); // a reused process id must not get checkout-only mode
+                    string clientMods = useClientExtras ? FindClientModule(ClientModsModule, "TiltedClient.dll") : CheckoutOnlyClientModule(process.Id, Record);
                     if (clientMods.Length > 0 && !process.HasExited)
                     {
                         Record(role + " loading " + Path.GetFileName(clientMods));
