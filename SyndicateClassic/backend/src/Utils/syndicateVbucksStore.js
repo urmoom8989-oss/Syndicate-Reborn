@@ -1,12 +1,14 @@
 // The V-Bucks packs in the game's own STORE tab, every season. They are real-money offers like Epic's
-// (CurrencyStorefront, with prices from the catalog and price engine services below), but nothing is paid:
-// buying one makes the game open its checkout browser, which SyndicateClient.dll points at Syndicate's checkout
-// page (Routes/syndicateCheckout.js). That page has nothing to fill in; Confirm adds the V-Bucks for free.
+// (CurrencyStorefront, with prices from the catalog and price engine services below), paid with Syndicate Rewards,
+// the money players earn in matches (syndicateRewardWallet.js), never real money: buying one makes the game open
+// its checkout browser, which SyndicateClient.dll points at Syndicate's checkout page (Routes/syndicateCheckout.js).
+// Nothing can be typed there; Place Order takes the pack's price from the rewards and adds the V-Bucks.
 // The ids are Syndicate's own, never Epic's, so a checkout that was not redirected can never show (or charge) a
 // real Epic product.
 import crypto from 'node:crypto';
 import {ensureSharedWallet,walletId} from './syndicateShopWallet.js';
 import {withAccountLock} from './syndicateAccountLock.js';
+import {rewardBalance,spendReward,formatDollars} from './syndicateRewardWallet.js';
 
 const hexId=key=>crypto.createHash('md5').update('syndicate-vbucks-'+key).digest('hex').toUpperCase();
 // The Chapter 1 packs and their US prices.
@@ -98,7 +100,8 @@ export function redeemReceipt(accountId,{receiptId,appStoreId}={}){
  return hit||null;
 }
 const usedNonces=new Map();
-// Adds the pack's V-Bucks to the account's shared wallet. One Confirm per checkout page (nonce).
+// Pays the pack with Syndicate Rewards and adds its V-Bucks to the account's shared wallet. One Place Order per
+// checkout page (nonce).
 export async function grantVbucksPack(accountId,appStoreId,nonce){
  const p=packFor(appStoreId);
  if(!p)throw Error('Unknown V-Bucks pack.');
@@ -111,6 +114,8 @@ export async function grantVbucksPack(accountId,appStoreId,nonce){
   const doc=await Profile.collection.findOne({accountId});
   const core=doc?.profiles?.common_core;if(!core)throw Error('No Fortnite profile for this account yet.');
   ensureSharedWallet(core);
+  const have=rewardBalance(core);
+  if(!spendReward(core,p.cents))throw Error(`Not enough Syndicate Rewards: this pack costs ${formatPrice(p.cents)} and you have ${formatDollars(have)}. Earn $5 for every elimination and $10 for every Victory Royale.`);
   core.items[walletId].quantity+=p.quantity;
   core.rvn=(Number(core.rvn)||0)+1;core.commandRevision=(Number(core.commandRevision)||0)+1;core.updated=new Date().toISOString();
   const saved=await Profile.collection.updateOne({accountId},{$set:{'profiles.common_core':core}});
@@ -119,6 +124,6 @@ export async function grantVbucksPack(accountId,appStoreId,nonce){
   const receipt={receiptId:crypto.randomUUID().replace(/-/g,''),receiptInfo:'syndicate-'+crypto.randomUUID(),appStoreId:p.appStoreId,quantity:p.quantity,at:Date.now(),redeemed:false};
   receipts.set(accountId,[...pendingReceipts(accountId),receipt]);
   if(global.giftReceived)global.giftReceived[accountId]=true;
-  return {pack:p,balance:core.items[walletId].quantity,receipt};
+  return {pack:p,balance:core.items[walletId].quantity,rewards:rewardBalance(core),receipt};
  });
 }

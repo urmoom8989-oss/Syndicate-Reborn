@@ -266,11 +266,30 @@
                     </StackPanel>
                 </Border>
 
-                <!-- V-Bucks -->
-                <Border Grid.Column="3" Height="46" CornerRadius="23" Padding="7,0,20,0" Margin="0,0,14,0"
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Syndicate Rewards: match money ($5 an elimination, $10 a Victory Royale) that buys V-Bucks packs in the STORE tab -->
+                <Border Height="46" CornerRadius="23" Padding="7,0,20,0" Margin="0,0,10,0"
                         VerticalAlignment="Center" BorderBrush="#2EFFFFFF" BorderThickness="1"
                         Background="{DynamicResource Tint_D90A0A0A}"
-                        ToolTip="Your V-Bucks. Earn more by claiming Syndicate Achievements.">
+                        ToolTip="Syndicate Rewards: $5 for every elimination and $10 for every Victory Royale (not while the Syndicate menu is on). Spend them on V-Bucks packs in the game's STORE tab.">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Grid Width="32" Height="32">
+                            <Ellipse Fill="#2E9E5B" Stroke="#7BE0A3" StrokeThickness="1.5" />
+                            <TextBlock Text="$" FontFamily="{StaticResource BurbankFont}" FontSize="20" Foreground="#FFFFFF"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,1,0,0" />
+                        </Grid>
+                        <StackPanel Margin="13,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="REWARDS" FontSize="8" FontWeight="Bold" Foreground="#9A9A9A" Margin="1,0,0,1" />
+                            <TextBlock Text="{Binding Home.RewardsBalanceText}" FontFamily="{StaticResource BurbankFont}" FontSize="22"
+                                       Foreground="#FFFFFF" Margin="0,-2,0,-3" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <!-- V-Bucks -->
+                <Border Height="46" CornerRadius="23" Padding="7,0,20,0" Margin="0,0,14,0"
+                        VerticalAlignment="Center" BorderBrush="#2EFFFFFF" BorderThickness="1"
+                        Background="{DynamicResource Tint_D90A0A0A}"
+                        ToolTip="Your V-Bucks. Buy packs with Syndicate Rewards in the game's STORE tab, or claim Syndicate Achievements.">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source="/SyndicateLauncher;component/Assets/vbucks.png" Width="32" Height="32"
                                RenderOptions.BitmapScalingMode="HighQuality" />
@@ -281,6 +300,7 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
+                </StackPanel>
 
                 <!-- Play -->
                 <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
@@ -507,11 +527,11 @@
                 <!-- Menu on: say so up front, so nobody grinds a match that won't count. -->
                 <Border CornerRadius="10" Padding="9,3" Background="#33E0533B" BorderBrush="#66E0533B" BorderThickness="1"
                         Visibility="{Binding EnableMenu, Converter={StaticResource BoolToVis}}"
-                        ToolTip="Matches played with the Syndicate menu on earn no V-Bucks and don't count toward achievements. Legit matches pay 100 V-Bucks a kill and 1,500 a win. Turn the menu off in Settings.">
+                        ToolTip="Matches played with the Syndicate menu on earn no Syndicate Rewards and don't count toward achievements. Legit matches pay $5 in Syndicate Rewards for every elimination and $10 for every Victory Royale. Turn the menu off in Settings.">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE7BA;" FontFamily="{StaticResource IconFont}" FontSize="9" Foreground="#FF9C8A"
                                    VerticalAlignment="Center" />
-                        <TextBlock Text="Syndicate menu is on: no V-Bucks or achievements" FontSize="9.5" FontWeight="SemiBold"
+                        <TextBlock Text="Syndicate menu is on: no rewards or achievements" FontSize="9.5" FontWeight="SemiBold"
                                    Foreground="#FFC9BE" Margin="6,0,0,0" />
                     </StackPanel>
                 </Border>
@@ -572,7 +592,7 @@
                         <TextBlock Text="SYNDICATE ACHIEVEMENTS" FontFamily="{StaticResource BurbankFont}" FontSize="34"
                                    Foreground="{DynamicResource TextBrush}" />
                         <TextBlock FontSize="10.5" Foreground="#A0A0A0" Margin="0,-2,0,0"
-                                   Text="Unlock them in any season and claim real V-Bucks. Matches with the Syndicate menu on don't count and earn no V-Bucks." />
+                                   Text="Unlock them in any season and claim real V-Bucks. Matches with the Syndicate menu on don't count and earn no rewards." />
                     </StackPanel>
                     <Border Grid.Column="1" CornerRadius="18" Padding="6,4,14,4" Margin="0,0,14,0" VerticalAlignment="Center"
                             Background="{DynamicResource Tint_D90A0A0A}" BorderBrush="#2EFFFFFF" BorderThickness="1">

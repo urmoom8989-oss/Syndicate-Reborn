@@ -18,6 +18,7 @@ import User from '../User/Mongodb/Schema/user.js';
 import {applyProgression,awards} from './syndicateProgressionCore.js';
 const queue=fileURLToPath(new URL('../../../Runtime/Server/progression-queue/',import.meta.url));
 import {vbucksAwards,grantVictoryUmbrellas} from './syndicateVictoryRewards.js';
+import {rewardCentsFor,addReward} from './syndicateRewardWallet.js';
 export {vbucksAwards};
 export async function awardAccount(accountId,event=null) {
   if(travelActive(accountId))throw new Error("Account is hosted remotely; reward retained for retry");
@@ -48,12 +49,15 @@ export async function awardAccount(accountId,event=null) {
     const result=applyProgression(doc.profiles,(event?awards[event.kind]*matchXpScale:0)+nativeXp+challenge.xp+seasonal.xp+daily.xp);
     result.seasonChallenges=seasonal;
     result.challengeRewards=challenge;
-    // Only legit players earn match V-Bucks: the launcher sets syndicate_menu_active at every launch
-    // (POST /launcher/menu), and while the Syndicate menu is on, kills and wins pay nothing.
+    // Only legit players earn match rewards: the launcher sets syndicate_menu_active at every launch
+    // (POST /launcher/menu), and while the Syndicate menu is on, kills and wins pay nothing. Kills and wins pay
+    // Syndicate Rewards ($5 / $10, syndicateRewardWallet.js), not V-Bucks; they buy V-Bucks packs in the STORE tab.
     const menuOn=attr.syndicate_menu_active===true;
     const vbucks=event&&!menuOn?vbucksAwards[event.kind]:0;
+    const rewardCents=event&&!menuOn?(rewardCentsFor[event.kind]||0):0;
     ensureSharedWallet(doc.profiles.common_core);
     if(vbucks)doc.profiles.common_core.items[walletId].quantity+=vbucks;
+    if(rewardCents)addReward(doc.profiles.common_core,rewardCents);
     if(season===4)progressBundleChallenges(doc.profiles.athena,event);
     if(season===5)progressSeason5Bundles(doc.profiles.athena,event);
     recordCareer(attr,event);
@@ -61,6 +65,7 @@ export async function awardAccount(accountId,event=null) {
     recordAchievements(attr,event);
     result.arena=applyArenaHype(attr,event);
     result.vbucksAwarded=vbucks;
+    result.rewardCentsAwarded=rewardCents;
     result.umbrellasGranted=grantVictoryUmbrellas(doc.profiles.athena,event);
     if(event&&originalSeason!==season)activateSeason(doc.profiles.athena,originalSeason);
     const update={$set:{'profiles.athena':doc.profiles.athena,'profiles.common_core':doc.profiles.common_core}};

@@ -48,6 +48,7 @@ public sealed class HomeViewModel : ViewModelBase
     private string? _loadedFor;
     private bool _refreshing;
     private long? _vbucks;
+    private long? _rewardCents; // Syndicate Rewards: match money ($5 a kill, $10 a win) that buys V-Bucks packs in the STORE tab
     private string _totalPlaytime = "0m";
     private string _weekPlaytime = "0m";
     private int _weekGames;
@@ -89,6 +90,7 @@ public sealed class HomeViewModel : ViewModelBase
 
     public bool HasVBucks => _vbucks is not null;
     public string VBucksText => _vbucks is long v ? v.ToString("N0") : "—";
+    public string RewardsBalanceText => _rewardCents is long c ? (c / 100m).ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-US")) : "—";
     public string TotalPlaytime { get => _totalPlaytime; private set => Set(ref _totalPlaytime, value); }
     public string WeekPlaytime { get => _weekPlaytime; private set => Set(ref _weekPlaytime, value); }
     public int WeekGames { get => _weekGames; private set => Set(ref _weekGames, value); }
@@ -162,9 +164,9 @@ public sealed class HomeViewModel : ViewModelBase
 
     private void ApplyCached(string profile)
     {
-        Achievements.Clear(); Spotlight.Clear(); _vbucks = null; _matchMinutes = 0;
+        Achievements.Clear(); Spotlight.Clear(); _vbucks = null; _rewardCents = null; _matchMinutes = 0;
         OnPropertyChanged(nameof(ShowAchievementsPlaceholder));
-        OnPropertyChanged(nameof(VBucksText)); OnPropertyChanged(nameof(HasVBucks));
+        OnPropertyChanged(nameof(VBucksText)); OnPropertyChanged(nameof(HasVBucks)); OnPropertyChanged(nameof(RewardsBalanceText));
         try { if (File.Exists(CacheFile(profile))) Apply(File.ReadAllText(CacheFile(profile))); } catch (Exception) { }
     }
 
@@ -173,6 +175,7 @@ public sealed class HomeViewModel : ViewModelBase
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
         if (root.TryGetProperty("vbucks", out var vb) && vb.TryGetInt64(out long v)) { _vbucks = v; OnPropertyChanged(nameof(VBucksText)); OnPropertyChanged(nameof(HasVBucks)); }
+        if (root.TryGetProperty("rewardCents", out var rc0) && rc0.TryGetInt64(out long cents)) { _rewardCents = cents; OnPropertyChanged(nameof(RewardsBalanceText)); }
         MenuActive = root.TryGetProperty("menuActive", out var m) && m.ValueKind == JsonValueKind.True;
         if (root.TryGetProperty("totals", out var t))
         {

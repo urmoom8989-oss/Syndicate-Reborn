@@ -1,6 +1,7 @@
 // Victory cosmetics verified against the installed 4.00 content.
-// Match V-Bucks for legit players: 100 a kill, 1,500 a win (every season, Season X included). Nothing while the Syndicate menu is on (syndicateProgression.js).
-export const vbucksAwards=Object.freeze({kill:100,win:1500,survival:0,match:0,quest:0,quest_delta:0,stats:0,xp:0});
+// Match V-Bucks: none. Kills and wins pay Syndicate Rewards instead ($5 and $10, syndicateRewardWallet.js), spent on
+// V-Bucks packs in the STORE tab. The keys are the gameplay events syndicateProgression.js accepts.
+export const vbucksAwards=Object.freeze({kill:0,win:0,survival:0,match:0,quest:0,quest_delta:0,stats:0,xp:0});
 // Each season's Victory Umbrella is earned by winning a match in that season.
 export const seasonUmbrellas=Object.freeze({2:'Umbrella_Snowflake',3:'Umbrella_PaperParasol',4:'Umbrella_Season_04',5:'Umbrella_Season_05',6:'Umbrella_Season_06',7:'Umbrella_Season_07',8:'Umbrella_Season_08',9:'Umbrella_Season_09',10:'Umbrella_Season_10'});
 export const victoryUmbrellas=Object.freeze(['FounderUmbrella']);

@@ -1,3 +1,4 @@
+import {rewardBalance} from '../Utils/syndicateRewardWallet.js';
 import {catalog as secretShopCatalog,purchase as buySecretShop} from '../Utils/syndicateSecretShop.js';
 import {shopItemsFor} from '../Utils/syndicateShopRotation.js';
 import {catalogFor,ownedIds,editLocker} from '../Utils/syndicateLockerEditor.js';
@@ -361,7 +362,8 @@ router.post('/launcher/stats',safe(async(req,res)=>{
  res.json({username:(await User.findOne({accountId:entry.accountId}).lean())?.username||'',modes,total});
 }));
 // Syndicate Achievements (Utils/syndicateAchievements.js): the launcher's Home card and Achievements page.
-// Returns every achievement with the player's progress, plus the account's V-Bucks balance for the Home wallet.
+// Returns every achievement with the player's progress, plus the account's V-Bucks balance and Syndicate Rewards
+// (match money, syndicateRewardWallet.js) for the Home wallet.
 const achAccount=req=>{
  const entry=sessions.get((req.headers.authorization||'').replace(/^Bearer /,''));
  return entry && entry.expires>Date.now()?entry.accountId:null;
@@ -372,8 +374,8 @@ const achBalance=common=>{
 };
 router.post('/launcher/achievements',safe(async(req,res)=>{
  const accountId=achAccount(req);if(!accountId)return res.status(401).json({message:'Please sign in again.'});
- const doc=await Profile.collection.findOne({accountId},{projection:{'profiles.athena.stats.attributes':1,'profiles.common_core.items':1}});
- res.json({...achievementView(doc?.profiles?.athena?.stats?.attributes||{}),vbucks:achBalance(doc?.profiles?.common_core)});
+ const doc=await Profile.collection.findOne({accountId},{projection:{'profiles.athena.stats.attributes':1,'profiles.common_core.items':1,'profiles.common_core.stats.attributes':1}});
+ res.json({...achievementView(doc?.profiles?.athena?.stats?.attributes||{}),vbucks:achBalance(doc?.profiles?.common_core),rewardCents:rewardBalance(doc?.profiles?.common_core)});
 }));
 // Claims one unlocked achievement: its reward goes into the shared V-Bucks wallet (common_core). Same save pattern as
 // the shops: under the account lock, only if neither profile changed since it was read, with both revisions bumped.
@@ -390,7 +392,7 @@ router.post('/launcher/achievements/claim',safe(async(req,res)=>{
     const claimed=claimAchievement(doc.profiles,id,achWalletId,achEnsureWallet);
     for(const p of [a,c]){p.rvn=(p.rvn||0)+1;p.commandRevision=(p.commandRevision||0)+1;p.updated=new Date().toISOString();}
     const saved=await Profile.collection.updateOne({accountId,'profiles.athena.rvn':ar,'profiles.common_core.rvn':cr},{$set:{'profiles.athena':a,'profiles.common_core':c}});
-    if(saved.modifiedCount){if(global.giftReceived)global.giftReceived[accountId]=true;return {...achievementView(a.stats.attributes),vbucks:achBalance(c),claimedReward:claimed.reward};}
+    if(saved.modifiedCount){if(global.giftReceived)global.giftReceived[accountId]=true;return {...achievementView(a.stats.attributes),vbucks:achBalance(c),rewardCents:rewardBalance(c),claimedReward:claimed.reward};}
    }
    throw new Error('Your account is busy. Try again.');
   });
