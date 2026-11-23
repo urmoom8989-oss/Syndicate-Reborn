@@ -525,6 +525,69 @@ namespace {
         Was = Key;
     }
 
+    // ---- Which pictures the menus show (Ctrl+Shift+F8) -----------------------------------------------------------------
+    // Writes %LOCALAPPDATA%\ProjectTilted\ui-images.log: every image widget that has a picture, the widgets it sits in,
+    // and the asset it draws (for a material, the material and its texture parameters). For finding a menu picture's
+    // texture to export it from the game files (8.50's Arena tile art is not named after Arena). Read-only.
+    const UObject* UiSafeOuter(const UObject* O) { __try { return O ? O->Outer : nullptr; } __except (1) { return nullptr; } }
+    const UObject* UiSafePtr(const UObject* O, uint32 Off) { __try { return O ? *(const UObject* const*)((const uint8*)O + Off) : nullptr; } __except (1) { return nullptr; } }
+    int UiSafeInt(const UObject* O, uint32 Off) { __try { return O ? *(const int*)((const uint8*)O + Off) : 0; } __except (1) { return 0; } }
+    std::string UiPath(const UObject* O) {
+        std::string Path; int Depth = 0;
+        for (auto At = O; At && Depth < 8; At = UiSafeOuter(At), ++Depth) {
+            const UClass* Cls = StoreSafeClass(At); if (!Cls) break;
+            std::string Name = At->Name.ToString().c_str();
+            Path = Path.empty() ? Name : Name + (Depth == 1 ? ":" : ".") + Path;
+        }
+        return Path;
+    }
+    void UiImageLine(const char* Text) {
+        FILE* Out = nullptr; auto File = DataFile(L"ui-images.log");
+        if (!File.empty() && _wfopen_s(&Out, File.c_str(), L"a") == 0 && Out) { fprintf(Out, "%s\n", Text); fclose(Out); }
+    }
+    void UiImageDumpOnce() {
+        { auto File = DataFile(L"ui-images.log"); if (!File.empty()) _wremove(File.c_str()); }
+        UiImageLine("=== pictures in the menus (Ctrl+Shift+F8) ===");
+        const int N = SDK::TUObjectArray::Num(); int Logged = 0;
+        for (int i = 0; i < N && Logged < 20000; ++i) {
+            const UObject* Obj = SDK::TUObjectArray::GetObjectByIndex(i);
+            const UClass* Cls = Obj ? StoreSafeClass(Obj) : nullptr;
+            if (!Cls) continue;
+            std::string ClsName = Cls->Name.ToString().c_str();
+            if (ClsName.find("Image") == std::string::npos) continue;
+            std::string ObjName = Obj->Name.ToString().c_str();
+            if (ObjName.rfind("Default__", 0) == 0) continue;
+            const uint32 BrushOff = Obj->GetOffset("Brush");
+            if (BrushOff == uint32(-1)) continue;
+            const UObject* Res = UiSafePtr(Obj, BrushOff + 0x48); // FSlateBrush::ResourceObject
+            const UClass* ResCls = Res ? StoreSafeClass(Res) : nullptr;
+            if (!ResCls) continue;
+            std::string Line = "[" + ClsName + "] " + UiPath(Obj) + "\n    -> " + std::string(ResCls->Name.ToString().c_str()) + " " + UiPath(Res);
+            // A material: its parent and the textures it is given.
+            const uint32 ParentOff = Res->GetOffset("Parent"), TexOff = Res->GetOffset("TextureParameterValues");
+            if (ParentOff != uint32(-1)) if (auto Parent = UiSafePtr(Res, ParentOff)) Line += "\n       parent " + UiPath(Parent);
+            if (TexOff != uint32(-1)) {
+                const UObject* Data = UiSafePtr(Res, TexOff); const int Count = UiSafeInt(Res, TexOff + 8);
+                for (int k = 0; Data && k < Count && k < 16; ++k) {
+                    const UObject* Entry = (const UObject*)((const uint8*)Data + k * 0x28); // FTextureParameterValue
+                    const UObject* Tex = UiSafePtr(Entry, 0x10);
+                    std::string Param = ((const FName*)Entry)->ToString().c_str();
+                    Line += "\n       texture " + Param + " = " + (Tex ? UiPath(Tex) : std::string("none"));
+                }
+            }
+            UiImageLine(Line.c_str());
+            ++Logged;
+        }
+        char Tail[96]; snprintf(Tail, sizeof(Tail), "=== end (%d pictures) ===", Logged); UiImageLine(Tail);
+        Log("ui images: written to ui-images.log");
+    }
+    void UiImageDumpTick() {
+        static bool Was = false;
+        const bool Key = GameHasInput() && (GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(VK_SHIFT) & 0x8000) && (GetAsyncKeyState(VK_F8) & 0x8000);
+        if (Key && !Was) UiImageDumpOnce();
+        Was = Key;
+    }
+
     // ---- Dev: experimental STORE-tab placeholder tile ----------------------------------------------
     // Ctrl+Shift+F9 on the STORE tab asks for a placeholder: StoreMain_Root_C.AddOffer(FortMtxOfferData CDO),
     // which should create a Store_Main_MTXOffer tile and add it to the scroll box. AddOffer builds UMG widgets,
@@ -602,7 +665,7 @@ namespace {
         if (Key && !Was) { InterlockedExchange(&StoreInjectActive, StoreInjectActive ? 0 : 1); } // toggle on/off
         Was = Key;
     }
-    DWORD WINAPI EditLoop(void*) { for (;;) { EditTick(); StoreDumpTick(); StoreInjectTick(); Sleep(4); } }
+    DWORD WINAPI EditLoop(void*) { for (;;) { EditTick(); StoreDumpTick(); UiImageDumpTick(); StoreInjectTick(); Sleep(4); } }
 
     // ---- Dev Kit camera share (Dev Console on-screen markers) ------------------------------------
     // Only while dev-camera-on.txt exists, which only the Dev Kit launcher's Dev Console creates: the camera's
