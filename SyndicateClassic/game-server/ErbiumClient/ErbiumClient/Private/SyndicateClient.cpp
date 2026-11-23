@@ -2057,23 +2057,39 @@ namespace {
         Lib->ProcessEvent(Finish, F);
         return FReturn >= 0 && *(UObject**)(F + FReturn) ? *(UObject**)(F + FReturn) : Actor;
     }
+    // An object of a class that lives for the whole game (the matchmaking objects), found by a scan of the object list
+    // (GetAllActorsOfClass's parameters are not found on 8.50, and the beacon is reached through these anyway) at
+    // most every 15 seconds, then kept while it is still in the list.
+    UObject* StwLiveObject(UObject*& Cached, const char* ClassName, ULONGLONG& NextScan) {
+        if (Cached && Cached->Index >= 0 && TUObjectArray::GetObjectByIndex(Cached->Index) == Cached) return Cached;
+        Cached = nullptr;
+        if (GetTickCount64() < NextScan) return nullptr;
+        NextScan = GetTickCount64() + 15000;
+        Cached = (UObject*)TUObjectArray::FindFirstObject(ClassName);
+        return Cached;
+    }
     void StwLobbyTick() {
-        static ULONGLONG Since = 0; static int Made = 0; const ULONGLONG Now = GetTickCount64();
-        static const UClass* ClientClass = FindClass("FortLobbyBeaconClient");
+        static UObject* Matchmaking = nullptr; static UObject* Context = nullptr; static ULONGLONG NextScan = 0, NextContextScan = 0;
+        static ULONGLONG Since = 0; static int Made = 0; static bool Told = false;
+        const ULONGLONG Now = GetTickCount64();
         static const UClass* StateClass = FindClass("FortLobbyBeaconStatePvE");
-        if (!ClientClass || !StateClass) return;
-        auto World = UWorld::GetWorld(); if (!World) return;
-        ActorList Clients; SyndicateAllActors(World, ClientClass, Clients);
-        if (Clients.Num() == 0 || !Clients[0]) { Since = 0; return; }
-        auto Client = (UObject*)Clients[0];
+        if (!StateClass) return;
+        // UFortMatchmaking::LobbyBeaconClient: the lobby beacon this game is connected to, or none.
+        auto Mm = StwLiveObject(Matchmaking, "FortMatchmaking", NextScan);
+        if (!Mm) return;
+        static int32 ClientOff = -2; if (ClientOff == -2) ClientOff = int32(Mm->GetOffset("LobbyBeaconClient"));
+        if (ClientOff < 0) { if (!Told) { Told = true; Log("stw lobby: FortMatchmaking has no LobbyBeaconClient on this build"); } return; }
+        auto Client = *(UObject**)((uint8*)Mm + ClientOff);
+        if (!Client) { Since = 0; Made = 0; return; }
         static int32 StateOff = -2; if (StateOff == -2) StateOff = int32(Client->GetOffset("LobbyState"));
         if (StateOff < 0) return;
         auto& Current = *(UObject**)((uint8*)Client + StateOff);
         if (Current) { Since = 0; return; } // the server's state (or the one made here) is in place
-        if (!Since) { Since = Now; return; }
+        if (!Since) { Since = Now; Log("stw lobby: connected to the lobby; waiting for its state"); return; }
         if (Now - Since < 8000 || Made >= 3) return;
         Since = Now; ++Made; // tried again 8 seconds later if it did not take
-        auto State = StwSpawnLocal(World, StateClass);
+        auto World = UWorld::GetWorld();
+        auto State = World ? StwSpawnLocal(World, StateClass) : nullptr;
         if (!State) { Log("stw lobby: the server's lobby state never arrived, and a local one could not be made"); return; }
         if (auto O = int32(State->GetOffset("MissionGeneratorDetailsRequirement")); O >= 0) *((uint8*)State + O) = 1; // NotRequired
         if (auto O = int32(State->GetOffset("bWorldRecordLoaded")); O >= 0) *((uint8*)State + O) = 1;
@@ -2082,6 +2098,9 @@ namespace {
         if (auto OnRep = State->GetFunction("OnRep_MissionGeneratorDetailsRequirement")) { alignas(16) uint8_t None[16]{}; State->ProcessEvent(OnRep, None); }
         if (auto O = int32(State->GetOffset("bWorldRecordLoaded")); O >= 0) *((uint8*)State + O) = 1;
         Log("stw lobby: the server's lobby state never arrived; using a local one that says the world record is loaded");
+        // Join now if the game already gave up on an earlier "join" from the server (it repeats it anyway).
+        if (auto Ctx = StwLiveObject(Context, "FortMatchmakingContext", NextContextScan))
+            if (auto Join = Ctx->GetFunction("JoinFromLobby")) { alignas(16) uint8_t R[16]{}; Ctx->ProcessEvent(Join, R); Log(R[0] ? "stw lobby: joining the game" : "stw lobby: the game did not join yet; waiting for the server's next join"); }
     }
 
     // ---- Two players on one PC: split the input between the two Fortnite clients ---------------------------------

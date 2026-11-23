@@ -3,9 +3,12 @@ import {MODES,availableModes,enabledModes,lobbyTiles} from './syndicateSeasonMod
 // Launcher Settings > Game modes (syndicateSeasonModes.js): the lobby lists the modes turned on for the build.
 // The Save the World and Creative buttons stay relabelled UNAVAILABLE unless they are turned on.
 const PLAYLIST={solo:'Playlist_DefaultSolo',duo:'Playlist_DefaultDuo',squad:'Playlist_DefaultSquad','50v50':'Playlist_50v50',playground:'Playlist_Playground'};
-// Seasons 8 to X show Arena as the Arena event's own tile (division and Hype, Routes/events.js), so the plain Arena
-// playlist tile is left out there or Arena shows twice.
+// Seasons 8 to X show Arena as the Arena event's own tile (division and Hype, Routes/events.js). A plain Arena line
+// made Arena show twice, and with no line at all the game put the event tiles in the second row whatever the lobby
+// editor said. So Arena is listed as a tournament playlist there (bIsTournament=true, as Epic's own lists had it): the
+// event's tile, placed in the row and order chosen in the launcher.
 const ARENA_EVENT_TILE=new Set(['8.50','9.40','10.31','10.40']);
+const isArena=t=>t.mode==='arenasolo'||t.mode==='arenaduos';
 const STW_BUTTON='F1B39B41400513DFDBBC39BE41A2AA7A',CREATIVE_BUTTON='85CC70F746437FF312DF528927FD1F52';
 // One +TextReplacements entry by key. "Save The\r\nWorld" spans two lines, so match up to the closing ))).
 const dropText=(text,key)=>text.replace(new RegExp('^\\+TextReplacements=[^\\n]*Key="'+key+'"[\\s\\S]*?\\)\\)\\)[ \\t]*\\r?$\\n?','m'),'');
@@ -17,7 +20,7 @@ function openButtons(text,modes){
 // One FrontEndPlaylistData line per lobby tile (row, order, default, locked, badges: syndicateSeasonModes.js lobbyTiles).
 // CategoryIndex is the row of the mode selector the tile sits in.
 const badgeFields=t=>(t.badge==='new'?'bDisplayAsNew=true,':'')+(t.badge==='limited'?'bDisplayAsLimitedTime=true,':'');
-const tileLine=(t,i)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,${badgeFields(t)}${t.mode==='creative'?'bIsTournament=false,':''}CategoryIndex=${t.row||0},DisplayPriority=${i}))`;
+const tileLine=(t,i,build)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,${badgeFields(t)}${t.mode==='creative'?'bIsTournament=false,':isArena(t)&&ARENA_EVENT_TILE.has(build)?'bIsTournament=true,':''}CategoryIndex=${t.row||0},DisplayPriority=${i}))`;
 const legacyTileLine=(t,i)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,bDisplayAsNew=${t.badge==='new'},CategoryIndex=${t.row||0},bDisplayAsLimitedTime=${t.badge==='limited'},DisplayPriority=${i}))`;
 // Keep Cert 3807424 on its own native lobby/playlist configuration.
 export function cloudTextForClient(file,userAgent,hotfixes){
@@ -47,7 +50,7 @@ export function cloudTextForClient(file,userAgent,hotfixes){
   return g+`
 [/Script/FortniteGame.FortGameInstance]
 !FrontEndPlaylistData=ClearArray
-`+lobbyTiles(build).filter(t=>!((t.mode==='arenasolo'||t.mode==='arenaduos')&&ARENA_EVENT_TILE.has(build))).map((t,i)=>tileLine(t,i)+'\n').join('');}
+`+lobbyTiles(build).map((t,i)=>tileLine(t,i,build)+'\n').join('');}
  // Season 4 exposes PlaylistOverrides (PlaylistName, bEnabled, RegionsDisabled).
  // FrontEndPlaylistData is a legacy field and is absent in the 4.5 client. Solo, Duos and Squads are on in the client
  // already; 50v50 and Playground are switched on here, and anything turned off in the launcher is switched off.

@@ -35,7 +35,7 @@ public static class SeasonModes
         new GameModeInfo("disco", "Disco Domination", "Two teams dance on dance floors to win (Seasons 6-7). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("teamrumble", "Team Rumble", "Two big teams with respawns race to the elimination target (Season 7 and up). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("foodfight", "Food Fight", "Durrr Burger against Pizza Pit, split by a barrier (Seasons 7-9). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("floorislava", "Floor Is Lava", "The lava rises through the match: build up to stay alive (Seasons 8-9). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("floorislava", "Floor Is Lava", "The lava rises through the match: build up to stay alive (Season 9). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("arenaduos", "Arena Duos", "Duos Arena with Hype and divisions (Seasons 8 to X and Chapter 2 Season 2). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("playground", "Playground", "Season 4's Playground: respawns, extra materials and no storm damage.", false),
         new GameModeInfo("creative", "Creative",
@@ -59,7 +59,7 @@ public static class SeasonModes
             ["disco"] = ("Playlist_Disco_32", new[] { "6.20", "7.40" }),
             ["teamrumble"] = ("Playlist_Respawn_24", new[] { "7.40", "8.50", "9.40", "10.31", "10.40", "11.00", "12.50" }),
             ["foodfight"] = ("Playlist_Barrier_16", new[] { "7.40", "8.50", "9.40" }),
-            ["floorislava"] = ("Playlist_Respawn_20_Lava", new[] { "8.50", "9.40" }),
+            ["floorislava"] = ("Playlist_Respawn_20_Lava", new[] { "9.40" }), // the 8.50 game has no Playlist_Respawn_20_Lava
             ["arenaduos"] = ("Playlist_ShowdownAlt_Duos", new[] { "8.50", "9.40", "10.31", "10.40", "12.50" }),
         };
     private static readonly HashSet<string> ArenaBuilds = new(StringComparer.OrdinalIgnoreCase) { "8.50", "9.40", "10.31", "10.40", "11.00", "12.50" };

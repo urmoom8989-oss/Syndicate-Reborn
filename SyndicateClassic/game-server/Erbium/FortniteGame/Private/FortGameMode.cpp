@@ -32,6 +32,25 @@ bool SyndicateListening = false; // also set by the map-load Listen hook (Misc.c
 #include "../Public/FortPhysicsPawn.h"
 #include <objbase.h>
 
+// Chapter 1: the player's game loads a playlist's extra levels (the Creative hub, PG_Island_GroupMaster...) under their
+// own package names (/Game/Creative/Maps/CreativeHubs/CreativeHub_S8_03b), but LoadLevelInstance names the server's
+// copy "<level>_LevelInstance_N". Nothing placed in those levels could then be matched between the two (8.50: the
+// Creative rifts never turned gold and the island's playset data never arrived, so the island never loaded). The
+// streaming level only loads on the next world tick, so give it the level's own name before then.
+static void SyndicateKeepLevelName(void* Streaming, const TSoftObjectPtr<UWorld>& Level)
+{
+    if (!Streaming || VersionInfo.FortniteVersion >= 11) return;
+    auto Obj = (UObject*)Streaming;
+    auto Off = Obj->GetOffset("WorldAsset");
+    if (Off == uint32(-1)) return;
+    // TSoftObjectPtr: weak pointer and tag (0x10), then the soft path, whose first field is the asset's FName.
+    auto Name = (FName*)((uint8*)Obj + Off + 0x10);
+    auto Before = Name->ToString();
+    memset((uint8*)Obj + Off, 0, 0x10);
+    *Name = Level.ObjectID.AssetPathName;
+    printf("[Syndicate] playlist level %s keeps its own name (was %s)\n", Level.ObjectID.AssetPathName.ToString().c_str(), Before.c_str());
+}
+
 // Native 12.50 henchman test heartbeat. It proves the manager-spawned bot exists in the
 // world, moves, and takes damage, even when the player is not standing next to it.
 AFortPlayerPawnAthena* SyndicateNativeHenchmanPawn = nullptr;
@@ -3658,7 +3677,7 @@ void AFortGameMode::ReadyToStartMatch_(UObject* Context, FFrame& Stack, bool* Re
                 for (auto& Level : Playlist->AdditionalLevels)
                 {
                     bool Success = false;
-                    ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr(UWorld::GetWorld(), Level, FVector(), FRotator(), &Success, FString(), nullptr);
+                    SyndicateKeepLevelName(ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr(UWorld::GetWorld(), Level, FVector(), FRotator(), &Success, FString(), nullptr), Level);
                     if (AdditionalLevelStruct)
                     {
                         auto level = (FAdditionalLevelStreamed*)malloc(FAdditionalLevelStreamed::Size());
@@ -3677,7 +3696,7 @@ void AFortGameMode::ReadyToStartMatch_(UObject* Context, FFrame& Stack, bool* Re
                 for (auto& Level : Playlist->AdditionalLevelsServerOnly)
                 {
                     bool Success = false;
-                    ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr(UWorld::GetWorld(), Level, FVector(), FRotator(), &Success, FString(), nullptr);
+                    SyndicateKeepLevelName(ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr(UWorld::GetWorld(), Level, FVector(), FRotator(), &Success, FString(), nullptr), Level);
 
                     if (AdditionalLevelStruct)
                     {

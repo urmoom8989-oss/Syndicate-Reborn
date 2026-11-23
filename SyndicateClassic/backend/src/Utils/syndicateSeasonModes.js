@@ -43,7 +43,7 @@ const LTM = {
  disco:['6.20', '7.40'],
  teamrumble:['7.40', '8.50', '9.40', '10.31', '10.40', '11.00', '12.50'],
  foodfight:['7.40', '8.50', '9.40'],
- floorislava:['8.50', '9.40'],
+ floorislava:['9.40'], // not in the 8.50 game (no Playlist_Respawn_20_Lava there)
  arenaduos:['8.50', '9.40', '10.31', '10.40', '12.50'],
 };
 const ORDER = Object.keys(MODES);
