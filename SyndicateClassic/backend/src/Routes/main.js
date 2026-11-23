@@ -140,8 +140,10 @@ app.get("/fortnite/api/game/v2/twitch/*", (req, res) => {
   res.end();
 });
 app.get("/fortnite/api/game/v2/world/info", (req, res) => {
-  // Dev launcher: the Save the World theaters and missions (LawinServer's data); otherwise empty as before.
-  res.json(stwDevEnabled(req.headers['user-agent']) ? stwWorldInfo() : {});
+  // Dev launcher: the Save the World theaters and missions (LawinServer's data, with the season's event zone);
+  // otherwise empty as before.
+  const season = Number((/Release-(\d+)\./.exec(req.headers['user-agent'] || '') || [])[1]) || 0;
+  res.json(stwDevEnabled(req.headers['user-agent']) ? stwWorldInfo(season) : {});
 });
 app.post(
   "/fortnite/api/game/v2/chat/*/recommendGeneralChatRooms/pc",

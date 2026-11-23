@@ -1,4 +1,6 @@
 import {catalogForClient} from '../Utils/syndicateLegacy111Catalog.js';
+import {stwDevEnabled} from '../Utils/syndicateStwDev.js';
+import {stwStorefronts} from '../Utils/syndicateStwMcp.js';
 import express from "express";
 const app = express.Router();
 import Profile from "../User/Mongodb/Schema/profiles.js";
@@ -25,7 +27,15 @@ app.get("/fortnite/api/storefront/v2/catalog", (req, res) => {
 
   try {
     const catalog = readCatalogConfig(req.headers["user-agent"]);
-    res.json(catalogForClient(catalog, req.headers["user-agent"]));
+    const client = catalogForClient(catalog, req.headers["user-agent"]);
+    // Save the World on: its llama store and event heroes too (LawinServer's storefronts, syndicateStwMcp.js).
+    if (stwDevEnabled(req.headers["user-agent"])) {
+      try {
+        const have = new Set((client.storefronts || []).map(store => store.name));
+        return res.json({ ...client, storefronts: [...(client.storefronts || []), ...stwStorefronts().filter(store => !have.has(store.name))] });
+      } catch (error) { console.log("[Syndicate STW] no llama store:", error.message); }
+    }
+    res.json(client);
   } catch (err) {
     console.log("Failed to load catalog_config.json:", err);
     res.status(500).json({ error: "Internal server error" });

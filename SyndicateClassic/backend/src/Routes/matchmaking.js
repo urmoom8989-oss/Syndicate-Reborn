@@ -8,6 +8,8 @@ const playlists=require('../../Matchmaker/playlists.cjs');
 const teamFill=require('../../Matchmaker/fill.cjs');
 import {remoteHost,prepareRemote,startLanBridge} from '../Utils/syndicateLan.js';
 import {modeEnabled,modeName,stwEnabledFor} from '../Utils/syndicateSeasonModes.js';
+import {stwTutorialEntry} from '../Utils/syndicateStwDev.js';
+import jwt from 'jsonwebtoken';
 import Profile from '../User/Mongodb/Schema/profiles.js';
 import {publishCharacter,preseasonMatchProfile} from '../Utils/syndicateLocker.js';
 import express from "express";
@@ -278,6 +280,21 @@ async function stwServerFor(build, theme, wait) {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 }
+// Before the tutorial is done the Save the World mission a player goes into is the tutorial: note when, so the
+// backend can unlock everything once they are back (syndicateStwDev.js). The request carries the player's token.
+async function noteStwTutorial(req) {
+  try {
+    const raw = String(req.headers.authorization || '').replace(/^bearer eg1~/i, '');
+    const accountId = jwt.verify(raw, global.JWT_SECRET)?.sub;
+    if (!accountId) return;
+    const doc = await Profile.collection.findOne({accountId}, {projection: {'profiles.campaign': 1, 'profiles.profile0': 1}});
+    const set = stwTutorialEntry(doc);
+    if (set) {
+      await Profile.collection.updateOne({accountId}, {$set: set});
+      console.log('[Syndicate STW] going into the tutorial mission:', accountId);
+    }
+  } catch {}
+}
 // The session the client searched for, with every criterion it searched by, pointing at the local match server.
 function stwSession(body) {
   const info = getGameServerInfo();
@@ -333,6 +350,7 @@ app.post("/fortnite/api/matchmaking/session/matchMakingRequest", async (req, res
         return res.json([]);
       }
       const session = stwSession(req.body);
+      await noteStwTutorial(req);
       console.log(`[Syndicate STW] offering the Save the World server (PID ${host.Pid}): ${JSON.stringify(session.attributes)}`);
       return res.json([session]);
     }
@@ -393,6 +411,7 @@ app.post("/fortnite/api/matchmaking/session/matchMakingRequest", async (req, res
       started: false,
     };
     console.log(`[Syndicate STW] offering the local host as an empty server: ${JSON.stringify(session)}`);
+    await noteStwTutorial(req);
     return res.json([session]);
   }
   res.json([]);

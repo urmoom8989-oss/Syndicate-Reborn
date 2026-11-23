@@ -29,6 +29,7 @@ import {acquireAccountLock} from '../Utils/syndicateAccountLock.js';
 import { publishCharacter } from '../Utils/syndicateLocker.js';
 import { awardAccount } from '../Utils/syndicateProgression.js';
 import { stwDevUpdate, stwDevNoOp, stwDevEnabled, STW_PROFILES } from '../Utils/syndicateStwDev.js';
+import { stwMcp } from '../Utils/syndicateStwMcp.js';
 import express from "express";
 const app = express.Router();
 // Season 3 to Chapter 2 Season 1: Save the World heroes as locker outfits while Unlock all and STW skins are on
@@ -182,6 +183,10 @@ import { v4 } from "uuid";
 const require = createRequire(import.meta.url);
 global.giftReceived = {};
 global.codes = [""];
+
+// Save the World tabs (Command, Heroes, Survivors, Armory, Research, Upgrades, Expeditions, Collection Book, Llamas,
+// Quests): LawinServer's Save the World profile operations (syndicateStwMcp.js). Battle Royale profiles go on.
+app.post('/fortnite/api/game/v2/profile/*/client/:operation',verifyToken,stwMcp);
 
 // One time per account: items an older purchase should have included (Raptor's back bling; Frostbite's back
 // bling, pickaxe and glider) are granted, with the reward pop-up. Runs before the profile is returned.
@@ -4025,7 +4030,7 @@ app.post(
     let profiles = await Profile.findOne({ accountId: req.user.accountId });
     // Dev launcher only: give the account Save the World access and full Save the World profiles once.
     if(profiles&&(req.query.profileId==='common_core'||req.query.profileId==='profile0'||STW_PROFILES.includes(req.query.profileId))){
-      try{const update=stwDevUpdate(profiles,req.headers['user-agent']);if(update){await profiles.updateOne({$set:update});profiles=await Profile.findOne({accountId:req.user.accountId});console.log('[Syndicate STW] dev: Save the World profiles set up for',req.user.accountId);}}
+      try{const update=stwDevUpdate(profiles,req.headers['user-agent'],{operation:req.params.operation,profileId:req.query.profileId});if(update){await profiles.updateOne({$set:update});profiles=await Profile.findOne({accountId:req.user.accountId});console.log('[Syndicate STW] dev: Save the World profiles set up for',req.user.accountId);}}
       catch(error){console.error('[Syndicate STW] dev profile setup skipped:',error.message);}
     }
     if (!(await profileManager.validateProfile(req.query.profileId, profiles)))
