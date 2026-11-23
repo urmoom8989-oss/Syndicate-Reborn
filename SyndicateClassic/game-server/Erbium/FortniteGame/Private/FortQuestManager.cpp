@@ -711,7 +711,7 @@ namespace SyndicateChallengeData
     // of its own: a text that cannot be read leaves the objective without one instead of stopping the export.
     __declspec(noinline) static void ObjectiveTextRead(void* Text, char* Out, size_t Cap)
     {
-        auto Value = ((FText*)Text)->ToString();
+        auto Value = UKismetTextLibrary::Conv_TextToString(*(FText*)Text).ToString(); // FText::ToString is private in the SDK
         strncpy_s(Out, Cap, Value.c_str(), _TRUNCATE);
     }
     static bool ObjectiveText(void* Text, char* Out, size_t Cap)
