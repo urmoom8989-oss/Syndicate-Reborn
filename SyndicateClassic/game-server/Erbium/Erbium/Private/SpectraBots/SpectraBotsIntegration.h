@@ -81,6 +81,7 @@ extern int SyndicateTeamKills[256];
 extern bool SyndicateRespawnKeepsItems;
 void SyndicateTeamKill(AFortPlayerStateAthena* Killer, AFortPlayerStateAthena* Victim);
 uint8 SyndicateSquadIdFor(uint8 TeamIndex, uint8 TeamSquadId); // FortGameMode.cpp: squads of four inside large teams
+extern bool bIsLargeTeamGame; // FortGameMode.cpp: the playlist is a large-team mode (Team Rumble, 50v50)
 namespace SpectraBots
 {
     // SDK::FindClass/FindEnum/FindStruct walk the whole object array on every call. The bot
@@ -12434,7 +12435,22 @@ for(auto T=(const UStruct*)V->Class;T;T=T->GetSuper())Dump(T);
         int Fixed=0,Added=0;
         for(size_t I=0;I<States.size();++I){auto PS=States[I];
             if(PS->TeamIndex<3)continue;
-            uint8 Squad=FiftyTeamMode()?FiftySquadFor(PS):uint8(PS->TeamIndex-(VersionInfo.FortniteVersion<9.f||VersionInfo.EngineVersion<4.23?0:VersionInfo.EngineVersion<4.24?3:2)); // setters take a non-const reference
+            const uint8 Base=uint8(PS->TeamIndex-(VersionInfo.FortniteVersion<9.f||VersionInfo.EngineVersion<4.23?0:VersionInfo.EngineVersion<4.24?3:2));
+            uint8 Squad=Base; // setters take a non-const reference
+            if(FiftyTeamMode())Squad=FiftySquadFor(PS);
+            else if(::bIsLargeTeamGame){
+                // Team Rumble and 50v50 on every season: a side is many squads of four (SyndicateSquadIdFor, given at
+                // join, side * 25 + squad). Setting the side's base id here put the whole side in one squad, so every
+                // teammate's name showed. Keep the join squad; a player whose squad is not on its side (team changed
+                // later) gets the side's next squad.
+                static UWorld* SquadWorld=nullptr;static std::unordered_map<AFortPlayerStateAthena*,uint8> Given;
+                if(World!=SquadWorld){SquadWorld=World;Given.clear();}
+                const int Low=int(Base)*25,High=Low+24;
+                auto It=Given.find(PS);
+                if(It!=Given.end() && It->second>=Low && It->second<=High)Squad=It->second;
+                else if(PS->HasSquadId() && PS->SquadId>=Low && PS->SquadId<=High)Squad=Given[PS]=PS->SquadId;
+                else Squad=Given[PS]=SyndicateSquadIdFor(PS->TeamIndex,Base);
+            }
             if(PS->HasSquadId() && PS->SquadId!=Squad){PS->SquadId=Squad;PS->OnRep_SquadId();PS->ForceNetUpdate();++Fixed;}
             if(!Roster)continue;
             auto Id=SyndicateNetId(PS);void* Key=Id?GetFromOffset<void*>(Id,8):nullptr;if(!Key)continue;
