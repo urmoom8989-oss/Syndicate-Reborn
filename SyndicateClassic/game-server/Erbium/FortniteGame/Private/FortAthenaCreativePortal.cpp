@@ -19,6 +19,47 @@ static bool SafeLoadPlayset(void (*Load)(UPlaysetLevelStreamComponent*), UPlayse
 	__except (EXCEPTION_EXECUTE_HANDLER) { return false; }
 }
 
+// The game's own code, logged once per Creative server so it can be read offline: the client's
+// OnRep_ClientPlaysetData (what makes a client stream an island in) and SetPlayset, then the LoadPlayset the scan found.
+static void SyndicateCreativeDumpBytes(const char* Name, uintptr_t At, size_t Size)
+{
+	auto Base = (uintptr_t)GetModuleHandleW(nullptr);
+	printf("[Creative] dump %s game+0x%llx size 0x%llx\n", Name, (unsigned long long)(At - Base), (unsigned long long)Size);
+	for (size_t o = 0; o < Size; o += 32)
+	{
+		char Line[80]; int n = 0;
+		for (size_t i = 0; i < 32 && o + i < Size; i++) n += snprintf(Line + n, sizeof(Line) - n, "%02X", ((const uint8_t*)At)[o + i]);
+		printf("[Creative] %llx %s\n", (unsigned long long)(At - Base + o), Line);
+	}
+	fflush(stdout);
+}
+static void SyndicateCreativeDumpCode(UObject* Component, uintptr_t LoadPlayset)
+{
+	static bool Done = false;
+	if (Done) return;
+	Done = true;
+	for (auto Name : { "OnRep_ClientPlaysetData", "SetPlayset" })
+	{
+		auto Fn = Component->GetFunction(Name);
+		auto Exec = Fn ? (uintptr_t)Fn->ExecFunction : 0;
+		if (!Exec) continue;
+		SyndicateCreativeDumpBytes(Name, Exec, 0x80);
+		int Bodies = 0; // the implementation: the first calls or jumps in the exec thunk
+		for (size_t o = 0; o < 0x78 && Bodies < 2; o++)
+		{
+			auto P = (const uint8_t*)Exec + o;
+			if (*P != 0xE8 && *P != 0xE9) continue;
+			int32_t Rel; memcpy(&Rel, P + 1, 4);
+			auto Target = (uintptr_t)(P + 5 + Rel), Base = (uintptr_t)GetModuleHandleW(nullptr);
+			if (Target < Base || Target > Base + 0x8000000) continue;
+			SyndicateCreativeDumpBytes((std::string(Name) + " call").c_str(), Target, 0x500);
+			Bodies++;
+			o += 4;
+		}
+	}
+	if (LoadPlayset) SyndicateCreativeDumpBytes("LoadPlayset", LoadPlayset, 0x900);
+}
+
 // The island's level, streamed in on the server with the engine's own LoadLevelInstance and handed to the clients
 // through the component's ClientPlaysetData, which is what LoadPlayset does. Used where the scanned LoadPlayset is not
 // safe (the UE4 builds, Seasons 7 to X): before this the island existed nowhere and the player fell into the sea.
@@ -254,9 +295,21 @@ AFortAthenaCreativePortal* AFortAthenaCreativePortal::Create(AFortPlayerControll
 	// On the UE4 builds (Seasons 7-X) the function found by the string scan crashes inside (null
 	// read, 7.40), and the crash reporter ends the process before the __except can catch it. Off
 	// there unless TILTED_CREATIVE_LOADPLAYSET=1 is set for testing.
-	bool Allowed = VersionInfo.EngineVersion >= 5.0 || GetEnvironmentVariableW(L"TILTED_CREATIVE_LOADPLAYSET", nullptr, 0) != 0;
+	// Season 8: the game's own LoadPlayset is used too. Streaming the island ourselves (below) loads it on the server,
+	// but the player's game never loaded it ("the island never loads"), even with the component replicating; the
+	// game's function is what real servers ran. The crash above was on 7.40 with no CurrentPlayset, which is set now.
+	bool Allowed = VersionInfo.EngineVersion >= 5.0 || (VersionInfo.FortniteVersion >= 8.0 && VersionInfo.FortniteVersion < 9.0)
+		|| GetEnvironmentVariableW(L"TILTED_CREATIVE_LOADPLAYSET", nullptr, 0) != 0;
+	SyndicateCreativeDumpCode((UObject*)LevelStreamComponent, (uintptr_t)LoadPlayset);
 	if (Allowed && LoadPlayset && IslandPlayset && LevelStreamComponent->HasCurrentPlayset() && LevelStreamComponent->CurrentPlayset)
+	{
+		printf("[Creative] calling the game's LoadPlayset\n");
+		fflush(stdout);
 		Loaded = SafeLoadPlayset(LoadPlayset, LevelStreamComponent);
+		printf("[Creative] LoadPlayset %s (client data valid right after: %d)\n", Loaded ? "returned" : "faulted",
+			LevelStreamComponent->HasClientPlaysetData() ? (int)LevelStreamComponent->ClientPlaysetData.bValid : -1);
+		fflush(stdout);
+	}
 	printf("[Creative] playset set by SetPlayset=%d, LoadPlayset %s\n", (int)HadPlayset, !LoadPlayset ? "not found" : !Allowed ? "skipped on this build" : Loaded ? "ran" : "FAULTED or skipped (island not loaded)");
 	// Where the game's LoadPlayset can't be used, stream the island ourselves.
 	if (!Loaded && IslandPlayset)
