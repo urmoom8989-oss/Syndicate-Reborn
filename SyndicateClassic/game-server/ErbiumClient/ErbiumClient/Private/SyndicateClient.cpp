@@ -2487,11 +2487,14 @@ namespace {
         return CurlEasySetOptOriginal(Handle, Option, Value);
     }
 
-    // Chapter 1 backstop. cobalt.dll stays (the menu and the rest expect it), and this hooks the function
-    // curl_easy_setopt hands every option to (Curl_setopt, in another part of libcurl), so it never touches cobalt's
-    // guarded function. Options cobalt already rewrote arrive here rewritten and pass through; one that slipped past
-    // its page-guard hook (several requests at once: opening Save the World sends eight profile queries together, and
-    // one going to Epic logged the player out, "Connection to the server failed") is redirected here instead.
+    // Chapter 1 backstop. cobalt.dll stays (the menu and the rest expect it). It hooks curl_easy_setopt with a page-guard
+    // (its exception handler sends execution at that address to its own function), and its function hands the option
+    // straight to Curl_setopt, which it finds by Curl_setopt's first bytes. With several requests at once (opening Save
+    // the World sends eight profile queries together) one call can run curl_easy_setopt's own code instead, go to
+    // Epic, fail its certificate check and log the player out ("Connection to the server failed"). That code ends in
+    // "call Curl_setopt": only that call is pointed at this function, so calls cobalt caught never come here, and
+    // neither curl_easy_setopt's first bytes nor Curl_setopt (both of which cobalt looks for) change. (Hooking
+    // Curl_setopt itself hid it from cobalt, which then called a null pointer: 8.50 crashed at login.)
     using CurlSetoptFn = int (*)(void*, int, va_list);
     CurlSetoptFn CurlSetoptOriginal = nullptr;
     volatile LONG BackstopCaught = 0;
@@ -2512,6 +2515,43 @@ namespace {
             }
         }
         return CurlSetoptOriginal(Handle, Option, Param);
+    }
+    // Executable memory within 2 GB of the game's code, for a jump to CurlSetoptDetour (a call's target is 32-bit).
+    uint8_t* AllocNear(uint8_t* Target) {
+        SYSTEM_INFO Info{}; GetSystemInfo(&Info);
+        const uintptr_t Step = Info.dwAllocationGranularity ? Info.dwAllocationGranularity : 0x10000;
+        const uintptr_t Base = (uintptr_t)Target & ~(Step - 1);
+        for (uintptr_t Distance = Step; Distance < 0x70000000; Distance += Step) {
+            if (Base > Distance) if (auto P = VirtualAlloc((void*)(Base - Distance), Step, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE)) return (uint8_t*)P;
+            if (auto P = VirtualAlloc((void*)(Base + Distance), Step, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE)) return (uint8_t*)P;
+        }
+        return nullptr;
+    }
+    // Repoints the call at Easy + 36 (E8 rel32). The four bytes are changed in one aligned 8-byte write so a thread
+    // running that code never sees half of them; the page's protection (cobalt's guard included) is put back after.
+    bool PatchSetoptCall(uint8_t* Easy) {
+        uint8_t* Call = Easy + 36;
+        uint8_t* Real = Call + 5 + *(int32_t*)(Call + 1);
+        uint8_t* Stub = AllocNear(Call);
+        if (!Stub) { Log("redirect backstop: no memory near the game's code"); return false; }
+        const intptr_t Rel = (intptr_t)Stub - (intptr_t)(Call + 5);
+        if (Rel != (intptr_t)(int32_t)Rel) { Log("redirect backstop: jump too far"); return false; }
+        static const uint8_t Jump[6] = { 0xFF, 0x25, 0, 0, 0, 0 }; // jmp [rip+0]
+        memcpy(Stub, Jump, sizeof(Jump)); *(void**)(Stub + 6) = (void*)CurlSetoptDetour;
+        FlushInstructionCache(GetCurrentProcess(), Stub, 14);
+        CurlSetoptOriginal = (CurlSetoptFn)Real;
+        uint8_t* Field = Call + 1;
+        uint8_t* Word = (uint8_t*)((uintptr_t)Field & ~(uintptr_t)7);
+        if (Field + 4 > Word + 8) { Log("redirect backstop: the call's target is not in one 8-byte word; left to cobalt"); return false; }
+        DWORD Old = 0;
+        if (!VirtualProtect(Word, 8, PAGE_EXECUTE_READWRITE, &Old)) { Log("redirect backstop: could not unprotect the call"); return false; }
+        LONG64 Before = *(volatile LONG64*)Word, After = Before;
+        const int32_t NewRel = (int32_t)Rel;
+        memcpy((uint8_t*)&After + (Field - Word), &NewRel, 4);
+        InterlockedCompareExchange64((volatile LONG64*)Word, After, Before);
+        DWORD Ignored = 0; VirtualProtect(Word, 8, Old, &Ignored);
+        FlushInstructionCache(GetCurrentProcess(), Word, 8);
+        return *(int32_t*)Field == NewRel;
     }
 
     // Fortnite's major version from the build string in the game exe (L"++Fortnite+Release-11.00"), or -1.
@@ -2549,12 +2589,9 @@ namespace {
             // curl_easy_setopt: ... ret; lea r8,[rsp+40h]; call Curl_setopt
             static const uint8_t Lea[] = { 0x4C, 0x8D, 0x44, 0x24, 0x40 };
             if (!Easy || memcmp(Easy + 31, Lea, sizeof(Lea)) != 0 || Easy[36] != 0xE8) { Log("redirect backstop: Curl_setopt not found (cobalt only)"); return 0; }
-            uint8_t* Setopt = Easy + 41 + *(int32_t*)(Easy + 37);
-            const MH_STATUS Init = MH_Initialize();
-            const MH_STATUS Made = MH_CreateHook(Setopt, (void*)CurlSetoptDetour, (void**)&CurlSetoptOriginal);
-            const MH_STATUS On = Made == MH_OK ? MH_EnableHook(Setopt) : Made;
-            char Line[192]; snprintf(Line, sizeof(Line), "redirect backstop (Fortnite %d): %s (Curl_setopt at exe+0x%llX, init %d, create %d, enable %d)", Major, On == MH_OK ? "on" : "FAILED",
-                (unsigned long long)(Setopt - (uint8_t*)GetModuleHandleW(nullptr)), int(Init), int(Made), int(On)); Log(Line);
+            const bool On = PatchSetoptCall(Easy);
+            char Line[160]; snprintf(Line, sizeof(Line), "redirect backstop (Fortnite %d): %s (curl_easy_setopt at exe+0x%llX)", Major, On ? "on" : "off",
+                (unsigned long long)(Easy - (uint8_t*)GetModuleHandleW(nullptr))); Log(Line);
             return 0;
         }
         // The launcher no longer loads cobalt.dll for Chapter 2: this hook is the only redirect there. With cobalt.dll
