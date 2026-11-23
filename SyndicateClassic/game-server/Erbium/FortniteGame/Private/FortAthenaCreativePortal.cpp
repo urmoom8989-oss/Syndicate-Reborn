@@ -104,6 +104,19 @@ static bool SyndicateStreamPlayset(UPlaysetLevelStreamComponent* Component, UObj
 		if (auto Flush = Statics->GetDefaultObj()->GetFunction("FlushLevelStreaming"))
 			Statics->GetDefaultObj()->Call<void>(Flush, World);
 
+	// The clients stream the island in themselves when the component's ClientPlaysetData reaches them (OnRep). The
+	// hub volumes' playset component is not a replicated component until the game's own LoadPlayset makes it one,
+	// so with LoadPlayset skipped the data never left the server and the island never loaded for the player.
+	if (auto SetReplicated = Component->GetFunction("SetIsReplicated"))
+	{
+		auto Info = SetReplicated->GetParamsNamed();
+		std::vector<uint8> Params(Info.Size < 8 ? 8 : Info.Size, 0);
+		Params[Info.NameOffsetMap.size() ? Info.NameOffsetMap[0].Offset : 0] = 1;
+		Component->ProcessEvent(SetReplicated, Params.data());
+		printf("[Creative] stream: the island's playset component now replicates\n");
+	}
+	else printf("[Creative] stream: SetIsReplicated is missing\n");
+
 	auto& Data = Component->ClientPlaysetData;
 	std::wstring WideUnique(Unique.begin(), Unique.end());
 	if (FFortPlaysetStreamingData::HasPackageName()) Data.PackageName = FName(WidePackage.c_str());
