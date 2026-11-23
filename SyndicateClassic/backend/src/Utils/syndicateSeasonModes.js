@@ -31,21 +31,29 @@ export const MODES = Object.freeze({
  arenaduos:{playlist:'Playlist_ShowdownAlt_Duos'},
  playground:{playlist:'Playlist_Playground'}, creative:{playlist:'Playlist_PlaygroundV2'}, stw:{playlist:null},
 });
-// Limited-time modes and the builds that have them (launcher Services/SeasonModes.cs keeps the same list).
+// Limited-time modes and the builds whose game files have their playlist (launcher Services/SeasonModes.cs keeps the
+// same list). A mode stays in every later season: Epic kept the old playlists in the game, and the playlist lists of
+// 8.50, 9.40 and 10.40 have every one of them (the game logs them at startup: "Adding Playlist:"). It cannot go back to
+// seasons from before it came out, because those builds do not have its playlist. 11.00 and 12.50 (Chapter 2) keep
+// only what they had: the launcher cannot start them, and nothing shows which Chapter 1 playlists they still have.
+const SEASONS = ['1.7.2','1.8.2','1.11','2.5','3.5.1','4.5','5.10','6.20','7.40','8.50','9.40','10.31','10.40'];
+const since = first => SEASONS.slice(SEASONS.indexOf(first)); // the first season with the playlist, then every later one
 const LTM = {
- '50v50':['1.11', '2.5', '3.5.1', '4.5', '5.10', '6.20'],
- gauntlet:['4.5'],
- solidgold:['3.5.1', '4.5', '5.10', '6.20'],
- blitz:['3.5.1', '4.5', '5.10', '6.20'],
- snipers:['3.5.1', '4.5', '5.10', '6.20', '7.40', '8.50', '9.40'],
- close:['4.5', '5.10', '6.20', '7.40', '8.50', '9.40'],
- highexplosives:['5.10', '6.20', '7.40', '8.50', '9.40'],
- disco:['6.20', '7.40'],
- teamrumble:['7.40', '8.50', '9.40', '10.31', '10.40', '11.00', '12.50'],
- foodfight:['7.40', '8.50', '9.40'],
- floorislava:['9.40'], // not in the 8.50 game (no Playlist_Respawn_20_Lava there)
- arenaduos:['8.50', '9.40', '10.31', '10.40', '12.50'],
+ '50v50':since('1.11'),
+ gauntlet:since('4.5'),
+ solidgold:since('3.5.1'),
+ blitz:since('3.5.1'),
+ snipers:since('3.5.1'),
+ close:since('4.5'),
+ highexplosives:since('4.5'), // 4.5 lists Playlist_HighExplosives_Squads
+ disco:since('6.20'),
+ teamrumble:[...since('7.40'),'11.00','12.50'],
+ foodfight:since('7.40'),
+ floorislava:since('9.40'), // not in the 8.50 game (no Playlist_Respawn_20_Lava there)
+ arenaduos:[...since('8.50'),'12.50'],
 };
+// Season 4's Playground: 5.10, 8.50, 9.40 and 10.40 have Playlist_Playground too.
+const PLAYGROUND = new Set(since('4.5'));
 const ORDER = Object.keys(MODES);
 const BR = ['solo','duo','squad'];
 const ARENA = new Set(['8.50','9.40','10.31','10.40','11.00','12.50']);
@@ -58,7 +66,7 @@ export function availableModes(build){
  const list=[...BR];
  if(ARENA.has(build))list.push('arenasolo');
  for(const [mode,builds] of Object.entries(LTM))if(builds.includes(build))list.push(mode);
- if(build==='4.5')list.push('playground');
+ if(PLAYGROUND.has(build))list.push('playground');
  if(CREATIVE.has(build))list.push('creative');
  list.push('stw');
  return list;

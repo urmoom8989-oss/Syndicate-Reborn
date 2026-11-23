@@ -25,19 +25,19 @@ public static class SeasonModes
         new GameModeInfo("duo", "Duos", "Battle Royale in teams of two.", false),
         new GameModeInfo("squad", "Squads", "Battle Royale in teams of four.", false),
         new GameModeInfo("arenasolo", "Arena", "Solo Arena with Hype and divisions (Season 8 and up).", false),
-        new GameModeInfo("50v50", "50v50", "Two teams of 50 with a storm line down the map (Seasons 2-6).", false),
-        new GameModeInfo("gauntlet", "Infinity Gauntlet", "Season 4 crossover: find the Infinity Gauntlet and become Thanos. Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("solidgold", "Solid Gold", "Every weapon on the map is legendary (Seasons 3-6). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("blitz", "Blitz", "Short matches with a fast storm and more loot (Seasons 3-6). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("snipers", "Sniper Shootout", "Sniper rifles and pistols only (Seasons 3-9). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("close", "Close Encounters", "Shotguns and jetpacks only (Seasons 4-9). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("highexplosives", "High Explosives", "Squads with explosive weapons only (Seasons 5-9). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("disco", "Disco Domination", "Two teams dance on dance floors to win (Seasons 6-7). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("50v50", "50v50", "Two teams of 50 with a storm line down the map (Season 2 to X). The bots are tuned for Season 4's 50v50; on other seasons it is experimental.", false),
+        new GameModeInfo("gauntlet", "Infinity Gauntlet", "Season 4 crossover: find the Infinity Gauntlet and become Thanos (Season 4 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("solidgold", "Solid Gold", "Every weapon on the map is legendary (Season 3 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("blitz", "Blitz", "Short matches with a fast storm and more loot (Season 3 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("snipers", "Sniper Shootout", "Sniper rifles and pistols only (Season 3 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("close", "Close Encounters", "Shotguns and jetpacks only (Season 4 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("highexplosives", "High Explosives", "Squads with explosive weapons only (Season 4 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("disco", "Disco Domination", "Two teams dance on dance floors to win (Season 6 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("teamrumble", "Team Rumble", "Two big teams with respawns race to the elimination target (Season 7 and up). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("foodfight", "Food Fight", "Durrr Burger against Pizza Pit, split by a barrier (Seasons 7-9). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("floorislava", "Floor Is Lava", "The lava rises through the match: build up to stay alive (Season 9). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("foodfight", "Food Fight", "Durrr Burger against Pizza Pit, split by a barrier (Season 7 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("floorislava", "Floor Is Lava", "The lava rises through the match: build up to stay alive (Season 9 to X; the Season 8 game has no Floor Is Lava playlist). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("arenaduos", "Arena Duos", "Duos Arena with Hype and divisions (Seasons 8 to X and Chapter 2 Season 2). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("playground", "Playground", "Season 4's Playground: respawns, extra materials and no storm damage.", false),
+        new GameModeInfo("playground", "Playground", "Season 4's Playground: respawns, extra materials and no storm damage (Season 4 to X).", false),
         new GameModeInfo("creative", "Creative",
             "Experimental, Season 7 and up. The lobby button and playlist open and you go to the Creative hub, but player islands don't load yet (you may land in empty sea), and Season X's match server still starts a normal match.", true),
         new GameModeInfo("stw", "Save the World",
@@ -45,23 +45,33 @@ public static class SeasonModes
     };
 
     private static readonly string[] BattleRoyale = { "solo", "duo", "squad" };
-    /// <summary>Limited-time modes: their playlist and the builds that have them (backend LTM list in Utils/syndicateSeasonModes.js).</summary>
+    /// <summary>The Chapter 1 builds, oldest first. A limited-time mode is offered from the first build that has its
+    /// playlist and on every later one: Epic kept the old playlists in the game (8.50, 9.40 and 10.40 list every one of
+    /// them at startup). Older builds don't have the playlist, so a mode never goes back before it came out.</summary>
+    private static readonly string[] Seasons =
+        { "1.7.2", "1.8.2", "1.11", "2.5", "3.5.1", "4.5", "5.10", "6.20", "7.40", "8.50", "9.40", "10.31", "10.40" };
+    private static string[] Since(string first, params string[] more) =>
+        Seasons[Array.IndexOf(Seasons, first)..].Concat(more).ToArray();
+    /// <summary>Limited-time modes: their playlist and the builds that have them (backend LTM list in Utils/syndicateSeasonModes.js).
+    /// 11.00 and 12.50 (Chapter 2) keep only what they had.</summary>
     public static readonly IReadOnlyDictionary<string, (string Playlist, string[] Builds)> LimitedTime =
         new Dictionary<string, (string, string[])>(StringComparer.OrdinalIgnoreCase)
         {
-            ["50v50"] = ("Playlist_50v50", new[] { "1.11", "2.5", "3.5.1", "4.5", "5.10", "6.20" }),
-            ["gauntlet"] = ("Playlist_Ashton_Sm", new[] { "4.5" }),
-            ["solidgold"] = ("Playlist_SolidGold_Solo", new[] { "3.5.1", "4.5", "5.10", "6.20" }),
-            ["blitz"] = ("Playlist_Blitz_Solo", new[] { "3.5.1", "4.5", "5.10", "6.20" }),
-            ["snipers"] = ("Playlist_Snipers_Solo", new[] { "3.5.1", "4.5", "5.10", "6.20", "7.40", "8.50", "9.40" }),
-            ["close"] = ("Playlist_Close_Solo", new[] { "4.5", "5.10", "6.20", "7.40", "8.50", "9.40" }),
-            ["highexplosives"] = ("Playlist_HighExplosives_Squads", new[] { "5.10", "6.20", "7.40", "8.50", "9.40" }),
-            ["disco"] = ("Playlist_Disco_32", new[] { "6.20", "7.40" }),
-            ["teamrumble"] = ("Playlist_Respawn_24", new[] { "7.40", "8.50", "9.40", "10.31", "10.40", "11.00", "12.50" }),
-            ["foodfight"] = ("Playlist_Barrier_16", new[] { "7.40", "8.50", "9.40" }),
-            ["floorislava"] = ("Playlist_Respawn_20_Lava", new[] { "9.40" }), // the 8.50 game has no Playlist_Respawn_20_Lava
-            ["arenaduos"] = ("Playlist_ShowdownAlt_Duos", new[] { "8.50", "9.40", "10.31", "10.40", "12.50" }),
+            ["50v50"] = ("Playlist_50v50", Since("1.11")),
+            ["gauntlet"] = ("Playlist_Ashton_Sm", Since("4.5")),
+            ["solidgold"] = ("Playlist_SolidGold_Solo", Since("3.5.1")),
+            ["blitz"] = ("Playlist_Blitz_Solo", Since("3.5.1")),
+            ["snipers"] = ("Playlist_Snipers_Solo", Since("3.5.1")),
+            ["close"] = ("Playlist_Close_Solo", Since("4.5")),
+            ["highexplosives"] = ("Playlist_HighExplosives_Squads", Since("4.5")), // 4.5 lists Playlist_HighExplosives_Squads
+            ["disco"] = ("Playlist_Disco_32", Since("6.20")),
+            ["teamrumble"] = ("Playlist_Respawn_24", Since("7.40", "11.00", "12.50")),
+            ["foodfight"] = ("Playlist_Barrier_16", Since("7.40")),
+            ["floorislava"] = ("Playlist_Respawn_20_Lava", Since("9.40")), // the 8.50 game has no Playlist_Respawn_20_Lava
+            ["arenaduos"] = ("Playlist_ShowdownAlt_Duos", Since("8.50", "12.50")),
         };
+    /// <summary>Season 4's Playground: 5.10, 8.50, 9.40 and 10.40 have Playlist_Playground too.</summary>
+    private static readonly HashSet<string> PlaygroundBuilds = new(Since("4.5"), StringComparer.OrdinalIgnoreCase);
     private static readonly HashSet<string> ArenaBuilds = new(StringComparer.OrdinalIgnoreCase) { "8.50", "9.40", "10.31", "10.40", "11.00", "12.50" };
     private static readonly HashSet<string> CreativeBuilds = new(StringComparer.OrdinalIgnoreCase) { "7.40", "8.50", "9.40", "10.31", "10.40", "11.00", "12.50" };
     private static readonly HashSet<string> KnownBuilds = new(StringComparer.OrdinalIgnoreCase)
@@ -80,7 +90,7 @@ public static class SeasonModes
         if (ArenaBuilds.Contains(build!)) list.Add("arenasolo");
         foreach (var (mode, ltm) in LimitedTime)
             if (Array.IndexOf(ltm.Builds, build) >= 0) list.Add(mode);
-        if (build == "4.5") list.Add("playground");
+        if (PlaygroundBuilds.Contains(build!)) list.Add("playground");
         if (CreativeBuilds.Contains(build!)) list.Add("creative");
         list.Add("stw");
         return list;

@@ -8,18 +8,22 @@ import { availableModes, defaultModes, enabledModes, modeEnabled, stwEnabledFor,
 
 const env = { TILTED_DEVKIT: '' };
 
-test('Creative is offered from Season 7, Arena from Season 8, 50v50 and Playground on Season 4', () => {
+test('Creative is offered from Season 7, Arena from Season 8, 50v50 and Playground from Season 4', () => {
   assert.equal(availableModes('6.20').includes('creative'), false);
   for (const b of ['7.40', '8.50', '9.40', '10.40', '11.00', '12.50']) assert.ok(availableModes(b).includes('creative'), b);
   assert.equal(availableModes('7.40').includes('arenasolo'), false);
   assert.ok(availableModes('8.50').includes('arenasolo'));
-  assert.deepEqual(availableModes('4.5'), ['solo', 'duo', 'squad', '50v50', 'gauntlet', 'solidgold', 'blitz', 'snipers', 'close', 'playground', 'stw']);
-  // Limited-time modes only on the seasons that had them.
-  assert.ok(availableModes('6.20').includes('50v50'));
-  assert.equal(availableModes('7.40').includes('50v50'), false);
+  assert.deepEqual(availableModes('4.5'), ['solo', 'duo', 'squad', '50v50', 'gauntlet', 'solidgold', 'blitz', 'snipers', 'close', 'highexplosives', 'playground', 'stw']);
+  // A limited-time mode stays in every later season (their playlists are still in the game), never earlier ones.
+  for (const b of ['6.20', '7.40', '8.50', '9.40', '10.31', '10.40']) assert.ok(availableModes(b).includes('50v50'), b);
+  for (const b of ['5.10', '6.20', '7.40', '8.50', '9.40', '10.40']) assert.ok(availableModes(b).includes('gauntlet'), b);
+  for (const b of ['5.10', '7.40', '8.50', '10.40']) assert.ok(availableModes(b).includes('playground'), b);
+  assert.deepEqual(availableModes('10.40'), ['solo', 'duo', 'squad', 'arenasolo', '50v50', 'gauntlet', 'solidgold', 'blitz', 'snipers', 'close',
+    'highexplosives', 'disco', 'teamrumble', 'foodfight', 'floorislava', 'arenaduos', 'playground', 'creative', 'stw']);
+  assert.equal(availableModes('8.50').includes('floorislava'), false); // the 8.50 game has no Playlist_Respawn_20_Lava
+  assert.equal(availableModes('3.5.1').includes('gauntlet'), false);
+  assert.equal(availableModes('1.8.2').includes('50v50'), false);
   assert.ok(availableModes('9.40').includes('arenaduos'));
-  assert.ok(availableModes('10.40').includes('arenaduos'));
-  assert.equal(availableModes('5.10').includes('gauntlet'), false);
   for (const b of ['1.7.2', '1.8.2', '1.11', '3.5.1', '10.40']) assert.ok(availableModes(b).includes('stw'), b);
   assert.deepEqual(availableModes('19.00'), []);
 });

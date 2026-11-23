@@ -35,8 +35,8 @@ function readTicket(id,dir=runtime){try{const t=read(ticketPath(id,dir));return 
 function reserve(mode,accountId,dir=runtime,now=Date.now(),build=selectedBuild(dir)){
  requireBuild(build,dir);
  if(!playlistNames[mode])throw Error('Unsupported playlist');
- if(mode==='50v50' && build!=='4.5')throw Error('50v50 is available only in Season 4.');
- if(mode==='playground' && build!=='4.5')throw Error('Playground is available only in Season 4.');
+ // 50v50, Playground and the limited-time modes: the seasons that have them are in src/Utils/syndicateSeasonModes.js,
+ // which the matchmaking route checks (modeEnabled) before it gets here.
  if(mode==='intro' && build!=='11.00')throw Error('The Chapter 2 entrance needs Fortnite 11.00.');
  if(mode.startsWith('arena') && !['8.50','9.40','10.31','10.40','11.00','12.50'].includes(build))throw Error('Arena is available in Season 8 and later.');
  // Creative is off by default: the island never loads on UE4 (LoadPlayset faults; see project doc
@@ -74,7 +74,6 @@ function prewarm(mode,dir=runtime,now=Date.now()){
  // Creative (when turned on for this season): Season X joins its local server straight from the lobby, so the
  // server has to be switched here or Ready lands in the Solo match that was already running.
  if(mode==='creative'&&!creativeOn(build,dir))return false;
- if(['50v50','playground'].includes(mode)&&build!=='4.5')return false;
  if(mode.startsWith('arena')&&!['8.50','9.40','10.31','10.40','11.00','12.50'].includes(build))return false;
  const live=hostStatus(dir,now);
  if(live&&live.Connected>0)return false;
@@ -93,7 +92,6 @@ function prewarm(mode,dir=runtime,now=Date.now()){
 function modeFromName(name){const m=typeof name==='string'?name.match(/Playlist_[A-Za-z0-9_]+/):null;return m?modes[m[0].toLowerCase()]||null:null;}
 function ready(id,dir=runtime){const t=readTicket(id,dir),r=read(path.join(dir,'playlist-request.json'));if(!t||t.reservedUntil<=Date.now()||t.requestId!==r?.Id)return false;const live=hostStatus(dir);return !!live&&live.Mode===t.mode&&live.Build===(t.build||'4.5')&&selectedBuild(dir)===(t.build||'4.5')&&(!t.assignedPid||t.assignedPid===live.Pid)&&live.Accepting&&require('./readiness.cjs').isReady(dir);}
 function reserveRemote(mode,accountId,host,remoteTicket,dir=runtime,build=selectedBuild(dir)){
- if(mode==='50v50' && build!=='4.5')throw Error('50v50 is available only in Season 4.');
  if(!playlistNames[mode]||!/^(?:\d{1,3}\.){3}\d{1,3}$/.test(host)||!/^[a-f0-9]{32}$/.test(remoteTicket))throw Error('Invalid remote playlist response');
  const id=remoteTicket,t={id,mode,build,accountId,host,remoteTicket,expires:Date.now()+600000,reservedUntil:Date.now()+300000};write(ticketPath(id,dir),t);return t;
 }
