@@ -167,6 +167,18 @@ static bool SyndicateStreamPlayset(UPlaysetLevelStreamComponent* Component, UObj
 	Data.bValid = true;
 	if (auto StreamedOff = Component->GetOffset("StreamedLevel"); StreamedOff != uint32(-1))
 		*(UObject**)((uint8*)Component + StreamedOff) = Streamed;
+	// The hub's volumes are placed in the map and start dormant (DORM_Initial), so the playset data set above never
+	// left the server and the player's game never streamed the island ("the island never loads"). Wake the volume
+	// (SetNetDormancy DORM_Awake) and flush it, so it replicates again with the data.
+	{
+		auto DormOff = ((UObject*)Volume)->GetOffset("NetDormancy");
+		int Before = DormOff != uint32(-1) ? *((const uint8*)Volume + DormOff) : -1;
+		bool Woke = false, Flushed = false;
+		if (auto SetDormancy = ((UObject*)Volume)->GetFunction("SetNetDormancy")) { alignas(16) uint8 P[16]{}; P[0] = 1; ((UObject*)Volume)->ProcessEvent(SetDormancy, P); Woke = true; }
+		if (auto Flush = ((UObject*)Volume)->GetFunction("FlushNetDormancy")) { alignas(16) uint8 P[16]{}; ((UObject*)Volume)->ProcessEvent(Flush, P); Flushed = true; }
+		int After = DormOff != uint32(-1) ? *((const uint8*)Volume + DormOff) : -1;
+		printf("[Creative] stream: volume dormancy %d -> %d (woken %d, flushed %d)\n", Before, After, (int)Woke, (int)Flushed);
+	}
 	Volume->ForceNetUpdate();
 	printf("[Creative] stream: island level %s loaded as %s at (%.0f,%.0f,%.0f)\n", Package.c_str(), Unique.c_str(),
 		(double)Location.X, (double)Location.Y, (double)Location.Z);

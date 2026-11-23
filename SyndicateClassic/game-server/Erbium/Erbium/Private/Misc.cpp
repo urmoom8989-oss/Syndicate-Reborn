@@ -935,24 +935,30 @@ void SyndicateStwTravelTick()
 	else SyndicateStwLog("[Syndicate STW] OpenLevel not found\n");
 }
 
-// Seasons 4+ (replication graph builds), called from the beacon net driver's tick. The beacon driver replicates the
-// beacon client actors itself, but the lobby state spawned below was registered for the driver its NetDriverName
-// names, not this beacon's driver, so it never reached the client: "Attempting JoinFromLobby before the lobby beacon
-// says the server world record is loaded", and the client sat on "traveling to lobby". Move the state to this driver
-// the way the engine moves a new beacon client actor (NetDriverName, then SetReplicates false/true, which adds it to
-// the driver's network list), note when its channel to the joining client is open, and repeat ClientJoinGame
-// while the client has not answered.
-void SyndicateStwBeaconTick(UNetDriver* Driver)
+// Seasons 4+ (replication graph builds), called from the beacon net driver's tick. The lobby state spawned below never
+// reached the client: "Attempting JoinFromLobby before the lobby beacon says the server world record is loaded", and
+// the client sat on "traveling to lobby". Two reasons: its NetDriverName named another driver ("BeaconNetDriver", the
+// beacon's is "IpNetDriver_..."), and client builds have no engine replication at all (the beacon client actor only
+// reached the client because our RPCs open its channel). So move the state to this driver the way the engine moves a
+// new beacon client actor (NetDriverName, then SetReplicates false/true, which adds it to the driver's network list),
+// and return true when the driver has a replication graph the caller should run for it. With no graph, the player's
+// game makes the state itself (SyndicateClient.cpp, StwLobbyTick). Also notes when the state's channel to the joining
+// client is open, and repeats ClientJoinGame while the client has not answered.
+bool SyndicateStwBeaconTick(UNetDriver* Driver)
 {
 	SyndicateStwBeaconTicking = true;
 	auto State = SyndicateStwLobbyState;
-	if (!State || !Driver) return;
+	if (!State || !Driver) return false;
+	static const UClass* GraphClass = FindClass("FortReplicationGraph");
+	auto Rep = Driver->ReplicationDriver;
+	bool UseGraph = Rep && GraphClass && Rep->IsA(GraphClass);
 	static UNetDriver* Registered = nullptr;
 	if (Registered != Driver)
 	{
 		Registered = Driver;
+		SyndicateStwLog("[Syndicate STW] lobby replication: beacon driver replication driver %s\n", !Rep ? "none" : UseGraph ? "FortReplicationGraph (used for the lobby)" : "of another class (not used)");
 		auto O = State->GetOffset("NetDriverName");
-		if (O == uint32(-1)) { SyndicateStwLog("[Syndicate STW] lobby replication: the lobby state has no NetDriverName\n"); return; }
+		if (O == uint32(-1)) { SyndicateStwLog("[Syndicate STW] lobby replication: the lobby state has no NetDriverName\n"); return UseGraph; }
 		auto& Name = GetFromOffset<FName>(State, O);
 		SyndicateStwLog("[Syndicate STW] lobby replication: lobby state driver %s, beacon driver %s\n", std::string(Name.ToString().c_str()).c_str(), std::string(Driver->NetDriverName.ToString().c_str()).c_str());
 		Name = Driver->NetDriverName;
@@ -981,8 +987,8 @@ void SyndicateStwBeaconTick(UNetDriver* Driver)
 					SyndicateStwLog("[Syndicate STW] lobby replication: the lobby state reached the client\n");
 					break;
 				}
-		// Still connected to the lobby and not joining after 8 seconds: tell it again (twice at most).
-		if (Owner == SyndicateStwJoinSentTo && !SyndicateStwJoinAcked && SyndicateStwJoinResends < 2 && GetTickCount64() >= SyndicateStwJoinSentAt + 8000)
+		// Still connected to the lobby and not joining after 8 seconds: tell it again (four times at most).
+		if (Owner == SyndicateStwJoinSentTo && !SyndicateStwJoinAcked && SyndicateStwJoinResends < 4 && GetTickCount64() >= SyndicateStwJoinSentAt + 8000)
 		{
 			SyndicateStwJoinResends++; SyndicateStwJoinSentAt = GetTickCount64();
 			if (auto Join = Owner->GetFunction("ClientJoinGame"))
@@ -993,6 +999,7 @@ void SyndicateStwBeaconTick(UNetDriver* Driver)
 			}
 		}
 	}
+	return UseGraph;
 }
 
 // A server started for Save the World (launcher: the "stw" playlist, or stw-host.txt on the dev launcher).

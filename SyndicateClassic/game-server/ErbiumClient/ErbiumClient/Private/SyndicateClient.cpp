@@ -39,6 +39,7 @@
 namespace {
     constexpr UINT ApplyMessage = WM_APP + 0x4F0;
     constexpr UINT ConsoleMessage = WM_APP + 0x4F1; // the in-game console tick (once a second), see ConsoleTick()
+    constexpr UINT StwLobbyMessage = WM_APP + 0x4F2; // the Save the World lobby check (twice a second), see StwLobbyTick()
     HMODULE SelfModule = nullptr;
     HWND GameWindow = nullptr;
     HHOOK MessageHook = nullptr;
@@ -2018,6 +2019,71 @@ namespace {
         LeanStage = 1; Log("lean: Purple Stuff is now called Lean");
     }
 #include "SyndicateStwLocker.inl"
+    // ---- Save the World lobby (Season 4 to Chapter 2 Season 1) -------------------------------------------------------
+    // The match server is this same client build, which has no engine replication, so the lobby beacon's state never
+    // reaches this game when the server's beacon has no replication graph: Fortnite then sits on "traveling to lobby"
+    // with "Attempting JoinFromLobby before the lobby beacon says the server world record is loaded" (8.50). Erbium
+    // hosts a single zone and has its world loaded before it takes the lobby, so when the lobby beacon client has
+    // been connected for 8 seconds with no state, this gives it a local state that says the world record is loaded
+    // (MissionGeneratorDetailsRequirement NotRequired, run through its own OnRep). The server's next ClientJoinGame
+    // then goes ahead. A state that does arrive from the server replaces it (the property is replicated).
+    bool StwLobbyBuild() { const float V = VersionInfo.FortniteVersion; return V > 3.9f && V < 12.f; }
+    UObject* StwSpawnLocal(UWorld* World, const UClass* Class) {
+        static UObject* Lib = nullptr; static UFunction* Begin = nullptr; static UFunction* Finish = nullptr;
+        static int32 BWorld = -1, BClass = -1, BTransform = -1, BCollision = -1, BReturn = -1, FActor = -1, FTransform = -1, FReturn = -1;
+        static uint32 BSize = 0, FSize = 0; static bool Tried = false;
+        if (!Tried) {
+            Tried = true;
+            Lib = (UObject*)UGameplayStatics::GetDefaultObj();
+            Begin = Lib ? Lib->GetFunction("BeginDeferredActorSpawnFromClass") : nullptr;
+            Finish = Lib ? Lib->GetFunction("FinishSpawningActor") : nullptr;
+            if (Begin) { auto P = Begin->GetParamsNamed(); BSize = uint32(P.Size);
+                for (auto& M : P.NameOffsetMap) { if (M.Name == "WorldContextObject") BWorld = int32(M.Offset); else if (M.Name == "ActorClass") BClass = int32(M.Offset);
+                    else if (M.Name == "SpawnTransform") BTransform = int32(M.Offset); else if (M.Name == "CollisionHandlingOverride") BCollision = int32(M.Offset); else if (M.Name == "ReturnValue") BReturn = int32(M.Offset); } }
+            if (Finish) { auto P = Finish->GetParamsNamed(); FSize = uint32(P.Size);
+                for (auto& M : P.NameOffsetMap) { if (M.Name == "Actor") FActor = int32(M.Offset); else if (M.Name == "SpawnTransform") FTransform = int32(M.Offset); else if (M.Name == "ReturnValue") FReturn = int32(M.Offset); } }
+        }
+        if (!Begin || !Finish || BWorld < 0 || BClass < 0 || BTransform < 0 || BReturn < 0 || FActor < 0 || FTransform < 0 || BSize > 256 || FSize > 256) return nullptr;
+        // FTransform: rotation (quaternion, W last) at 0, translation at 16, scale at 32.
+        alignas(16) float Transform[12]{ 0, 0, 0, 1,  0, 0, -100000.f, 0,  1, 1, 1, 0 };
+        alignas(16) uint8_t B[256]{};
+        *(UWorld**)(B + BWorld) = World; *(const UClass**)(B + BClass) = Class; memcpy(B + BTransform, Transform, sizeof(Transform));
+        if (BCollision >= 0) B[BCollision] = 1; // AlwaysSpawn
+        Lib->ProcessEvent(Begin, B);
+        auto Actor = *(UObject**)(B + BReturn);
+        if (!Actor) return nullptr;
+        alignas(16) uint8_t F[256]{};
+        *(UObject**)(F + FActor) = Actor; memcpy(F + FTransform, Transform, sizeof(Transform));
+        Lib->ProcessEvent(Finish, F);
+        return FReturn >= 0 && *(UObject**)(F + FReturn) ? *(UObject**)(F + FReturn) : Actor;
+    }
+    void StwLobbyTick() {
+        static ULONGLONG Since = 0; static int Made = 0; const ULONGLONG Now = GetTickCount64();
+        static const UClass* ClientClass = FindClass("FortLobbyBeaconClient");
+        static const UClass* StateClass = FindClass("FortLobbyBeaconStatePvE");
+        if (!ClientClass || !StateClass) return;
+        auto World = UWorld::GetWorld(); if (!World) return;
+        ActorList Clients; SyndicateAllActors(World, ClientClass, Clients);
+        if (Clients.Num() == 0 || !Clients[0]) { Since = 0; return; }
+        auto Client = (UObject*)Clients[0];
+        static int32 StateOff = -2; if (StateOff == -2) StateOff = int32(Client->GetOffset("LobbyState"));
+        if (StateOff < 0) return;
+        auto& Current = *(UObject**)((uint8*)Client + StateOff);
+        if (Current) { Since = 0; return; } // the server's state (or the one made here) is in place
+        if (!Since) { Since = Now; return; }
+        if (Now - Since < 8000 || Made >= 3) return;
+        Since = Now; ++Made; // tried again 8 seconds later if it did not take
+        auto State = StwSpawnLocal(World, StateClass);
+        if (!State) { Log("stw lobby: the server's lobby state never arrived, and a local one could not be made"); return; }
+        if (auto O = int32(State->GetOffset("MissionGeneratorDetailsRequirement")); O >= 0) *((uint8*)State + O) = 1; // NotRequired
+        if (auto O = int32(State->GetOffset("bWorldRecordLoaded")); O >= 0) *((uint8*)State + O) = 1;
+        if (auto O = int32(State->GetOffset("MaxPlayers")); O >= 0) *(int32*)((uint8*)State + O) = 4;
+        Current = State;
+        if (auto OnRep = State->GetFunction("OnRep_MissionGeneratorDetailsRequirement")) { alignas(16) uint8_t None[16]{}; State->ProcessEvent(OnRep, None); }
+        if (auto O = int32(State->GetOffset("bWorldRecordLoaded")); O >= 0) *((uint8*)State + O) = 1;
+        Log("stw lobby: the server's lobby state never arrived; using a local one that says the world record is loaded");
+    }
+
     // ---- Two players on one PC: split the input between the two Fortnite clients ---------------------------------
     // The launcher's "Launch 2nd player" writes input-role-<pid>.txt for each client: "kbm" or "controller". Without
     // it both clients read every device (raw mouse input and XInput both reach a background window), so:
@@ -2194,6 +2260,8 @@ namespace {
         // The console has its own message so the other mods' ticks keep running only while they are switched on.
         if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == ConsoleMessage && InterlockedCompareExchange(&ConsoleDue, 0, 1) == 1)
             { __try { ConsoleTick(); } __except (EXCEPTION_EXECUTE_HANDLER) { InterlockedExchange(&ConsoleDue, -1); Log("console: stopped after an error"); } }
+        if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == StwLobbyMessage)
+            { static bool Failed = false; if (!Failed) { __try { StwLobbyTick(); } __except (EXCEPTION_EXECUTE_HANDLER) { Failed = true; Log("stw lobby: stopped after an error"); } } }
         if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == ApplyMessage) {
             if (StwWanted()) { __try { StwLockerTick(); } __except (EXCEPTION_EXECUTE_HANDLER) { StwLockerFailed(); } }
             if (LeanStage == 0) { __try { LeanRename(); } __except (EXCEPTION_EXECUTE_HANDLER) { LeanStage = -1; Log("lean: stopped after an error"); } }
@@ -2277,6 +2345,7 @@ namespace {
                   }
               } }
             if (MessageHook && (AudioKeepDue || StwWanted() || SquadShared || WantedTimes100 > 0 || LastSet > 0.f || StretchOn || StretchSaved >= 0 || TurboOn || EditOn || ResetOn || DevCameraOn || DevAimLevel || DevFlyOn || DevFreeCamOn || DevNoRecoil || DevNoDrop || StoreInjectActive || !DevRecoilSaved.empty())) PostMessageW(GameWindow, ApplyMessage, 0, 0);
+            { static ULONGLONG NextLobby = 0; if (MessageHook && StwLobbyBuild() && GetTickCount64() >= NextLobby) { NextLobby = GetTickCount64() + 500; PostMessageW(GameWindow, StwLobbyMessage, 0, 0); } }
             TurboTick();
             DevFlyKeyTick();
             Sleep(DevCameraOn || DevAimLevel || DevFlyOn ? 6 : 16); // Dev Console markers: sample the game more often so they keep up
