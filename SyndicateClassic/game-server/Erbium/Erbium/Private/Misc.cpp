@@ -888,7 +888,7 @@ void SyndicateStwTravelTick()
 			// The client only joins once the lobby state says the server's world record is loaded (1.7.2: +0x659).
 			auto O = SyndicateStwLobbyState->GetOffset("bWorldRecordLoaded");
 			SyndicateStwLog("[Syndicate STW] lobby: bWorldRecordLoaded at +0x%x\n", O);
-			GetFromOffset<bool>(SyndicateStwLobbyState, O != uint32(-1) ? O : 0x659) = true;
+			if (O != uint32(-1) || VersionInfo.FortniteVersion < 2.0) GetFromOffset<bool>(SyndicateStwLobbyState, O != uint32(-1) ? O : 0x659) = true;
 		}
 		if (auto Join = Client->GetFunction("ClientJoinGame"))
 		{
@@ -1111,21 +1111,20 @@ static void SyndicateStwExplainSafe(uintptr_t Rva) { __try { SyndicateStwExplain
 
 static void SyndicateStwListFunctions(const char* Name)
 {
-	// Walks the class's fields with the 1.7.2 layout: on later builds it reads garbage and crashed the 8.50 server.
-	if (VersionInfo.FortniteVersion >= 2.0) return;
+	// The same walk UObject::GetFunction does (this build's offsets), so it is safe on every season. The old one
+	// read the 1.7.2 layout and crashed the 8.50 server.
 	auto Cls = FindClass(Name);
 	if (!Cls) { SyndicateStwLog("[Syndicate STW] functions of %s: class missing\n", Name); return; }
-	for (auto C = Cls; C; C = GetFromOffset<const UClass*>(C, 0x30))
+	for (const UStruct* C = Cls; C; C = C->GetSuper())
 	{
 		std::string CName(C->Name.ToSDKString().c_str());
-		if (CName == "Actor" || CName == "Object") break;
+		if (CName == "Actor" || CName == "Object" || CName == "Info") break;
 		for (const UField* F = C->GetChildren(); F; F = F->GetNext())
-		{
-			if (!F->Class || std::string(F->Class->Name.ToSDKString().c_str()) != "Function") continue;
-			SyndicateStwLog("[Syndicate STW] functions of %s: %s::%s\n", Name, CName.c_str(), std::string(F->Name.ToSDKString().c_str()).c_str());
-		}
+			if (F->Class && (F->Class->GetCastFlags() & 0x80000))
+				SyndicateStwLog("[Syndicate STW] functions of %s: %s::%s\n", Name, CName.c_str(), std::string(F->GetName().ToSDKString().c_str()).c_str());
 	}
 }
+static void SyndicateStwListFunctionsSafe(const char* Name) { __try { SyndicateStwListFunctions(Name); } __except (1) { SyndicateStwLog("[Syndicate STW] listing %s crashed (caught)\n", Name); } }
 static void SyndicateStwRecon()
 {
 	for (auto Name : { "FortGameModeZone", "FortGameModeOutpost", "FortGameModeCampaign", "FortGameModeOnboarding", "FortGameStateZone", "FortZoneTheme", "FortMissionInfo", "FortGameModeZoneOnboarding" })
@@ -1145,11 +1144,73 @@ static void SyndicateStwRecon()
 }
 static void SyndicateStwReconSafe() { __try { SyndicateStwRecon(); } __except (1) { SyndicateStwLog("[Syndicate STW] recon crashed (caught)\n"); } }
 
+// Seasons 2 and later: the party beacon's own reservation code wants the online session this host never has
+// (Bad Session Id) and a reservation state it never fills (Reservation Denied), and the byte patches below are
+// 1.7.2's. A Save the World server takes one party, so the reservation RPCs are answered here through
+// reflection: accepted, then allowed to proceed (the zone is already loaded). Same for the lobby beacon's login.
+static int SyndicateParamOffset(UFunction* Fn, const char* Name, uint32_t* Size = nullptr)
+{
+	for (auto& P : Fn->GetParamsNamed().NameOffsetMap)
+		if (strcmp(P.Name.c_str(), Name) == 0) { if (Size) *Size = P.ElementSize; return (int)P.Offset; }
+	return -1;
+}
+static void SyndicateStwAccept(UObject* Client, const char* What)
+{
+	if (auto Response = Client->GetFunction("ClientReservationResponse"))
+	{
+		std::vector<uint8_t> Params(std::max<size_t>(Response->GetParamsNamed().Size, 16), 0);
+		int O = SyndicateParamOffset(Response, "ReservationResponse");
+		Params[O < 0 ? 0 : O] = 8; // EPartyReservationResult::ReservationAccepted
+		Client->ProcessEvent(Response, Params.data());
+	}
+	else SyndicateStwLog("[Syndicate STW] beacon: ClientReservationResponse not found\n");
+	if (auto Proceed = Client->GetFunction("ClientAllowedToProceedFromReservation"))
+	{
+		uint8_t Params[64]{};
+		Client->ProcessEvent(Proceed, Params);
+	}
+	SyndicateStwLog("[Syndicate STW] beacon: %s accepted, told the client to proceed\n", What);
+}
+static void (*SyndicateReservationOG)(UObject*, FFrame&, void*) = nullptr;
+static void SyndicateReservationHook(UObject* Context, FFrame& Stack, void* Result)
+{
+	// From the network the RPC comes through ProcessEvent (no script code): its parameters need no reading.
+	if (Stack.Code) { SyndicateReservationOG(Context, Stack, Result); return; }
+	SyndicateStwAccept(Context, "reservation");
+}
+static void (*SyndicateLobbyLoginOG)(UObject*, FFrame&, void*) = nullptr;
+static void SyndicateLobbyLoginHook(UObject* Context, FFrame& Stack, void* Result)
+{
+	if (Stack.Code || !Stack.Locals || !Stack.Node) { SyndicateLobbyLoginOG(Context, Stack, Result); return; }
+	// ALobbyBeaconClient::ServerLoginPlayer(SessionId, InUniqueId, UrlString): ProcessLogin refuses it (no online
+	// session, no lobby player for this id). Report the login done with the client's own id, then join the game.
+	uint32_t IdSize = 0;
+	int IdIn = SyndicateParamOffset(Stack.Node, "InUniqueId", &IdSize);
+	if (auto Complete = Context->GetFunction("ClientLoginComplete"))
+	{
+		std::vector<uint8_t> Params(std::max<size_t>(Complete->GetParamsNamed().Size, 64), 0);
+		uint32_t OutSize = 0;
+		int IdOut = SyndicateParamOffset(Complete, "InUniqueId", &OutSize);
+		int Ok = SyndicateParamOffset(Complete, "bWasSuccessful");
+		if (IdIn >= 0 && IdOut >= 0 && IdSize && IdSize == OutSize && IdOut + OutSize <= Params.size())
+			memcpy(Params.data() + IdOut, Stack.Locals + IdIn, IdSize);
+		if (Ok >= 0 && (size_t)Ok < Params.size()) Params[Ok] = 1;
+		Context->ProcessEvent(Complete, Params.data());
+		SyndicateStwLog("[Syndicate STW] lobby: login reported done (id %d bytes at +0x%x -> +0x%x, success at +0x%x)\n", (int)IdSize, IdIn, IdOut, Ok);
+	}
+	else SyndicateStwLog("[Syndicate STW] lobby: ClientLoginComplete not found\n");
+	if (auto O = Context->GetOffset("LobbyState"); O != uint32(-1) && SyndicateStwLobbyState) GetFromOffset<UObject*>(Context, O) = SyndicateStwLobbyState;
+	SyndicateStwJoinClient = Context; SyndicateStwJoinAt = GetTickCount64() + 3000;
+	SyndicateStwLog("[Syndicate STW] lobby: joining the game in 3 seconds\n");
+}
+
 // After the client's reconnect is answered, the dedicated server tells it to come in with the client RPC
 // FortPartyBeaconClient::ClientAllowedToProceedFromReservation; without it the client waits forever.
 static void (*SyndicateReconnectOG)(UObject*, FFrame&, void*) = nullptr;
 static void SyndicateReconnectHook(UObject* Context, FFrame& Stack, void* Result)
 {
+	// Seasons 2+: the forced reservation was never recorded, so the engine would answer "not found".
+	if (VersionInfo.FortniteVersion >= 2.0 && !Stack.Code) { SyndicateStwAccept(Context, "reconnect"); return; }
 	SyndicateReconnectOG(Context, Stack, Result);
 	if (auto Proceed = Context->GetFunction("ClientAllowedToProceedFromReservation"))
 	{
@@ -1324,6 +1385,32 @@ void SyndicateStwBeaconStart()
 			Utils::ExecHook((UFunction*)Fn, SyndicateReconnectHook, SyndicateReconnectOG);
 			SyndicateStwLog("[Syndicate STW] beacon: reconnect hooked\n");
 		}
+	if (VersionInfo.FortniteVersion >= 2.0)
+	{
+		// What the client beacons can call, for the log (the next step's names).
+		for (auto Name : { "FortPartyBeaconClient", "FortLobbyBeaconClientPvE" }) SyndicateStwListFunctionsSafe(Name);
+		if (auto Client = TUObjectArray::FindObject("Default__FortPartyBeaconClient"))
+		{
+			if (auto Fn = Client->GetFunction("ServerReservationRequest"))
+			{
+				Utils::ExecHook((UFunction*)Fn, SyndicateReservationHook, SyndicateReservationOG);
+				SyndicateStwLog("[Syndicate STW] beacon: reservation requests are accepted\n");
+			}
+			else SyndicateStwLog("[Syndicate STW] beacon: ServerReservationRequest not found\n");
+		}
+		const char* LobbyClients[] = { "Default__FortLobbyBeaconClientPvE", "Default__FortLobbyBeaconClient", "Default__LobbyBeaconClient" };
+		bool LoginHooked = false;
+		for (auto Name : LobbyClients)
+			if (auto Client = TUObjectArray::FindObject(Name))
+				if (auto Fn = Client->GetFunction("ServerLoginPlayer"))
+				{
+					Utils::ExecHook((UFunction*)Fn, SyndicateLobbyLoginHook, SyndicateLobbyLoginOG);
+					SyndicateStwLog("[Syndicate STW] beacon: lobby logins are accepted (%s)\n", Name);
+					LoginHooked = true;
+					break;
+				}
+		if (!LoginHooked) SyndicateStwLog("[Syndicate STW] beacon: ServerLoginPlayer not found\n");
+	}
 	const char* Names[] = { "FortOnlineBeaconHost", "OnlineBeaconHost" };
 	const UClass* HostClass = nullptr;
 	const char* HostName = "";
@@ -1428,7 +1515,8 @@ void SyndicateStwBeaconStart()
 			for (size_t o = 0; o < 0x400 && !Patched; o++)
 			{
 				auto P = (uint8_t*)Fn + o;
-				if (P[0] == 0xBB && P[1] == 0x0D && P[2] == 0 && P[3] == 0 && P[4] == 0 && P[5] == 0xE8 && P[10] == 0x84 && P[11] == 0xC0 && P[12] == 0x74)
+				// mov ebx,BadSessionId (13 on 1.7.2, 14 from Season 2 on: the enum gained a value); call; test al,al; je
+				if (P[0] == 0xBB && (P[1] == 0x0D || P[1] == 0x0E) && P[2] == 0 && P[3] == 0 && P[4] == 0 && P[5] == 0xE8 && P[10] == 0x84 && P[11] == 0xC0 && P[12] == 0x74)
 				{
 					DWORD Old; VirtualProtect(P + 12, 2, PAGE_EXECUTE_READWRITE, &Old);
 					P[12] = 0x90; P[13] = 0x90;
@@ -1448,7 +1536,17 @@ void SyndicateStwBeaconStart()
 					// conditional jumps lead there (exe+0x743d30 + 0x31/0xC8/0xD5/0xED): a beacon-state check and
 					// three UPartyBeaconState checks. A dev host serves one party, so skip all four; each is
 					// checked (0F 8x, target = the deny block) before it is replaced with NOPs.
-					if (P[23] == 0xE8)
+					if (P[23] == 0xE8 && VersionInfo.FortniteVersion >= 2.0)
+					{
+						// Seasons 2+: the empty-server reservation itself is reported accepted (SyndicateReserveHook);
+						// its 1.7.2 deny-check offsets below do not apply.
+						int32_t Rel; memcpy(&Rel, P + 24, 4);
+						auto R = (uint8_t*)(P + 28 + Rel);
+						Utils::Hook((uint64_t)R, SyndicateReserveHook, SyndicateReserveOG);
+						MH_EnableHook((LPVOID)R);
+						SyndicateStwLog("[Syndicate STW] beacon: empty-server reservation hooked at exe+0x%llx\n", (unsigned long long)((uintptr_t)R - Exe));
+					}
+					else if (P[23] == 0xE8)
 					{
 						int32_t Rel; memcpy(&Rel, P + 24, 4);
 						auto R = (uint8_t*)(P + 28 + Rel);
