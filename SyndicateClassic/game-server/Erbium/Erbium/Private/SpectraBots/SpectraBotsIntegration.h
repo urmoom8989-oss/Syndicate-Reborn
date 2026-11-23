@@ -7087,6 +7087,13 @@ namespace SpectraBots
         int Best=-1,BestScore=0;
         for(int T=0;T<256;++T)if(::SyndicateTeamKills[T]>BestScore){BestScore=::SyndicateTeamKills[T];Best=T;}
         if(GS->HasbIsLargeTeamGame() && !GS->bIsLargeTeamGame){GS->bIsLargeTeamGame=true;GS->ForceNetUpdate();}
+        // Team Rumble report, once a match: the sides and the real players' teams (Season X showed it as a Solo match).
+        {static AFortGameStateAthena* Told=nullptr;
+         if(Told!=GS && Players.Num()>=10){Told=GS;int Count[256]{};std::string Humans;
+          for(int I=0;I<Players.Num();++I){auto S=(AFortPlayerStateAthena*)Players[I];if(!S)continue;++Count[uint8(S->TeamIndex)];
+           if(!(S->HasbIsABot() && S->bIsABot)){char H[64];snprintf(H,sizeof(H)," player team %d squad %d",int(uint8(S->TeamIndex)),S->HasSquadId()?int(S->SquadId):-1);Humans+=H;}}
+          std::string Sides;for(int T=0;T<256;++T)if(Count[T]){char C[32];snprintf(C,sizeof(C)," team %d: %d",T,Count[T]);Sides+=C;}
+          printf("[Syndicate] team game sides:%s;%s; large team flag %d\n",Sides.c_str(),Humans.c_str(),GS->HasbIsLargeTeamGame()?int(GS->bIsLargeTeamGame):-1);}}
         for(int I=0;I<Players.Num();++I){auto S=(AFortPlayerStateAthena*)Players[I];if(!S)continue;
             int Score=::SyndicateTeamKills[uint8(S->TeamIndex)];bool Changed=false;
             if(S->HasTeamScore() && S->TeamScore!=Score){S->TeamScore=Score;S->OnRep_TeamScore();Changed=true;}

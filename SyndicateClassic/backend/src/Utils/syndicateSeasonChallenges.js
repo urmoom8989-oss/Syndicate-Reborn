@@ -127,9 +127,20 @@ export function rewardOnClaim(athena, questItem, season) {
 }
 // --- challenges with no in-game stat (counted from the player's other challenges) ------------
 const weekBundle = id => /week/i.test(id);
-const metaObjective = /season_xp_gained|complete_?weekly_?challenges|complete_daily_challenges|cumulative_token0*\d+$|cumulative_final_quest0*\d+$|completequests/;
-function metaValue(name, count, ctx) {
+const metaObjective = /season_xp_gained|season_levelup|complete_?weekly_?challenges|complete_daily_challenges|cumulative_token0*\d+$|cumulative_final_quest0*\d+$|completequests/;
+// Objectives the game gives no stat for but describes (the game server exports their text): Season X style
+// previews such as "Reach Battle Pass Tier 22" or "Reach Level 65" follow the player's tier or season level.
+const describedValue = (desc, ctx) => {
+  const text = String(desc || '');
+  if (/\btier\s*\d+/i.test(text)) return ctx.tier;
+  if (/\blevel\s*\d+/i.test(text)) return ctx.level;
+  return null;
+};
+const metaCounted = o => !o.stats?.length && (metaObjective.test(o.name) || describedValue(o.desc, {tier: 0, level: 0}) !== null);
+function metaValue(name, count, ctx, desc) {
   if (/season_xp_gained/.test(name)) return ctx.seasonXp;
+  // Season X "Reach level N" missions (MissionBundle_S10_SeasonLevel: athena_season_levelup_s10_NN).
+  if (/season_levelup/.test(name)) return ctx.level;
   if (/complete_daily_challenges/.test(name)) return ctx.dailyDone;
   if (/complete_?weekly_?challenges/.test(name)) return ctx.weeklyDone;
   let m = /cumulative_token0*(\d+)$/.exec(name); if (m) return ctx.weeksDone;
@@ -138,13 +149,13 @@ function metaValue(name, count, ctx) {
   // of the Battle Pass, so they follow the player's tier. Their style stages (01b/02b/03b) still count challenges.
   if (/completequests/.test(name) && /_chaintest_\d+a$/.test(ctx.questId || '')) return ctx.tier;
   if (/completequests/.test(name)) return count > ctx.ownBundleSize ? ctx.allDone : ctx.ownBundleDone;
-  return null;
+  return describedValue(desc, ctx);
 }
 function progressMeta(profile, data, season) {
   const items = profile.items, a = profile.stats.attributes;
   const byId = new Map(Object.values(items).filter(i => /^quest:/i.test(i.templateId || '')).map(i => [i.templateId.slice(6).toLowerCase(), i]));
   const isDone = id => done(byId.get(String(id).toLowerCase()));
-  const isMeta = id => (data.questMap.get(String(id).toLowerCase())?.objectives || []).some(o => !o.stats?.length && metaObjective.test(o.name));
+  const isMeta = id => (data.questMap.get(String(id).toLowerCase())?.objectives || []).some(metaCounted);
   let weeklyDone = 0, weeksDone = 0, allDone = 0; const bundleOf = new Map();
   for (const bundle of data.bundles || []) {
     for (const q of bundle.quests || []) bundleOf.set(String(q).toLowerCase(), bundle);
@@ -156,7 +167,7 @@ function progressMeta(profile, data, season) {
   for (const [id, item] of byId) if (done(item) && !isMeta(id) && !item.attributes?.tilted_daily) allDone++;
   const cumulativeDone = new Set();
   for (const [id, item] of byId) { const m = /cumulative_quest0*(\d+)$/.exec(id); if (m && done(item)) cumulativeDone.add(Number(m[1])); }
-  const ctx = {tier: Math.max(1, Number(a.book_level) || 1), seasonXp: totalSeasonXp(a, season), weeklyDone, weeksDone, allDone, cumulativeDone, dailyDone: Math.max(0, Number(a.tilted_quest_dailies_completed) || 0)};
+  const ctx = {tier: Math.max(1, Number(a.book_level) || 1), level: Math.max(0, Number(a.level) || 0), seasonXp: totalSeasonXp(a, season), weeklyDone, weeksDone, allDone, cumulativeDone, dailyDone: Math.max(0, Number(a.tilted_quest_dailies_completed) || 0)};
   let stars = 0, changed = false;
   for (const [id, item] of byId) {
     if (item.attributes?.quest_state !== 'Active') continue;
@@ -165,7 +176,7 @@ function progressMeta(profile, data, season) {
     ctx.questId = id; ctx.ownBundleSize = own.length; ctx.ownBundleDone = own.filter(isDone).length;
     for (const o of definition.objectives || []) {
       if (o.stats?.length) continue;
-      const value = metaValue(o.name, o.count, ctx); if (value === null) continue;
+      const value = metaValue(o.name, o.count, ctx, o.desc); if (value === null) continue;
       const key = 'completion_' + o.name, next = Math.min(o.count, Math.max(Number(item.attributes[key]) || 0, value));
       if (next !== item.attributes[key]) { item.attributes[key] = next; changed = true; }
     }

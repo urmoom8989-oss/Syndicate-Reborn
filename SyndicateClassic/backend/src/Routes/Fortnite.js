@@ -134,8 +134,8 @@ app.use('/fortnite/api/game/v2/profile/:accountId',verifyToken,async(req,res,nex
     const passUnlocked=passIds.some(id=>!!doc.syndicatePassPurchases?.[id]) && unlockSeasonPass(p,season);
     // Challenges for this season (Season 4 keeps its own route below).
     const challenges=season===5?ensureSeason5Bundles(p):ensureSeasonChallenges(p,season);
-    // Chapter 2 challenge check: what the profile holds (schedules, bundles, quests), for comparing with the game.
-    if(season>=11)try{fs.writeFileSync(new URL('../../../Runtime/Server/challenge-data/profile-debug-season-'+season+'.json',import.meta.url),JSON.stringify(Object.fromEntries(Object.entries(p.items).filter(([,i])=>/^(Quest|ChallengeBundle|ChallengeBundleSchedule):/i.test(i.templateId||''))),null,1));}catch{}
+    // Season X and Chapter 2 challenge check: what the profile holds (schedules, bundles, quests), for comparing with the game.
+    if(season>=10)try{fs.writeFileSync(new URL('../../../Runtime/Server/challenge-data/profile-debug-season-'+season+'.json',import.meta.url),JSON.stringify(Object.fromEntries(Object.entries(p.items).filter(([,i])=>/^(Quest|ChallengeBundle|ChallengeBundleSchedule):/i.test(i.templateId||''))),null,1));}catch{}
     // Daily challenges from the build's own daily quests (Season 4 keeps its own).
     const dailies=season!==4&&ensureDailyChallenges(p,season);
     // Launcher "Unlock all cosmetics": add newly exported cosmetics while the option is on.

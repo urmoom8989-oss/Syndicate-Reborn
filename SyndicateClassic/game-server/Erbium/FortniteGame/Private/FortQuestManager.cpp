@@ -706,6 +706,20 @@ namespace SyndicateChallengeData
             "\",\"tag\":\"" + Esc(Str(GetFromOffset<FGameplayTag>(Token, TagOffset).TagName)) + "\"";
     }
 
+    // An objective's text as the game shows it ("Reach Level 65"). Objectives without a stat (Season X style
+    // previews) are counted by the backend from the player's tier or level, so it needs the text. Read in a frame
+    // of its own: a text that cannot be read leaves the objective without one instead of stopping the export.
+    __declspec(noinline) static void ObjectiveTextRead(void* Text, char* Out, size_t Cap)
+    {
+        auto Value = ((FText*)Text)->ToString();
+        strncpy_s(Out, Cap, Value.c_str(), _TRUNCATE);
+    }
+    static bool ObjectiveText(void* Text, char* Out, size_t Cap)
+    {
+        __try { ObjectiveTextRead(Text, Out, Cap); return true; }
+        __except (EXCEPTION_EXECUTE_HANDLER) { Out[0] = 0; return false; }
+    }
+
     static void AddQuest(UFortQuestItemDefinition* Def, int Depth)
     {
         if (!Def) return;
@@ -714,6 +728,7 @@ namespace SyndicateChallengeData
         QuestJson[Id] = "";
         static auto ObjectiveStruct = FindStruct("FortMcpQuestObjectiveInfo");
         auto CountOffset = ObjectiveStruct ? ObjectiveStruct->GetOffset("Count") : uint32(-1);
+        static auto DescOffset = ObjectiveStruct ? ObjectiveStruct->GetOffset("Description") : uint32(-1);
         std::string Objectives = "[";
         for (int i = 0; i < Def->Objectives.Num(); i++)
         {
@@ -749,8 +764,14 @@ namespace SyndicateChallengeData
                 }
             }
             Stats += "]";
+            std::string Desc;
+            if (Stats == "[]" && DescOffset != uint32(-1))
+            {
+                char Text[256]{};
+                if (ObjectiveText((uint8*)&Objective + DescOffset, Text, sizeof(Text)) && Text[0]) Desc = ",\"desc\":\"" + Esc(Text) + "\"";
+            }
             if (Objectives.size() > 1) Objectives += ",";
-            Objectives += "{\"name\":\"" + Esc(Lower(Str(Objective.BackendName))) + "\",\"count\":" + std::to_string(Count < 1 ? 1 : Count) + ",\"stats\":" + Stats + "}";
+            Objectives += "{\"name\":\"" + Esc(Lower(Str(Objective.BackendName))) + "\",\"count\":" + std::to_string(Count < 1 ? 1 : Count) + ",\"stats\":" + Stats + Desc + "}";
         }
         Objectives += "]";
 
@@ -979,7 +1000,7 @@ namespace SyndicateChallengeData
         if (Season < 2) return;
         auto File = Folder + L"\\season-" + std::to_wstring(Season) + L".json";
         char VersionText[32]; snprintf(VersionText, sizeof(VersionText), "%.2f", VersionInfo.FortniteVersion);
-        { std::ifstream Existing(File); std::string Head((std::istreambuf_iterator<char>(Existing)), {}); if (Head.find(std::string("\"dump\":6,\"version\":\"") + VersionText + "\"") != std::string::npos) { SyndicateChallengeLog("challenges: season data already exported\n"); return; } }
+        { std::ifstream Existing(File); std::string Head((std::istreambuf_iterator<char>(Existing)), {}); if (Head.find(std::string("\"dump\":7,\"version\":\"") + VersionText + "\"") != std::string::npos) { SyndicateChallengeLog("challenges: season data already exported\n"); return; } }
 
         auto ScheduleClass = FindClass("FortChallengeBundleScheduleDefinition");
         auto BundleClass = FindClass("FortChallengeBundleItemDefinition");
@@ -1064,7 +1085,7 @@ namespace SyndicateChallengeData
         Daily += "]";
         Schedules += "]"; Bundles += "]"; Loose += "]";
         std::string Quests = "{"; for (auto& [Id, Json] : QuestJson) { if (Json.empty()) continue; if (Quests.size() > 1) Quests += ","; Quests += "\"" + Esc(Id) + "\":" + Json; } Quests += "}";
-        std::string Out = std::string("{\"dump\":6,\"version\":\"") + VersionText + "\",\"season\":" + std::to_string(Season) + ",\"schedules\":" + Schedules + ",\"bundles\":" + Bundles + ",\"loose\":" + Loose + ",\"daily\":" + Daily + ",\"quests\":" + Quests + "}";
+        std::string Out = std::string("{\"dump\":7,\"version\":\"") + VersionText + "\",\"season\":" + std::to_string(Season) + ",\"schedules\":" + Schedules + ",\"bundles\":" + Bundles + ",\"loose\":" + Loose + ",\"daily\":" + Daily + ",\"quests\":" + Quests + "}";
         if (QuestJson.empty()) { SyndicateChallengeLog("challenges: no challenge data found in this build\n"); return; }
         auto Temp = File + L".tmp";
         { std::ofstream Stream(Temp, std::ios::binary | std::ios::trunc); Stream << Out; }
@@ -1107,7 +1128,7 @@ UObject* SyndicateLoadStwHero(const std::string& Id)
     return nullptr;
 }
 
-// Seasons 3 to 9: location challenges ("search chests at Pleasant Park", "eliminations at Tilted Towers") counted
+// Seasons 3 to X: location challenges ("search chests at Pleasant Park", "eliminations at Tilted Towers") counted
 // anywhere, because the location tags the game puts on a stat do not say where the player is. The backend now gets
 // the location from the player's position instead: every Athena.Location tag on the stat is replaced with the tags
 // of the POI volumes (FortPoiVolume, from their brush bounds) the player is standing in.
@@ -1171,7 +1192,7 @@ void SyndicateRecordStat(AActor* PlayerController, long long StatEvent, int32 Co
     auto& List = Pending[PlayerController];
     if (List.size() >= 400) return;
     PendingStat Stat{ StatEvent, (int)Count, TagList(TargetTags, true), TagList(SourceTags, true), TagList(ContextTags, true) };
-    if (VersionInfo.FortniteVersion >= 3.0 && VersionInfo.FortniteVersion < 10.0 && PC->MyFortPawn)
+    if (VersionInfo.FortniteVersion >= 3.0 && VersionInfo.FortniteVersion < 11.0 && PC->MyFortPawn)
     {
         auto Here = SyndicateLocationTagsAt(PC->MyFortPawn->K2_GetActorLocation());
         Stat.Target = SyndicateRelocate(Stat.Target, Here);

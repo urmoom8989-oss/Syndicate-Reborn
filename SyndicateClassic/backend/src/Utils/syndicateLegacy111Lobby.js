@@ -9,6 +9,12 @@ const PLAYLIST={solo:'Playlist_DefaultSolo',duo:'Playlist_DefaultDuo',squad:'Pla
 // event's tile, placed in the row and order chosen in the launcher.
 const ARENA_EVENT_TILE=new Set(['8.50','9.40','10.31','10.40']);
 const isArena=t=>t.mode==='arenasolo'||t.mode==='arenaduos';
+// Season X's PlaylistAccess has no bIsTournament field (10.40 SDK: bForcePlaylistOff, bEnabled, bVisibleWhenDisabled,
+// bIsDefaultPlaylist, AdvertiseType, bDisplayAsLimitedTime, DisplayPriority, CategoryIndex), so an Arena line there is
+// a second, plain Arena tile next to the event's own one. Season X lists no Arena line: the event tiles show on their
+// own, in the second row.
+const ARENA_EVENT_ONLY=new Set(['10.31','10.40']);
+const listedTile=(t,build)=>!(isArena(t)&&ARENA_EVENT_ONLY.has(build));
 const STW_BUTTON='F1B39B41400513DFDBBC39BE41A2AA7A',CREATIVE_BUTTON='85CC70F746437FF312DF528927FD1F52';
 // One +TextReplacements entry by key. "Save The\r\nWorld" spans two lines, so match up to the closing ))).
 const dropText=(text,key)=>text.replace(new RegExp('^\\+TextReplacements=[^\\n]*Key="'+key+'"[\\s\\S]*?\\)\\)\\)[ \\t]*\\r?$\\n?','m'),'');
@@ -19,7 +25,8 @@ function openButtons(text,modes){
 }
 // One FrontEndPlaylistData line per lobby tile (row, order, default, locked, badges: syndicateSeasonModes.js lobbyTiles).
 // CategoryIndex is the row of the mode selector the tile sits in.
-const badgeFields=t=>(t.badge==='new'?'bDisplayAsNew=true,':'')+(t.badge==='limited'?'bDisplayAsLimitedTime=true,':'');
+// Season X has no bDisplayAsNew: its NEW badge is AdvertiseType=New. Each game skips the field it does not have.
+const badgeFields=t=>(t.badge==='new'?'bDisplayAsNew=true,AdvertiseType=New,':'')+(t.badge==='limited'?'bDisplayAsLimitedTime=true,':'');
 const tileLine=(t,i,build)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,${badgeFields(t)}${t.mode==='creative'?'bIsTournament=false,':isArena(t)&&ARENA_EVENT_TILE.has(build)?'bIsTournament=true,':''}CategoryIndex=${t.row||0},DisplayPriority=${i}))`;
 const legacyTileLine=(t,i)=>`+FrontEndPlaylistData=(PlaylistName=${t.playlist},PlaylistAccess=(bEnabled=${t.enabled},bIsDefaultPlaylist=${t.isDefault},bVisibleWhenDisabled=true,bDisplayAsNew=${t.badge==='new'},CategoryIndex=${t.row||0},bDisplayAsLimitedTime=${t.badge==='limited'},DisplayPriority=${i}))`;
 // Keep Cert 3807424 on its own native lobby/playlist configuration.
@@ -50,7 +57,7 @@ export function cloudTextForClient(file,userAgent,hotfixes){
   return g+`
 [/Script/FortniteGame.FortGameInstance]
 !FrontEndPlaylistData=ClearArray
-`+lobbyTiles(build).map((t,i)=>tileLine(t,i,build)+'\n').join('');}
+`+lobbyTiles(build).filter(t=>listedTile(t,build)).map((t,i)=>tileLine(t,i,build)+'\n').join('');}
  // Season 4 exposes PlaylistOverrides (PlaylistName, bEnabled, RegionsDisabled).
  // FrontEndPlaylistData is a legacy field and is absent in the 4.5 client. Solo, Duos and Squads are on in the client
  // already; 50v50 and Playground are switched on here, and anything turned off in the launcher is switched off.

@@ -2162,6 +2162,13 @@ void AFortPlayerControllerAthena::ClientOnPawnDied(AFortPlayerControllerAthena* 
 		}
 		else
 			bRespawnAllowed = GameState->Call<bool>(IsRespawningAllowedFunc, PlayerState);
+		// Team Rumble report (Season X lands players back in what looks like a Solo match): what decided the respawn.
+		{
+			extern bool bIsLargeTeamGame;
+			if (bIsLargeTeamGame && !(PlayerState->HasbIsABot() && PlayerState->bIsABot))
+				printf("[Syndicate] team game: player on team %d died, respawn %s by the %s\n", int(uint8(PlayerState->TeamIndex)),
+					bRespawnAllowed ? "allowed" : "refused", IsRespawningAllowedFunc ? "game's IsRespawningAllowed" : "playlist");
+		}
 
 		if (!bRespawnAllowed && (Finalizing || !PlayerController->Pawn || !PlayerController->Pawn->IsDBNO()) && PlayerState->HasPlace())
 		{
