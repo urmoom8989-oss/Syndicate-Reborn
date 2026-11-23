@@ -2042,8 +2042,15 @@ namespace {
                     else if (M.Name == "SpawnTransform") BTransform = int32(M.Offset); else if (M.Name == "CollisionHandlingOverride") BCollision = int32(M.Offset); else if (M.Name == "ReturnValue") BReturn = int32(M.Offset); } }
             if (Finish) { auto P = Finish->GetParamsNamed(); FSize = uint32(P.Size);
                 for (auto& M : P.NameOffsetMap) { if (M.Name == "Actor") FActor = int32(M.Offset); else if (M.Name == "SpawnTransform") FTransform = int32(M.Offset); else if (M.Name == "ReturnValue") FReturn = int32(M.Offset); } }
+            // The parameters by name are not found on 8.50 (as for GetAllActorsOfClass): Chapter 1 uses the engine's
+            // layout, the same on every UE4 build of these seasons (FTransform is 16-byte aligned).
+            if (Begin && Finish && (VersionInfo.FortniteVersion < 11.f || BWorld < 0 || BClass < 0 || BTransform < 0 || BReturn < 0 || FActor < 0 || FTransform < 0)) {
+                BWorld = 0; BClass = 0x8; BTransform = 0x10; BCollision = 0x40; BReturn = 0x50; FActor = 0; FTransform = 0x10; FReturn = 0x40;
+                Log("stw lobby: spawning with the engine's parameter layout");
+            }
+            if (!Begin || !Finish) Log("stw lobby: BeginDeferredActorSpawnFromClass or FinishSpawningActor not found");
         }
-        if (!Begin || !Finish || BWorld < 0 || BClass < 0 || BTransform < 0 || BReturn < 0 || FActor < 0 || FTransform < 0 || BSize > 256 || FSize > 256) return nullptr;
+        if (!Begin || !Finish || BWorld < 0 || BClass < 0 || BTransform < 0 || BReturn < 0 || FActor < 0 || FTransform < 0) return nullptr;
         // FTransform: rotation (quaternion, W last) at 0, translation at 16, scale at 32.
         alignas(16) float Transform[12]{ 0, 0, 0, 1,  0, 0, -100000.f, 0,  1, 1, 1, 0 };
         alignas(16) uint8_t B[256]{};
@@ -2051,7 +2058,7 @@ namespace {
         if (BCollision >= 0) B[BCollision] = 1; // AlwaysSpawn
         Lib->ProcessEvent(Begin, B);
         auto Actor = *(UObject**)(B + BReturn);
-        if (!Actor) return nullptr;
+        if (!Actor) { Log("stw lobby: the game did not spawn the lobby state"); return nullptr; }
         alignas(16) uint8_t F[256]{};
         *(UObject**)(F + FActor) = Actor; memcpy(F + FTransform, Transform, sizeof(Transform));
         Lib->ProcessEvent(Finish, F);
