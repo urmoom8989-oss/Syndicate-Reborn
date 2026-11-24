@@ -849,6 +849,86 @@ namespace {
         }
         return nullptr;
     }
+    // ---- Game code snapshot for the STORE tab (one time, only on request) ---------------------------------------------
+    // Season X's exe is packed on disk, so the rule that hides the STORE tab can only be read from the running game. When
+    // %LOCALAPPDATA%\ProjectTilted\dump-game-image.txt exists, the next lobby writes game-image.bin (the game module's
+    // memory as loaded, at file offset = address - module base: readable pages only; guard and no-access pages are written
+    // as zeros and never touched) and game-image.txt (the module base, and where the lobby top bar's, tab screen's and UI
+    // context's code is). The flag file is deleted first, so it happens once. Read-only: nothing in the game is changed.
+    struct StoreImageJob { uint8* Base; size_t Size; };
+    bool StoreSafeCopy(void* Dst, const void* Src, size_t N) { __try { memcpy(Dst, Src, N); return true; } __except (1) { return false; } }
+    DWORD WINAPI StoreImageWrite(void* Arg) {
+        StoreImageJob Job = *(StoreImageJob*)Arg; delete (StoreImageJob*)Arg;
+        FILE* Out = nullptr; auto File = DataFile(L"game-image.bin");
+        if (File.empty() || _wfopen_s(&Out, File.c_str(), L"wb") != 0 || !Out) { Log("game image: could not create game-image.bin"); return 0; }
+        static uint8 Chunk[1 << 16]; static const uint8 Zero[1 << 16] = {};
+        size_t Done = 0, Skipped = 0;
+        while (Done < Job.Size) {
+            MEMORY_BASIC_INFORMATION Mbi{};
+            if (!VirtualQuery(Job.Base + Done, &Mbi, sizeof(Mbi))) break;
+            size_t Region = (uint8*)Mbi.BaseAddress + Mbi.RegionSize - (Job.Base + Done);
+            if (Region > Job.Size - Done) Region = Job.Size - Done;
+            const DWORD Prot = Mbi.Protect & 0xFF;
+            const bool Readable = Mbi.State == MEM_COMMIT && !(Mbi.Protect & (PAGE_GUARD | PAGE_NOACCESS))
+                && (Prot == PAGE_READONLY || Prot == PAGE_READWRITE || Prot == PAGE_WRITECOPY || Prot == PAGE_EXECUTE_READ
+                    || Prot == PAGE_EXECUTE_READWRITE || Prot == PAGE_EXECUTE_WRITECOPY);
+            for (size_t At = 0; At < Region; At += sizeof(Chunk)) {
+                const size_t N = Region - At < sizeof(Chunk) ? Region - At : sizeof(Chunk);
+                if (Readable && StoreSafeCopy(Chunk, Job.Base + Done + At, N)) fwrite(Chunk, 1, N, Out);
+                else { fwrite(Zero, 1, N, Out); Skipped += N; }
+            }
+            Done += Region;
+        }
+        fclose(Out);
+        char Line[160]; snprintf(Line, sizeof(Line), "game image: wrote game-image.bin (%zu MB, %zu MB unreadable left as zeros)", Done >> 20, Skipped >> 20);
+        Log(Line);
+        return 0;
+    }
+    std::string StoreAddress(const void* P, const uint8* Base, size_t Size) {
+        char T[48];
+        if ((const uint8*)P >= Base && (const uint8*)P < Base + Size) snprintf(T, sizeof(T), "rva 0x%llX", (unsigned long long)((const uint8*)P - Base));
+        else snprintf(T, sizeof(T), "abs 0x%llX", (unsigned long long)(uintptr_t)P);
+        return T;
+    }
+    // An object's vtable and, for its class and each base class, every UFUNCTION with its native code address.
+    void StoreDescribe(FILE* Out, const char* What, const UObject* Obj, const uint8* Base, size_t Size) {
+        if (!Obj) { fprintf(Out, "%s: not found\n", What); return; }
+        fprintf(Out, "%s: %s (%s) at %s, vtable %s\n", What, StoreObjectName(Obj).c_str(), StoreObjectName(Obj->Class).c_str(),
+            StoreAddress(Obj, Base, Size).c_str(), StoreAddress(*(void* const*)Obj, Base, Size).c_str());
+        int Depth = 0;
+        for (const UStruct* S = (const UStruct*)Obj->Class; S && Depth < 12; S = S->GetSuper(), ++Depth) {
+            const std::string Name = StoreObjectName(S);
+            if (Name == "Object") break;
+            fprintf(Out, "  class %s\n", Name.c_str());
+            int Count = 0;
+            for (const UField* F = S->GetChildren(); F && Count < 400; F = F->GetNext(), ++Count) {
+                if (!(F->Class->GetCastFlags() & 0x80000)) continue;
+                fprintf(Out, "    %s %s\n", StoreObjectName(F).c_str(), StoreAddress(((const UFunction*)F)->GetNativeFunc(), Base, Size).c_str());
+            }
+        }
+    }
+    void StoreImageDump(const UObject* TopBar, const UObject* Ctx) {
+        _wremove(DataFile(L"dump-game-image.txt").c_str()); // once
+        uint8* Base = (uint8*)GetModuleHandleW(nullptr);
+        const auto* Dos = (const IMAGE_DOS_HEADER*)Base;
+        const auto* Nt = (const IMAGE_NT_HEADERS64*)(Base + Dos->e_lfanew);
+        const size_t Size = Nt->OptionalHeader.SizeOfImage;
+        FILE* Out = nullptr; auto File = DataFile(L"game-image.txt");
+        if (!File.empty() && _wfopen_s(&Out, File.c_str(), L"w") == 0 && Out) {
+            fprintf(Out, "Fortnite %.2f, module base 0x%llX, image size 0x%zX\n", VersionInfo.FortniteVersion, (unsigned long long)(uintptr_t)Base, Size);
+            StoreDescribe(Out, "lobby top bar", TopBar, Base, Size);
+            StoreDescribe(Out, "UI context", Ctx, Base, Size);
+            const UClass* TabsClass = FindClass("FortAthenaTabsScreenBase");
+            StoreDescribe(Out, "tab screen", TabsClass ? StoreFindLiveOf(TabsClass) : nullptr, Base, Size);
+            const UClass* ButtonClass = FindClass("FortTopBarTabButton");
+            fprintf(Out, "FortTopBarTabButton class %s\n", ButtonClass ? "found" : "not found");
+            if (ButtonClass) StoreDescribe(Out, "tab button default", ButtonClass->GetDefaultObj(), Base, Size);
+            fclose(Out);
+        }
+        auto* Job = new StoreImageJob{ Base, Size };
+        if (auto Thread = CreateThread(nullptr, 0, StoreImageWrite, Job, 0, nullptr)) CloseHandle(Thread); else delete Job;
+        Log("game image: writing game-image.bin and game-image.txt (requested by dump-game-image.txt)");
+    }
     void StoreTabTick() {
         static bool NoFeature = false;
         static const UObject* DoneTopBar = nullptr; static int32 DoneIndex = -1;
@@ -857,6 +937,7 @@ namespace {
         if (!TopBar) return; // not in a lobby that is up yet
         if (DoneTopBar == TopBar && TUObjectArray::GetObjectByIndex(DoneIndex) == DoneTopBar) return; // this lobby is done
         DoneTopBar = TopBar; DoneIndex = TopBar->Index; // once per lobby, whatever happens below
+        if (FlagFile(L"dump-game-image.txt")) StoreImageDump(TopBar, StoreTabFindContext());
         static const UEnum* Features = FindEnum("EFortUIFeature");
         static const UEnum* States = FindEnum("EFortUIFeatureState");
         static const UEnum* Reasons = FindEnum("EFortUIFeatureStateReason");
