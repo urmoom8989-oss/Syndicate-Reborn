@@ -183,6 +183,25 @@ public static class GameLauncher
             }
         return "";
     }
+    /// <summary>
+    /// The version of the build's libcef.dll when it is not the CEF 3.x the game was made with (for example one
+    /// copied in from a newer Fortnite), else null. The game expects that exact browser: with a newer one,
+    /// CefInitialize gets no API hash back and the game crashes as the purchase screen opens.
+    /// </summary>
+    public static string? MismatchedBrowser(BuildInfo build)
+    {
+        try
+        {
+            var win64 = Path.GetDirectoryName(build.ExecutablePath);                    // FortniteGame\Binaries\Win64
+            var root = win64 is null ? null : Directory.GetParent(win64)?.Parent?.Parent?.FullName;
+            if (root is null) return null;
+            var cef = Path.Combine(root, "Engine", "Binaries", "ThirdParty", "CEF3", "Win64", "libcef.dll");
+            if (!File.Exists(cef)) return null;
+            var info = FileVersionInfo.GetVersionInfo(cef);
+            return info.FileMajorPart is 0 or 3 ? null : info.FileVersion ?? info.FileMajorPart.ToString();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException) { return null; }
+    }
     public static ProcessStartInfo CreateStartInfo(BuildInfo build, string name, bool host, string extra, string? exchangeCode = null)
     {
         bool syndicate = UsesSyndicateServer(build);
@@ -198,6 +217,10 @@ public static class GameLauncher
 
         foreach (var arg in new[] { "-epicapp=Fortnite", "-epicenv=Prod", "-epiclocale=en-us", "-epicportal" }) start.ArgumentList.Add(arg);
         if (syndicate && !host) start.ArgumentList.Add("-game");
+        // The game's built-in browser (the STORE tab's checkout) only works with the browser files the build shipped
+        // with (CEF 3.x on every season). With a newer libcef.dll copied in, the game crashes the moment the browser
+        // starts, so it is told not to start one (-nocef): the checkout screen stays empty instead.
+        if (!host && MismatchedBrowser(build) is not null) start.ArgumentList.Add("-nocef");
 #if DEV_BUILD
         // Save the World (dev launcher), Pre-season/Season 1: the tutorial's reservation beacon sent an
         // encryption token, and the host (no online session of its own) failed it with "Unable to get user
@@ -702,6 +725,8 @@ public static class GameLauncher
             }
             var clientInfo = CreateStartInfo(build, profile.Name, false, extraArguments, exchangeCode);
             clientInfo.ArgumentList.Add("-abslog=" + clientLog);
+            if (MismatchedBrowser(build) is { } browser)
+                Record("browser: this build's libcef.dll is version " + browser + ", not the CEF 3 it was made with; started with -nocef so the STORE checkout cannot crash the game (it stays empty)");
             options.Apply(clientInfo, false);
             status(syndicateServer ? "Starting the Syndicate server..." : "Starting the Syndicate 10.40 server...");
             if (!syndicateServer || NeedsEpicStub(build))
