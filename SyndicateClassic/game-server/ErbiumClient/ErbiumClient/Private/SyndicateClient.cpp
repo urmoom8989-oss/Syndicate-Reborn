@@ -42,6 +42,7 @@ namespace {
     constexpr UINT ConsoleMessage = WM_APP + 0x4F1; // the in-game console tick (once a second), see ConsoleTick()
     constexpr UINT StwLobbyMessage = WM_APP + 0x4F2; // the Save the World lobby check (twice a second), see StwLobbyTick()
     constexpr UINT StoreTabMessage = WM_APP + 0x4F3; // keeps the lobby's STORE tab on (every 2 seconds), see StoreTabTick()
+    constexpr UINT WidgetMessage = WM_APP + 0x4F4; // the on-screen widget list (once a second; wParam 1 = Ctrl+Shift+F7), see WidgetListTick()
     HMODULE SelfModule = nullptr;
     HWND GameWindow = nullptr;
     HHOOK MessageHook = nullptr;
@@ -989,7 +990,101 @@ namespace {
         } else Log(("store tab: the STORE button " + StoreObjectName(B) + " has visibility " + std::to_string(Vis) + "; left as it is").c_str());
     }
 
-    DWORD WINAPI EditLoop(void*) { for (;;) { EditTick(); StoreDumpTick(); UiImageDumpTick(); StoreInjectTick(); Sleep(4); } }
+    // ---- On-screen widget list (diagnostic) -----------------------------------------------------------------------------
+    // Writes %LOCALAPPDATA%\ProjectTilted\widgets.log: every user widget that is really on screen (it and every widget it
+    // sits in are visible and not fully see-through), with the user widget it sits in and the outermost widget above it.
+    // Once per match, 20 seconds after the match world is up, and again on Ctrl+Shift+F7. For finding which game widget
+    // draws something that should not be on the HUD (8.50's Floor Is Lava showed a blue panel and placeholder kill-feed
+    // lines over the left side that Esc and Enter did not close). Read-only; game thread (WidgetMessage).
+    // widgets-off.txt in the same folder turns it off.
+    float UiSafeFloat(const UObject* O, uint32 Off) { __try { return O ? *(const float*)((const uint8*)O + Off) : 1.f; } __except (1) { return 1.f; } }
+    uint8 UiSafeByte(const UObject* O, uint32 Off) { __try { return O ? *((const uint8*)O + Off) : 0; } __except (1) { return 0; } }
+    struct WidgetOffsets { uint32 Vis = uint32(-1), Opacity = uint32(-1), Slot = uint32(-1), Parent = uint32(-1); };
+    std::string UiClassName(const UObject* O) { const UClass* C = O ? StoreSafeClass(O) : nullptr; return C ? std::string(C->Name.ToString().c_str()) : std::string("none"); }
+    // What a widget sits in: its slot's parent panel or, for the root of a widget tree, the user widget that owns the tree.
+    const UObject* WidgetParent(const UObject* W, WidgetOffsets& Off, const UClass* UserWidget) {
+        if (Off.Slot != uint32(-1)) if (const UObject* Slot = UiSafePtr(W, Off.Slot)) {
+            if (Off.Parent == uint32(-1) && StoreSafeClass(Slot)) Off.Parent = Slot->GetOffset("Parent");
+            if (Off.Parent != uint32(-1)) if (const UObject* Panel = UiSafePtr(Slot, Off.Parent)) if (StoreSafeClass(Panel)) return Panel;
+        }
+        const UObject* Tree = UiSafeOuter(W);
+        if (Tree && UiClassName(Tree) == "WidgetTree") { const UObject* Owner = UiSafeOuter(Tree); if (Owner && StoreSafeClass(Owner) && Owner->IsA(UserWidget)) return Owner; }
+        return nullptr;
+    }
+    // On screen as far as the widgets can tell: it and everything it sits in are not Collapsed (1) or Hidden (2) and not
+    // fully see-through. In: the first user widget above it. Top: the outermost widget reached.
+    bool WidgetShown(const UObject* W, WidgetOffsets& Off, const UClass* UserWidget, const UObject*& In, const UObject*& Top) {
+        In = nullptr; Top = W;
+        const UObject* At = W;
+        for (int Depth = 0; At && Depth < 128; ++Depth) { // a real widget tree is far less deep; the cap only stops a loop
+            const uint8 Vis = UiSafeByte(At, Off.Vis);
+            if (Vis == 1 || Vis == 2) return false;
+            if (Off.Opacity != uint32(-1) && UiSafeFloat(At, Off.Opacity) <= 0.01f) return false;
+            Top = At;
+            const UObject* Up = WidgetParent(At, Off, UserWidget);
+            if (!Up) break;
+            if (!In && Up->IsA(UserWidget)) In = Up;
+            At = Up;
+        }
+        return true;
+    }
+    void WidgetListWrite(const char* Why) {
+        static const UClass* UserWidget = FindClass("UserWidget");
+        if (!UserWidget) return;
+        const auto File = DataFile(L"widgets.log");
+        if (File.empty()) return;
+        WIN32_FILE_ATTRIBUTE_DATA Attr{};
+        if (GetFileAttributesExW(File.c_str(), GetFileExInfoStandard, &Attr) && (Attr.nFileSizeHigh || Attr.nFileSizeLow > 4u * 1024 * 1024)) _wremove(File.c_str());
+        FILE* Out = nullptr;
+        if (_wfopen_s(&Out, File.c_str(), L"a") != 0 || !Out) return;
+        auto Engine = UEngine::GetEngine();
+        auto Viewport = Engine ? Engine->GameViewport : nullptr;
+        const UObject* World = Viewport ? (const UObject*)Viewport->World : nullptr;
+        SYSTEMTIME T; GetLocalTime(&T);
+        fprintf(Out, "=== %02d:%02d:%02d pid=%lu %s, world %s: user widgets on screen (class name | in | top) ===\n",
+            T.wHour, T.wMinute, T.wSecond, GetCurrentProcessId(), Why, StoreObjectName(World).c_str());
+        WidgetOffsets Off;
+        int Total = 0, Shown = 0;
+        const int N = TUObjectArray::Num();
+        for (int i = 0; i < N; ++i) {
+            const UObject* Obj = TUObjectArray::GetObjectByIndex(i);
+            if (!StoreLive(Obj) || !StoreSafeClass(Obj) || !Obj->IsA(UserWidget)) continue;
+            if (Off.Vis == uint32(-1)) {
+                Off.Vis = Obj->GetOffset("Visibility"); Off.Opacity = Obj->GetOffset("RenderOpacity"); Off.Slot = Obj->GetOffset("Slot");
+                if (Off.Vis == uint32(-1)) { fprintf(Out, "(no Visibility property on UserWidget)\n"); break; }
+            }
+            ++Total;
+            const UObject* In = nullptr; const UObject* Top = nullptr;
+            if (!WidgetShown(Obj, Off, UserWidget, In, Top)) continue;
+            ++Shown;
+            fprintf(Out, "%s %s | %s | %s %s\n", UiClassName(Obj).c_str(), StoreObjectName(Obj).c_str(), In ? UiClassName(In).c_str() : "-",
+                UiClassName(Top).c_str(), StoreObjectName(Top).c_str());
+        }
+        fprintf(Out, "=== %d of %d user widgets on screen ===\n", Shown, Total);
+        fclose(Out);
+        Log(("widgets: " + std::to_string(Shown) + " of " + std::to_string(Total) + " user widgets on screen written to widgets.log (" + Why + ")").c_str());
+    }
+    void WidgetListTick(bool Asked) {
+        static const UObject* Seen = nullptr; static int32 SeenIndex = -1; static ULONGLONG Since = 0; static bool Done = false;
+        if (Asked) { WidgetListWrite("Ctrl+Shift+F7"); return; }
+        auto Engine = UEngine::GetEngine();
+        auto Viewport = Engine ? Engine->GameViewport : nullptr;
+        const UObject* World = Viewport ? (const UObject*)Viewport->World : nullptr;
+        if (!World) return;
+        if (World != Seen || TUObjectArray::GetObjectByIndex(SeenIndex) != Seen) { Seen = World; SeenIndex = World->Index; Since = GetTickCount64(); Done = false; return; }
+        if (Done || GetTickCount64() - Since < 20000) return;
+        Done = true;
+        if (StoreObjectName(World).find("Frontend") != std::string::npos) return; // the lobby: only matches are listed
+        WidgetListWrite("20 seconds into the match");
+    }
+    void WidgetKeyTick() {
+        static bool Was = false;
+        const bool Key = GameHasInput() && (GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(VK_SHIFT) & 0x8000) && (GetAsyncKeyState(VK_F7) & 0x8000);
+        if (Key && !Was && MessageHook && GameWindow) PostMessageW(GameWindow, WidgetMessage, 1, 0);
+        Was = Key;
+    }
+
+    DWORD WINAPI EditLoop(void*) { for (;;) { EditTick(); StoreDumpTick(); UiImageDumpTick(); WidgetKeyTick(); StoreInjectTick(); Sleep(4); } }
 
     // ---- Dev Kit camera share (Dev Console on-screen markers) ------------------------------------
     // Only while dev-camera-on.txt exists, which only the Dev Kit launcher's Dev Console creates: the camera's
@@ -2788,6 +2883,9 @@ namespace {
             { __try { ConsoleTick(); } __except (EXCEPTION_EXECUTE_HANDLER) { InterlockedExchange(&ConsoleDue, -1); Log("console: stopped after an error"); } }
         if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == StoreTabMessage)
             { static bool Failed = false; if (!Failed) { __try { StoreTabTick(); } __except (EXCEPTION_EXECUTE_HANDLER) { Failed = true; Log("store tab: stopped after an error"); } } }
+        if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == WidgetMessage)
+            { static bool Failed = false; const bool Asked = reinterpret_cast<MSG*>(L)->wParam == 1;
+              if (!Failed) { __try { WidgetListTick(Asked); } __except (EXCEPTION_EXECUTE_HANDLER) { Failed = true; Log("widgets: stopped after an error"); } } }
         if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == StwLobbyMessage)
             { static bool Failed = false; if (!Failed) { __try { StwLobbyTick(); } __except (EXCEPTION_EXECUTE_HANDLER) { Failed = true; Log("stw lobby: stopped after an error"); } } }
         if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == ApplyMessage) {
@@ -2856,7 +2954,8 @@ namespace {
             }
             if (GetTickCount64() >= NextRead) { NextRead = GetTickCount64() + 1000; ReadSetting(); ReadStretch(); ReadTurbo(); ReadEdit(); ReadDevCamera(); ReadInputRole(); if (InputRole) HookXInput(); CheckoutHooksTick();
                 static int AudioRound = 0; if (++AudioRound % 3 == 1) InterlockedExchange(&AudioKeepDue, 1);
-                if (MessageHook && ConsoleDue >= 0 && !FlagFile(L"console-off.txt")) { InterlockedExchange(&ConsoleDue, 1); PostMessageW(GameWindow, ConsoleMessage, 0, 0); } }
+                if (MessageHook && ConsoleDue >= 0 && !FlagFile(L"console-off.txt")) { InterlockedExchange(&ConsoleDue, 1); PostMessageW(GameWindow, ConsoleMessage, 0, 0); }
+                if (MessageHook && !FlagFile(L"widgets-off.txt")) PostMessageW(GameWindow, WidgetMessage, 0, 0); }
             if (!MessageHook) MessageHook = SetWindowsHookExW(WH_GETMESSAGE, OnMessage, nullptr, GetWindowThreadProcessId(GameWindow, nullptr));
             if (MessageHook && !MouseCoalesce::Active) { static bool Tried = false; if (!Tried) { Tried = true; Log(MouseCoalesce::Install(GetWindowThreadProcessId(GameWindow, nullptr)) ? "mouse: polling-rate merge ready (only 2000-8000 Hz mice are merged)" : "mouse: polling-rate merge off"); } }
             { static ULONGLONG NextSquad = 0, NextReport = 0; static int Reports = 0;
