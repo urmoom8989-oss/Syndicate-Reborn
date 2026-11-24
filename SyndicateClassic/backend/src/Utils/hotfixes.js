@@ -162,8 +162,10 @@ export const defaultinput = `
 
 export const defaultruntimeoptions = `
 [/Script/FortniteGame.FortRuntimeOptions]
+; No lobby tab is hidden or disabled. The lobby top bar skips every tab listed here (TabName = the tab's id:
+; AthenaStore, AthenaChallenges, AthenaCareer, ...); AthenaStore used to be listed, which is why the STORE tab
+; (the V-Bucks packs, syndicateVbucksStore.js) was missing on 8.50 and Season X.
 !DisabledFrontendNavigationTabs=ClearArray
-+DisabledFrontendNavigationTabs=(TabName="AthenaStore",TabState=EFortRuntimeOptionTabState::Hidden)
 bEnableGlobalChat=false
 ; Visualize Sound Effects keeps game audio on (older seasons muted everything with it on)
 bDisableSpatializationInsteadOfMutingWhenHearingAccessibilityEnabled=true
