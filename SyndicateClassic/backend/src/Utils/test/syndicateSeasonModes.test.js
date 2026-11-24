@@ -20,7 +20,9 @@ test('Creative is offered from Season 7, Arena from Season 8, 50v50 and Playgrou
   for (const b of ['5.10', '7.40', '8.50', '10.40']) assert.ok(availableModes(b).includes('playground'), b);
   assert.deepEqual(availableModes('10.40'), ['solo', 'duo', 'squad', 'arenasolo', '50v50', 'gauntlet', 'solidgold', 'blitz', 'snipers', 'close',
     'highexplosives', 'disco', 'teamrumble', 'foodfight', 'floorislava', 'arenaduos', 'playground', 'creative', 'stw']);
-  assert.equal(availableModes('8.50').includes('floorislava'), false); // the 8.50 game has no Playlist_Respawn_20_Lava
+  // Floor Is Lava is Season 8's solo playlist (Playlist_Fill_Solo), which 8.50 has too; 7.40 is before it came out.
+  assert.ok(availableModes('8.50').includes('floorislava'));
+  assert.equal(availableModes('7.40').includes('floorislava'), false);
   assert.equal(availableModes('3.5.1').includes('gauntlet'), false);
   assert.equal(availableModes('1.8.2').includes('50v50'), false);
   assert.ok(availableModes('9.40').includes('arenaduos'));

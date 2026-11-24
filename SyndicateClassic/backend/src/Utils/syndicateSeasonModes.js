@@ -27,7 +27,7 @@ export const MODES = Object.freeze({
  disco:{playlist:'Playlist_Disco_32'},
  teamrumble:{playlist:'Playlist_Respawn_24'},
  foodfight:{playlist:'Playlist_Barrier_16'},
- floorislava:{playlist:'Playlist_Respawn_20_Lava'},
+ floorislava:{playlist:'Playlist_Fill_Solo'}, // Season 8's Floor Is Lava in Solo (not the Team Rumble Lava playlist)
  arenaduos:{playlist:'Playlist_ShowdownAlt_Duos'},
  playground:{playlist:'Playlist_Playground'}, creative:{playlist:'Playlist_PlaygroundV2'}, stw:{playlist:null},
 });
@@ -49,7 +49,7 @@ const LTM = {
  disco:since('6.20'),
  teamrumble:[...since('7.40'),'11.00','12.50'],
  foodfight:since('7.40'),
- floorislava:since('9.40'), // not in the 8.50 game (no Playlist_Respawn_20_Lava there)
+ floorislava:since('8.50'), // Playlist_Fill_Solo: 8.50, 9.40 and 10.40 all list it
  arenaduos:[...since('8.50'),'12.50'],
 };
 // Season 4's Playground: 5.10, 8.50, 9.40 and 10.40 have Playlist_Playground too.

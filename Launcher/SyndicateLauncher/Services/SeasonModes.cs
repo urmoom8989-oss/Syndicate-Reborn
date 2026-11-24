@@ -35,7 +35,7 @@ public static class SeasonModes
         new GameModeInfo("disco", "Disco Domination", "Two teams dance on dance floors to win (Season 6 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("teamrumble", "Team Rumble", "Two big teams with respawns race to the elimination target (Season 7 and up). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("foodfight", "Food Fight", "Durrr Burger against Pizza Pit, split by a barrier (Season 7 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("floorislava", "Floor Is Lava", "The lava rises through the match: build up to stay alive (Season 9 to X; the Season 8 game has no Floor Is Lava playlist). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
+        new GameModeInfo("floorislava", "Floor Is Lava", "Season 8's Floor Is Lava in Solo: the lava rises through the match, so build up to stay alive (Season 8 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("arenaduos", "Arena Duos", "Duos Arena with Hype and divisions (Seasons 8 to X and Chapter 2 Season 2). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("playground", "Playground", "Season 4's Playground: you and your party only (no bots), with respawns, extra materials and no storm damage (Season 4 to X).", false),
         new GameModeInfo("creative", "Creative",
@@ -67,7 +67,7 @@ public static class SeasonModes
             ["disco"] = ("Playlist_Disco_32", Since("6.20")),
             ["teamrumble"] = ("Playlist_Respawn_24", Since("7.40", "11.00", "12.50")),
             ["foodfight"] = ("Playlist_Barrier_16", Since("7.40")),
-            ["floorislava"] = ("Playlist_Respawn_20_Lava", Since("9.40")), // the 8.50 game has no Playlist_Respawn_20_Lava
+            ["floorislava"] = ("Playlist_Fill_Solo", Since("8.50")), // the solo Floor Is Lava playlist, not Team Rumble Lava (Playlist_Respawn_20_Lava)
             ["arenaduos"] = ("Playlist_ShowdownAlt_Duos", Since("8.50", "12.50")),
         };
     /// <summary>Season 4's Playground: 5.10, 8.50, 9.40 and 10.40 have Playlist_Playground too.</summary>
