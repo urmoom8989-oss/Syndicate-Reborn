@@ -1028,9 +1028,23 @@ namespace {
         }
         return true;
     }
+    // Where the widget was last drawn, from UWidget.GetCachedGeometry (a plain getter): FGeometry's local size (0x0), scale
+    // (0x8) and absolute position (0xC). False when the call is not there or the widget has no size.
+    struct WidgetRect { float X = 0, Y = 0, W = 0, H = 0; };
+    bool WidgetGeometry(const UObject* W, UFunction* Fn, WidgetRect& Out) {
+        if (!Fn) return false;
+        struct { uint8 Geometry[0x100]; } P{}; // FGeometry is 0x38 bytes; room to spare for any season
+        W->ProcessEvent(Fn, &P);
+        const float* F = (const float*)P.Geometry;
+        const float Scale = F[2] > 0.f ? F[2] : 1.f;
+        Out.W = F[0] * Scale; Out.H = F[1] * Scale; Out.X = F[3]; Out.Y = F[4];
+        return Out.W > 0.f && Out.H > 0.f;
+    }
+    bool WidgetGeometrySafe(const UObject* W, UFunction* Fn, WidgetRect& Out) { __try { return WidgetGeometry(W, Fn, Out); } __except (1) { return false; } }
     void WidgetListWrite(const char* Why) {
         static const UClass* UserWidget = FindClass("UserWidget");
-        if (!UserWidget) return;
+        static const UClass* Widget = FindClass("Widget");
+        if (!UserWidget || !Widget) return;
         const auto File = DataFile(L"widgets.log");
         if (File.empty()) return;
         WIN32_FILE_ATTRIBUTE_DATA Attr{};
@@ -1041,28 +1055,39 @@ namespace {
         auto Viewport = Engine ? Engine->GameViewport : nullptr;
         const UObject* World = Viewport ? (const UObject*)Viewport->World : nullptr;
         SYSTEMTIME T; GetLocalTime(&T);
-        fprintf(Out, "=== %02d:%02d:%02d pid=%lu %s, world %s: user widgets on screen (class name | in | top) ===\n",
-            T.wHour, T.wMinute, T.wSecond, GetCurrentProcessId(), Why, StoreObjectName(World).c_str());
+        fprintf(Out, "=== %02d:%02d:%02d pid=%lu %s, world %s ===\n", T.wHour, T.wMinute, T.wSecond, GetCurrentProcessId(), Why, StoreObjectName(World).c_str());
+        fprintf(Out, "widgets on screen at least 200x200 (class name | in | top | x,y width x height), then every user widget on screen\n");
         WidgetOffsets Off;
+        UFunction* GeoFn = nullptr;
         int Total = 0, Shown = 0;
+        std::string Users;
         const int N = TUObjectArray::Num();
         for (int i = 0; i < N; ++i) {
             const UObject* Obj = TUObjectArray::GetObjectByIndex(i);
-            if (!StoreLive(Obj) || !StoreSafeClass(Obj) || !Obj->IsA(UserWidget)) continue;
+            if (!StoreLive(Obj) || !StoreSafeClass(Obj) || !Obj->IsA(Widget)) continue;
             if (Off.Vis == uint32(-1)) {
                 Off.Vis = Obj->GetOffset("Visibility"); Off.Opacity = Obj->GetOffset("RenderOpacity"); Off.Slot = Obj->GetOffset("Slot");
-                if (Off.Vis == uint32(-1)) { fprintf(Out, "(no Visibility property on UserWidget)\n"); break; }
+                GeoFn = Obj->GetFunction("GetCachedGeometry");
+                if (Off.Vis == uint32(-1)) { fprintf(Out, "(no Visibility property on Widget)\n"); break; }
             }
-            ++Total;
             const UObject* In = nullptr; const UObject* Top = nullptr;
             if (!WidgetShown(Obj, Off, UserWidget, In, Top)) continue;
+            if (!StoreLive(Top)) continue; // part of a widget class's template (WidgetArchetype), never drawn
+            ++Total;
+            WidgetRect R;
+            if (!WidgetGeometrySafe(Obj, GeoFn, R)) continue;
             ++Shown;
-            fprintf(Out, "%s %s | %s | %s %s\n", UiClassName(Obj).c_str(), StoreObjectName(Obj).c_str(), In ? UiClassName(In).c_str() : "-",
-                UiClassName(Top).c_str(), StoreObjectName(Top).c_str());
+            char Line[640];
+            snprintf(Line, sizeof(Line), "%s %s | %s | %s %s | %.0f,%.0f %.0fx%.0f\n", UiClassName(Obj).c_str(), StoreObjectName(Obj).c_str(),
+                In ? UiClassName(In).c_str() : "-", UiClassName(Top).c_str(), StoreObjectName(Top).c_str(), R.X, R.Y, R.W, R.H);
+            if (R.W >= 200.f && R.H >= 200.f) fputs(Line, Out);
+            if (Obj->IsA(UserWidget) && Users.size() < 200000) Users += "  " + std::string(Line);
         }
-        fprintf(Out, "=== %d of %d user widgets on screen ===\n", Shown, Total);
+        fputs("--- user widgets on screen ---\n", Out);
+        fputs(Users.c_str(), Out);
+        fprintf(Out, "=== %d widgets drawn of %d shown ===\n", Shown, Total);
         fclose(Out);
-        Log(("widgets: " + std::to_string(Shown) + " of " + std::to_string(Total) + " user widgets on screen written to widgets.log (" + Why + ")").c_str());
+        Log(("widgets: " + std::to_string(Shown) + " widgets drawn, written to widgets.log (" + Why + ")").c_str());
     }
     void WidgetListTick(bool Asked) {
         static const UObject* Seen = nullptr; static int32 SeenIndex = -1; static ULONGLONG Since = 0; static bool Done = false;
