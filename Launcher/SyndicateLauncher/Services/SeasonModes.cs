@@ -37,7 +37,7 @@ public static class SeasonModes
         new GameModeInfo("foodfight", "Food Fight", "Durrr Burger against Pizza Pit, split by a barrier (Season 7 to X). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("floorislava", "Floor Is Lava", "The lava rises through the match: build up to stay alive (Season 9 to X; the Season 8 game has no Floor Is Lava playlist). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
         new GameModeInfo("arenaduos", "Arena Duos", "Duos Arena with Hype and divisions (Seasons 8 to X and Chapter 2 Season 2). Experimental: the match server plays it once Erbium is rebuilt (needs Visual Studio).", true),
-        new GameModeInfo("playground", "Playground", "Season 4's Playground: respawns, extra materials and no storm damage (Season 4 to X).", false),
+        new GameModeInfo("playground", "Playground", "Season 4's Playground: you and your party only (no bots), with respawns, extra materials and no storm damage (Season 4 to X).", false),
         new GameModeInfo("creative", "Creative",
             "Experimental, Season 7 and up. The lobby button and playlist open and you go to the Creative hub, but player islands don't load yet (you may land in empty sea), and Season X's match server still starts a normal match.", true),
         new GameModeInfo("stw", "Save the World",

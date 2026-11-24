@@ -2330,6 +2330,9 @@ namespace SpectraBots
     }
     inline int DesiredBotCount()
     {
+        // Season 4's Playground is you (and the real players in your party) on the island with respawns and extra
+        // materials, not a lobby of 99 other players: it gets no bots, whatever the bot count setting says.
+        if (wcsstr(FConfiguration::Playlist, L"/Playground/Playlist_Playground.")) return 0;
         static int Count = -1;
         if (Count < 0)
         {
