@@ -41,6 +41,7 @@ namespace {
     constexpr UINT ApplyMessage = WM_APP + 0x4F0;
     constexpr UINT ConsoleMessage = WM_APP + 0x4F1; // the in-game console tick (once a second), see ConsoleTick()
     constexpr UINT StwLobbyMessage = WM_APP + 0x4F2; // the Save the World lobby check (twice a second), see StwLobbyTick()
+    constexpr UINT StoreTabMessage = WM_APP + 0x4F3; // keeps the lobby's STORE tab on (every 2 seconds), see StoreTabTick()
     HMODULE SelfModule = nullptr;
     HWND GameWindow = nullptr;
     HHOOK MessageHook = nullptr;
@@ -700,6 +701,160 @@ namespace {
         if (Key && !Was) { InterlockedExchange(&StoreInjectActive, StoreInjectActive ? 0 : 1); } // toggle on/off
         Was = Key;
     }
+
+    // ---- STORE tab in the lobby's top bar ----------------------------------------------------------------------------
+    // The lobby shows a tab only while the game's UI feature for it is on (FortGlobalUIContext's feature states). The
+    // STORE tab is EFortUIFeature::ShowMainStore. On Syndicate the game leaves that feature off on 8.50 and Season X, so
+    // the tab bar ended at CAREER where real Fortnite has STORE (the V-Bucks packs). This turns that one feature on with
+    // the game's own FortGlobalUIContext.ForceSetFeatureState, before the lobby is built and again if anything turns it
+    // off. The first time it logs the state the game had chosen and why, and the tabs the lobby's tab bar knows.
+    // Game thread only (StoreTabMessage, every 2 seconds). store-tab-off.txt leaves the STORE tab to the game.
+    int64 StoreEnumValue(const UEnum* E, const char* Member) { return E ? E->GetValue(Member) : -1; }
+    std::string StoreEnumName(const UEnum* E, int64 Value) {
+        if (E) {
+            const auto& Names = *(const TArray<TPair<FName, int64>>*)(__int64(E) + 0x40);
+            for (int i = 0; i < Names.Num(); ++i) {
+                const auto& Pair = Names[i];
+                if (Pair.Value() != Value) continue;
+                std::string S = Pair.Key().ToString().c_str();
+                const size_t Cut = S.rfind(':');
+                return Cut == std::string::npos ? S : S.substr(Cut + 1);
+            }
+        }
+        return std::to_string(Value);
+    }
+    struct StoreTabFeature { unsigned char Feature, State, Reason; unsigned char Pad[13]; };
+    const UObject* StoreTabContext = nullptr; int32 StoreTabContextIndex = -1;
+    const UClass* StoreTabContextClass = nullptr;
+    // The live FortGlobalUIContext (one per local player). Cached by object index; found again if it went away.
+    const UObject* StoreTabFindContext() {
+        if (!StoreTabContextClass) StoreTabContextClass = FindClass("FortGlobalUIContext");
+        if (!StoreTabContextClass) return nullptr;
+        if (StoreTabContext && TUObjectArray::GetObjectByIndex(StoreTabContextIndex) == StoreTabContext
+            && StoreTabContext->Class == StoreTabContextClass) return StoreTabContext;
+        StoreTabContext = nullptr; StoreTabContextIndex = -1;
+        const int N = TUObjectArray::Num();
+        for (int i = 0; i < N; ++i) {
+            const UObject* Obj = TUObjectArray::GetObjectByIndex(i);
+            if (!Obj || Obj->IsDefaultObject() || Obj->Class != StoreTabContextClass) continue;
+            StoreTabContext = Obj; StoreTabContextIndex = i; break;
+        }
+        return StoreTabContext;
+    }
+    // Which tabs the lobby's tab bar has (FortAthenaTabsScreenBase.TabsUIFeature), for the log.
+    std::string StoreTabListTabs(const UEnum* Features) {
+        const UClass* TabsClass = FindClass("FortAthenaTabsScreenBase");
+        if (!TabsClass) return "no tab bar class in this season";
+        const int N = TUObjectArray::Num();
+        for (int i = 0; i < N; ++i) {
+            const UObject* Obj = TUObjectArray::GetObjectByIndex(i);
+            if (!Obj || Obj->IsDefaultObject() || !Obj->IsA(TabsClass)) continue;
+            const uint32 Off = Obj->GetOffset("TabsUIFeature");
+            if (Off == uint32(-1)) return "the tab bar has no TabsUIFeature";
+            const auto& Tabs = *(const TArray<uint8>*)((const uint8*)Obj + Off);
+            std::string Out = std::string(Obj->Class->Name.ToString().c_str()) + ":";
+            for (int k = 0; k < Tabs.Num() && k < 32; ++k) { Out += " "; Out += StoreEnumName(Features, Tabs[k]); }
+            return Out;
+        }
+        return "the lobby's tab bar is not built yet";
+    }
+    // Fallback when ForceSetFeatureState does not stick: the game's own entry for the feature in
+    // FortGlobalUIContext.Features (TMap<EFortUIFeature, FFortUIFeatureStruct>; each element is the 1-byte key, the
+    // 0x18-byte value at +8 {CurrentState, ForcedState, ForcedStateReason, pad, ChangeDelegate at +8}, then the hash
+    // links: 0x28 bytes). Null when the feature is not in the map.
+    unsigned char* StoreTabFeatureEntry(const UObject* Ctx, unsigned char Feature) {
+        const uint32 Off = Ctx->GetOffset("Features");
+        if (Off == uint32(-1)) return nullptr;
+        const uint8* Map = (const uint8*)Ctx + Off;
+        uint8* Data = *(uint8* const*)Map;
+        const int32 Num = *(const int32*)(Map + 0x08);
+        const uint32* Secondary = *(const uint32* const*)(Map + 0x20);
+        const uint32* Bits = Secondary ? Secondary : (const uint32*)(Map + 0x10);
+        const int32 NumBits = *(const int32*)(Map + 0x28);
+        if (!Data || Num <= 0 || Num > 64 || NumBits < Num) return nullptr;
+        for (int32 i = 0; i < Num; ++i) {
+            if (!(Bits[i / 32] & (1u << (i % 32)))) continue;
+            uint8* Elem = Data + size_t(i) * 0x28;
+            // Used only when it looks like a feature entry (both states 0 to 3, a small reason number).
+            if (Elem[0] == Feature) return (Elem[8] < 4 && Elem[9] < 4 && Elem[10] < 16) ? Elem + 8 : nullptr;
+        }
+        return nullptr;
+    }
+    // Tell every widget bound to the feature (ChangeDelegate: TArray of {weak object, function name}) its new state,
+    // the way the game's own broadcast does. Returns how many were told.
+    int StoreTabNotify(unsigned char* Entry, unsigned char Feature, unsigned char State, unsigned char Reason) {
+        struct Bound { FWeakObjectPtr Object; FName Function; };
+        const Bound* List = *(const Bound* const*)(Entry + 8);
+        const int32 Count = *(const int32*)(Entry + 0x10);
+        if (!List || Count <= 0 || Count > 64) return 0;
+        std::vector<Bound> Copy(List, List + Count); // a handler may rebind while we call
+        int Told = 0;
+        for (const Bound& B : Copy) {
+            const UObject* Obj = B.Object.Get();
+            UFunction* Fn = Obj ? Obj->GetFunction(B.Function) : nullptr;
+            if (!Fn) continue;
+            unsigned char Params[32]{}; Params[0] = Feature; Params[1] = State; Params[2] = Reason;
+            Obj->ProcessEvent(Fn, Params);
+            ++Told;
+        }
+        return Told;
+    }
+    void StoreTabTick() {
+        static int Forced = 0, Failed = 0, Reported = 0;
+        static bool TabsLogged = false, NoFeature = false;
+        if (NoFeature) return;
+        const UObject* Ctx = StoreTabFindContext();
+        if (!Ctx) return; // not logged in yet
+        static const UEnum* Features = nullptr; static const UEnum* States = nullptr; static const UEnum* Reasons = nullptr;
+        if (!Features) { Features = FindEnum("EFortUIFeature"); States = FindEnum("EFortUIFeatureState"); Reasons = FindEnum("EFortUIFeatureStateReason"); }
+        const int64 Store = StoreEnumValue(Features, "ShowMainStore");
+        const int64 Enabled = StoreEnumValue(States, "Enabled");
+        const int64 Default = StoreEnumValue(Reasons, "Default");
+        UFunction* GetFn = Ctx->GetFunction("GetFeatureState");
+        UFunction* ForceFn = Ctx->GetFunction("ForceSetFeatureState");
+        if (Store < 0 || Enabled < 0 || Default < 0 || !GetFn || !ForceFn) {
+            NoFeature = true; Log("store tab: this season has no STORE tab feature (EFortUIFeature::ShowMainStore); left as it is");
+            return;
+        }
+        // The tab list is only for the log; looked for at most 60 times (2 minutes) so a match never pays for the scan.
+        static int TabLooks = 0;
+        if (!TabsLogged && TabLooks < 60) { ++TabLooks; std::string Tabs = StoreTabListTabs(Features); if (Tabs.find("not built yet") == std::string::npos) { TabsLogged = true; Log(("store tab: lobby tabs " + Tabs).c_str()); } }
+        StoreTabFeature Get{}; Get.Feature = (unsigned char)Store;
+        Ctx->ProcessEvent(GetFn, &Get);
+        if (Get.State == (unsigned char)Enabled) {
+            if (!Reported) { Reported = 1; Log("store tab: the game already shows the STORE tab"); }
+            return;
+        }
+        if (Failed >= 20) return; // it would not stay on; stop fighting the game (logged below)
+        StoreTabFeature Force{}; Force.Feature = (unsigned char)Store; Force.State = (unsigned char)Enabled; Force.Reason = (unsigned char)Default;
+        Ctx->ProcessEvent(ForceFn, &Force);
+        StoreTabFeature After{}; After.Feature = (unsigned char)Store;
+        Ctx->ProcessEvent(GetFn, &After);
+        std::string How = "ForceSetFeatureState";
+        if (After.State != (unsigned char)Enabled) {
+            // The game ignored the forced state: set the feature's own state and tell the tab bar, like its broadcast.
+            if (unsigned char* Entry = StoreTabFeatureEntry(Ctx, (unsigned char)Store)) {
+                char Raw[96]; snprintf(Raw, sizeof(Raw), " ignored (entry current %u forced %u reason %u)", Entry[0], Entry[1], Entry[2]);
+                How += Raw;
+                Entry[0] = (unsigned char)Enabled; Entry[1] = (unsigned char)Enabled; Entry[2] = (unsigned char)Default;
+                const int Told = StoreTabNotify(Entry, (unsigned char)Store, (unsigned char)Enabled, (unsigned char)Default);
+                How += "; set the feature directly and told " + std::to_string(Told) + " widgets";
+                StoreTabFeature Again{}; Again.Feature = (unsigned char)Store;
+                Ctx->ProcessEvent(GetFn, &Again);
+                After = Again;
+            } else How += " ignored, and the feature has no entry to set";
+        }
+        ++Forced;
+        if (After.State != (unsigned char)Enabled) ++Failed;
+        if (Forced <= 3 || Failed == 20) {
+            std::string Line = "store tab: the game had the STORE tab " + StoreEnumName(States, Get.State) + " (reason "
+                + StoreEnumName(Reasons, Get.Reason) + "); turned it on with " + How + " -> now " + StoreEnumName(States, After.State);
+            if (Failed == 20) Line += "; it will not stay on, giving up for this session";
+            Log(Line.c_str());
+        }
+        Reported = 1;
+    }
+
     DWORD WINAPI EditLoop(void*) { for (;;) { EditTick(); StoreDumpTick(); UiImageDumpTick(); StoreInjectTick(); Sleep(4); } }
 
     // ---- Dev Kit camera share (Dev Console on-screen markers) ------------------------------------
@@ -2497,6 +2652,8 @@ namespace {
         // The console has its own message so the other mods' ticks keep running only while they are switched on.
         if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == ConsoleMessage && InterlockedCompareExchange(&ConsoleDue, 0, 1) == 1)
             { __try { ConsoleTick(); } __except (EXCEPTION_EXECUTE_HANDLER) { InterlockedExchange(&ConsoleDue, -1); Log("console: stopped after an error"); } }
+        if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == StoreTabMessage)
+            { static bool Failed = false; if (!Failed) { __try { StoreTabTick(); } __except (EXCEPTION_EXECUTE_HANDLER) { Failed = true; Log("store tab: stopped after an error"); } } }
         if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == StwLobbyMessage)
             { static bool Failed = false; if (!Failed) { __try { StwLobbyTick(); } __except (EXCEPTION_EXECUTE_HANDLER) { Failed = true; Log("stw lobby: stopped after an error"); } } }
         if (Code >= 0 && W == PM_REMOVE && reinterpret_cast<MSG*>(L)->message == ApplyMessage) {
@@ -2582,6 +2739,7 @@ namespace {
                   }
               } }
             if (MessageHook && (AudioKeepDue || StwWanted() || SquadShared || WantedTimes100 > 0 || LastSet > 0.f || StretchOn || StretchSaved >= 0 || TurboOn || EditOn || ResetOn || DevCameraOn || DevAimLevel || DevFlyOn || DevFreeCamOn || DevNoRecoil || DevNoDrop || StoreInjectActive || !DevRecoilSaved.empty())) PostMessageW(GameWindow, ApplyMessage, 0, 0);
+            { static ULONGLONG NextStore = 0; if (MessageHook && GetTickCount64() >= NextStore) { NextStore = GetTickCount64() + 2000; if (!FlagFile(L"store-tab-off.txt")) PostMessageW(GameWindow, StoreTabMessage, 0, 0); } }
             { static ULONGLONG NextLobby = 0; if (MessageHook && StwLobbyBuild() && GetTickCount64() >= NextLobby) { NextLobby = GetTickCount64() + 500; PostMessageW(GameWindow, StwLobbyMessage, 0, 0); } }
             TurboTick();
             DevFlyKeyTick();
