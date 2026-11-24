@@ -706,9 +706,11 @@ namespace {
     // The lobby's top bar (AthenaTopBar) shows a tab only while the game's UI feature for it is on (FortGlobalUIContext's
     // feature states). The STORE tab is EFortUIFeature::ShowMainStore. On Syndicate the tab bar ended at CAREER on 8.50 and
     // Season X, where real Fortnite has STORE (the V-Bucks packs), so this turns that feature on with the game's own
-    // FortGlobalUIContext.ForceSetFeatureState. It only ever runs while the lobby world is up and ticking: the first
-    // version also ran during the game's start-up loading and Season X crashed right after (0x15EE1FF, "Fortnite exited
-    // during startup"). Once per lobby it logs the top bar's tabs (name, feature, state) and tab buttons, so the next
+    // FortGlobalUIContext.ForceSetFeatureState and shows the top bar's STORE button if the game made it but hid it.
+    // It only runs once the lobby is really up: the lobby's top bar exists (it is made after login, never during the
+    // game's start-up) and is still the same one 2 seconds later. The first version also ran during start-up and Season X
+    // crashed right after (0x15EE1FF, "Fortnite exited during startup"). It does its work once per lobby and then leaves
+    // the game alone until the next lobby. It logs the top bar's tabs (name, feature, state) and tab buttons, so the next
     // step can be read from syndicate-client.log ("store tab:" lines). Game thread only (StoreTabMessage, every 2 seconds).
     // store-tab-off.txt leaves the STORE tab to the game.
     int64 StoreEnumValue(const UEnum* E, const char* Member) { return E ? E->GetValue(Member) : -1; }
@@ -737,21 +739,20 @@ namespace {
         }
         return nullptr;
     }
-    // The lobby is up and the game is ticking it: the world is the Frontend map, it was the same world 2 seconds ago,
-    // and its clock moved on since then. False during start-up and map loads (the world's clock stands still there).
-    bool StoreLobbySettled() {
-        static const UObject* LastWorld = nullptr; static float LastTime = -1.f; static uint32 TimeOff = uint32(-1);
+    // The lobby's top bar once the lobby is up, or null: the world is the Frontend map, and a live AthenaTopBar exists
+    // that was already there at the previous check (2 seconds ago). Read-only: it only reads object names and pointers.
+    const UObject* StoreLobbyTopBar() {
+        static const UObject* Last = nullptr; static int32 LastIndex = -1;
+        static const UClass* TopBarClass = nullptr;
         auto Engine = UEngine::GetEngine();
         auto Viewport = Engine ? Engine->GameViewport : nullptr;
         const UObject* World = Viewport ? (const UObject*)Viewport->World : nullptr;
-        if (!World) { LastWorld = nullptr; return false; }
-        if (TimeOff == uint32(-1)) TimeOff = World->GetOffset("TimeSeconds");
-        if (TimeOff == uint32(-1)) return false;
-        const std::string Name = World->Name.ToString().c_str();
-        const float Now = *(const float*)((const uint8*)World + TimeOff);
-        const bool Ok = Name.find("Frontend") != std::string::npos && World == LastWorld && Now > 3.f && Now > LastTime + 0.5f;
-        LastWorld = World; LastTime = Now;
-        return Ok;
+        if (!World || std::string(World->Name.ToString().c_str()).find("Frontend") == std::string::npos) { Last = nullptr; return nullptr; }
+        if (!TopBarClass) TopBarClass = FindClass("AthenaTopBar");
+        if (!TopBarClass) return nullptr;
+        if (Last && TUObjectArray::GetObjectByIndex(LastIndex) == Last && StoreLive(Last) && Last->IsA(TopBarClass)) return Last;
+        Last = StoreFindLiveOf(TopBarClass); LastIndex = Last ? Last->Index : -1;
+        return nullptr; // new (or no) top bar: look again at the next check
     }
     struct StoreTabFeature { unsigned char Feature, State, Reason; unsigned char Pad[13]; };
     // A feature's state as the game reports it; State stays 0xFF when the game has not set the feature up (yet).
@@ -873,13 +874,50 @@ namespace {
         }
         return Told;
     }
+    // The top bar's STORE entry: its label (TabsInfo[].DisplayName), or empty when the top bar has no STORE entry.
+    std::string StoreTabLabel(const UObject* TopBar, unsigned char StoreFeature, bool& Found) {
+        Found = false;
+        const uint32 InfoOff = TopBar->GetOffset("TabsInfo");
+        const UStruct* Info = FindStruct("FortTopBarTabButtonInfo");
+        if (InfoOff == uint32(-1) || !Info) return "";
+        const int32 Size = Info->GetPropertiesSize();
+        const uint32 TextOff = Info->GetOffset("DisplayName"), FeatureOff = Info->GetOffset("LinkedUIFeature");
+        if (Size <= 0 || FeatureOff == uint32(-1)) return "";
+        const uint8* Data = *(const uint8* const*)((const uint8*)TopBar + InfoOff);
+        const int32 Num = *(const int32*)((const uint8*)TopBar + InfoOff + 8);
+        for (int32 i = 0; Data && i < Num && i < 24; ++i) {
+            const uint8* E = Data + size_t(i) * size_t(Size);
+            if (E[FeatureOff] != StoreFeature) continue;
+            Found = true;
+            return TextOff != uint32(-1) ? StoreText(E + TextOff) : std::string();
+        }
+        return "";
+    }
+    // The live top bar tab button showing this label, or null.
+    UObject* StoreTabButton(const std::string& Label) {
+        const UClass* ButtonClass = FindClass("FortTopBarTabButton");
+        if (!ButtonClass || Label.empty()) return nullptr;
+        const int N = TUObjectArray::Num();
+        for (int i = 0; i < N; ++i) {
+            const UObject* B = TUObjectArray::GetObjectByIndex(i);
+            if (!StoreLive(B) || !B->IsA(ButtonClass)) continue;
+            const uint32 LabelOff = B->GetOffset("Text_DisplayName");
+            const UObject* Text = LabelOff != uint32(-1) ? *(const UObject* const*)((const uint8*)B + LabelOff) : nullptr;
+            const uint32 TextOff = Text ? Text->GetOffset("Text") : uint32(-1);
+            if (TextOff != uint32(-1) && StoreText((const uint8*)Text + TextOff) == Label) return (UObject*)B;
+        }
+        return nullptr;
+    }
     void StoreTabTick() {
-        static int Forced = 0, Failed = 0;
-        static bool NoFeature = false, ReportedOn = false, ReportedWait = false;
-        static const UObject* ReportedTopBar = nullptr; static int32 ReportedTopBarIndex = -1;
-        if (NoFeature || !StoreLobbySettled()) return;
+        static bool NoFeature = false;
+        static const UObject* DoneTopBar = nullptr; static int32 DoneIndex = -1;
+        if (NoFeature) return;
+        const UObject* TopBar = StoreLobbyTopBar();
+        if (!TopBar) return; // not in a lobby that is up yet
+        if (DoneTopBar == TopBar && TUObjectArray::GetObjectByIndex(DoneIndex) == DoneTopBar) return; // this lobby is done
+        DoneTopBar = TopBar; DoneIndex = TopBar->Index; // once per lobby, whatever happens below
         const UObject* Ctx = StoreTabFindContext();
-        if (!Ctx) return;
+        if (!Ctx) { Log("store tab: the lobby is up but the game's UI context was not found"); return; }
         static const UEnum* Features = nullptr; static const UEnum* States = nullptr; static const UEnum* Reasons = nullptr;
         if (!Features) { Features = FindEnum("EFortUIFeature"); States = FindEnum("EFortUIFeatureState"); Reasons = FindEnum("EFortUIFeatureStateReason"); }
         const int64 Store = StoreEnumValue(Features, "ShowMainStore");
@@ -891,49 +929,38 @@ namespace {
             NoFeature = true; Log("store tab: this season has no STORE tab feature (EFortUIFeature::ShowMainStore); left as it is");
             return;
         }
-        // Once per lobby (a new top bar is made each time you come back from a match): what the top bar has.
-        static const UClass* TopBarClass = FindClass("AthenaTopBar");
-        const bool SameTopBar = ReportedTopBar && TUObjectArray::GetObjectByIndex(ReportedTopBarIndex) == ReportedTopBar;
-        if (!SameTopBar && TopBarClass) {
-            if (const UObject* TopBar = StoreFindLiveOf(TopBarClass)) {
-                ReportedTopBar = TopBar; ReportedTopBarIndex = TopBar->Index;
-                StoreTabReport(TopBar, Ctx, GetFn, Features, States, Reasons);
-            }
-        }
+        StoreTabReport(TopBar, Ctx, GetFn, Features, States, Reasons);
+        // 1. The feature: on, through the game's forced state (or, if the game ignores that, its own state).
         const StoreTabFeature Get = StoreFeatureState(Ctx, GetFn, (unsigned char)Store);
-        if (Get.State == (unsigned char)Enabled) {
-            if (!ReportedOn) { ReportedOn = true; Log(Forced ? "store tab: the STORE tab feature is on" : "store tab: the game already has the STORE tab feature on"); }
-            return;
-        }
-        if (Get.State == 0xFF && !ReportedWait) { ReportedWait = true; Log("store tab: the game has not set up the STORE tab feature yet; turning it on"); }
-        if (Failed >= 20) return; // it would not stay on; stop fighting the game (logged below)
-        ReportedOn = false;
-        StoreTabFeature Force{}; Force.Feature = (unsigned char)Store; Force.State = (unsigned char)Enabled; Force.Reason = (unsigned char)Default;
-        Ctx->ProcessEvent(ForceFn, &Force);
-        StoreTabFeature After = StoreFeatureState(Ctx, GetFn, (unsigned char)Store);
-        std::string How = "ForceSetFeatureState";
-        if (After.State != (unsigned char)Enabled) {
-            // The game ignored the forced state: set the feature's own state and tell the tab bar, like its broadcast.
-            if (unsigned char* Entry = StoreTabFeatureEntry(Ctx, (unsigned char)Store)) {
-                char Raw[96]; snprintf(Raw, sizeof(Raw), " ignored (entry current %u forced %u reason %u)", Entry[0], Entry[1], Entry[2]);
-                How += Raw;
-                Entry[0] = (unsigned char)Enabled; Entry[1] = (unsigned char)Enabled; Entry[2] = (unsigned char)Default;
-                const int Told = StoreTabNotify(Entry, (unsigned char)Store, (unsigned char)Enabled, (unsigned char)Default);
-                How += "; set the feature directly and told " + std::to_string(Told) + " widgets";
-                After = StoreFeatureState(Ctx, GetFn, (unsigned char)Store);
-            } else How += " ignored, and the feature has no entry to set";
-        }
-        ++Forced;
-        if (After.State != (unsigned char)Enabled) ++Failed;
-        if (Forced <= 3 || Failed == 20) {
-            std::string Line = "store tab: the game had the STORE tab feature " + (Get.State == 0xFF ? std::string("not set up")
+        StoreTabFeature After = Get;
+        if (Get.State != (unsigned char)Enabled) {
+            StoreTabFeature Force{}; Force.Feature = (unsigned char)Store; Force.State = (unsigned char)Enabled; Force.Reason = (unsigned char)Default;
+            Ctx->ProcessEvent(ForceFn, &Force);
+            After = StoreFeatureState(Ctx, GetFn, (unsigned char)Store);
+            std::string How = "ForceSetFeatureState";
+            if (After.State != (unsigned char)Enabled) {
+                if (unsigned char* Entry = StoreTabFeatureEntry(Ctx, (unsigned char)Store)) {
+                    char Raw[96]; snprintf(Raw, sizeof(Raw), " ignored (entry current %u forced %u reason %u)", Entry[0], Entry[1], Entry[2]);
+                    How += Raw;
+                    Entry[0] = (unsigned char)Enabled; Entry[1] = (unsigned char)Enabled; Entry[2] = (unsigned char)Default;
+                    const int Told = StoreTabNotify(Entry, (unsigned char)Store, (unsigned char)Enabled, (unsigned char)Default);
+                    How += "; set the feature directly and told " + std::to_string(Told) + " widgets";
+                    After = StoreFeatureState(Ctx, GetFn, (unsigned char)Store);
+                } else How += " ignored, and the feature has no entry to set";
+            }
+            Log(("store tab: the STORE tab feature was " + (Get.State == 0xFF ? std::string("not set up")
                 : StoreEnumName(States, Get.State) + " (reason " + StoreEnumName(Reasons, Get.Reason) + ")")
-                + "; turned it on with " + How + " -> now " + (After.State == 0xFF ? std::string("not set up") : StoreEnumName(States, After.State));
-            if (Failed == 20) Line += "; it will not stay on, giving up for this session";
-            Log(Line.c_str());
-        }
-        // Report the top bar once more after the first change, so the log shows whether the STORE tab came.
-        if (Forced == 1) ReportedTopBar = nullptr;
+                + "; turned it on with " + How + " -> now " + (After.State == 0xFF ? std::string("not set up") : StoreEnumName(States, After.State))).c_str());
+        } else Log("store tab: the STORE tab feature is on");
+        // 2. The button: the top bar made its buttons when the lobby opened; show the STORE one if it was made hidden.
+        bool HasEntry = false;
+        const std::string Label = StoreTabLabel(TopBar, (unsigned char)Store, HasEntry);
+        if (!HasEntry) { Log("store tab: this lobby's top bar has no STORE entry (see the tabs above)"); return; }
+        UObject* Button = StoreTabButton(Label);
+        if (!Button) { Log(("store tab: the top bar has a STORE entry (\"" + Label + "\") but made no button for it; it should come with the next lobby").c_str()); return; }
+        const int Vis = StoreVisibility(Button);
+        if (Vis == 1 || Vis == 2) { StoreSetVis(Button, 0); Log(("store tab: the STORE button (\"" + Label + "\") was " + (Vis == 1 ? "collapsed" : "hidden") + "; shown -> visibility " + std::to_string(StoreVisibility(Button))).c_str()); }
+        else Log(("store tab: the STORE button (\"" + Label + "\") is there, visibility " + std::to_string(Vis)).c_str());
     }
 
     DWORD WINAPI EditLoop(void*) { for (;;) { EditTick(); StoreDumpTick(); UiImageDumpTick(); StoreInjectTick(); Sleep(4); } }
