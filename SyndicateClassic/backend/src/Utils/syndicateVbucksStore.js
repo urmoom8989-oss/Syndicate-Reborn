@@ -11,23 +11,32 @@ import {withAccountLock} from './syndicateAccountLock.js';
 import {rewardBalance,spendReward,formatDollars} from './syndicateRewardWallet.js';
 
 const hexId=key=>crypto.createHash('md5').update('syndicate-vbucks-'+key).digest('hex').toUpperCase();
-// The Chapter 1 packs and their US prices.
-export const VBUCKS_PACKS=Object.freeze([
- {quantity:1000,bonus:0,cents:999,devName:'Small Currency Pack',icon:'XSmall',sort:4},
- {quantity:2800,bonus:300,cents:2499,devName:'Medium Currency Pack',icon:'Small',sort:3,banner:'12PercentExtra'},
- {quantity:5000,bonus:1000,cents:3999,devName:'Intermediate Currency Pack',icon:'Medium',sort:2,banner:'25PercentExtra'},
- {quantity:13500,bonus:3500,cents:9999,devName:'Jumbo Currency Pack',icon:'XLarge',sort:1,banner:'35PercentExtra'},
-].map(p=>Object.freeze({...p,appStoreId:'app-SyndicateVbucks'+p.quantity,offerId:hexId(p.quantity)})));
-const byAppStoreId=new Map(VBUCKS_PACKS.map(p=>[p.appStoreId.toLowerCase(),p]));
-export const packFor=id=>typeof id==='string'?byAppStoreId.get(id.toLowerCase())||VBUCKS_PACKS.find(p=>p.offerId===id.toUpperCase())||null:null;
+// The Chapter 1 packs and their US prices. Seasons 1 to 6 sold a 7,500 pack (6,000 + 1,500) where later seasons sell
+// the 5,000 pack (4,000 + 1,000); their game files only have the 7,500 pack's picture (DA_MtxPack7500), so the third
+// pack follows the season (packsForBuild). Any pack can be looked up (packFor), whichever season is asking.
+const pack=p=>Object.freeze({...p,appStoreId:'app-SyndicateVbucks'+p.quantity,offerId:hexId(p.quantity)});
+const SMALL=pack({quantity:1000,bonus:0,cents:999,devName:'Small Currency Pack',icon:'XSmall',sort:4});
+const MEDIUM=pack({quantity:2800,bonus:300,cents:2499,devName:'Medium Currency Pack',icon:'Small',sort:3,banner:'12PercentExtra'});
+const INTERMEDIATE=pack({quantity:5000,bonus:1000,cents:3999,devName:'Intermediate Currency Pack',icon:'Medium',sort:2,banner:'25PercentExtra'});
+const LARGE=pack({quantity:7500,bonus:1500,cents:5999,devName:'Large Currency Pack',icon:'Large',sort:2,banner:'25PercentExtra'});
+const JUMBO=pack({quantity:13500,bonus:3500,cents:9999,devName:'Jumbo Currency Pack',icon:'XLarge',sort:1,banner:'35PercentExtra'});
+export const VBUCKS_PACKS=Object.freeze([SMALL,MEDIUM,INTERMEDIATE,JUMBO]);          // Season 7 and later
+export const LEGACY_VBUCKS_PACKS=Object.freeze([SMALL,MEDIUM,LARGE,JUMBO]);          // Seasons 1 to 6
+const ALL_PACKS=[SMALL,MEDIUM,INTERMEDIATE,LARGE,JUMBO];
+// The packs a game build sells: build as clientBuild() gives it ('3.5.1', '10.40', ...).
+export const packsForBuild=build=>{const season=parseInt(String(build||''),10);return season>0&&season<7?LEGACY_VBUCKS_PACKS:VBUCKS_PACKS;};
+// The set a pack belongs to (for the checkout page's pack list).
+export const packsWith=p=>p&&LEGACY_VBUCKS_PACKS.includes(p)&&!VBUCKS_PACKS.includes(p)?LEGACY_VBUCKS_PACKS:VBUCKS_PACKS;
+const byAppStoreId=new Map(ALL_PACKS.map(p=>[p.appStoreId.toLowerCase(),p]));
+export const packFor=id=>typeof id==='string'?byAppStoreId.get(id.toLowerCase())||ALL_PACKS.find(p=>p.offerId===id.toUpperCase())||null:null;
 export const formatVbucks=n=>Number(n).toLocaleString('en-US');
 export const formatPrice=cents=>'$'+(cents/100).toFixed(2);
 export const packTitle=p=>p.bonus?`${formatVbucks(p.quantity-p.bonus)} (+${formatVbucks(p.bonus)} Bonus!)`:`${formatVbucks(p.quantity)} V-Bucks`;
 
 // The STORE tab's V-Bucks storefront. appStoreId[1] is the Epic purchasing service's id (EAppStore order), the
 // one the game prices through bulk/offers and the price engine.
-export function vbucksStorefront(){
- return {name:'CurrencyStorefront',catalogEntries:VBUCKS_PACKS.map(p=>{
+export function vbucksStorefront(build){
+ return {name:'CurrencyStorefront',catalogEntries:packsForBuild(build).map(p=>{
   const meta=[['MtxQuantity',String(p.quantity)],['MtxBonus',String(p.bonus)],['IconSize',p.icon],...(p.banner?[['BannerOverride',p.banner]]:[]),['CurrencyAnalyticsName','MtxPack'+p.quantity]];
   return {
    offerId:p.offerId,devName:p.devName,offerType:'StaticPrice',
@@ -65,7 +74,10 @@ export function vbucksBulkOffers(ids){
  return out;
 }
 
-const money=amount=>({currencyCode:'USD',currencySymbolPlacement:'LEFT',originalPrice:amount,discountPrice:amount,discount:0,
+// The game reads a line offer's price as {currencyCode, unitPrice, originalUnitPrice, discount} (cents; read from Season
+// X's price engine client). Without unitPrice it shows the pack as -0.01. The other fields are the newer service's names.
+const money=(amount,quantity=1)=>({currencyCode:'USD',unitPrice:Math.round(amount/quantity),originalUnitPrice:Math.round(amount/quantity),discount:0,
+ currencySymbolPlacement:'LEFT',originalPrice:amount,discountPrice:amount,
  basePayoutCurrencyCode:'USD',basePayoutPrice:amount,payoutCurrencyExchangeRate:1,vat:0,voucherDiscount:0});
 // POST /priceengine/api/shared/offers/price: the price the STORE tab shows on each pack. Other offers are priced at
 // otherCents when it is set (the dev placeholder) and left out otherwise. Null when nothing was priced.
@@ -74,7 +86,7 @@ export function vbucksPrices(body,otherCents=0){
  const priced=lines.map(o=>({o,p:packFor(String(o?.offerId||''))})).filter(x=>x.p||otherCents>0);
  if(!priced.length)return null;
  let total=0;
- const lineOffers=priced.map(({o,p})=>{const quantity=Math.max(1,Number(o.quantity)||1),amount=(p?p.cents:otherCents)*quantity;total+=amount;return {offerId:p?p.appStoreId:String(o?.offerId||''),quantity,price:money(amount),appliedRules:[]};});
+ const lineOffers=priced.map(({o,p})=>{const quantity=Math.max(1,Number(o.quantity)||1),amount=(p?p.cents:otherCents)*quantity;total+=amount;return {offerId:p?p.appStoreId:String(o?.offerId||''),quantity,price:money(amount,quantity),appliedRules:[]};});
  return {totalPrice:money(total),totalPaymentPrice:{paymentCurrencyCode:'USD',paymentCurrencySymbol:'$',paymentCurrencyAmount:total,paymentCurrencyExchangeRate:1,paymentCurrencySymbolPlacement:'LEFT'},lineOffers};
 }
 

@@ -8,7 +8,7 @@ import {verifyToken} from '../User/tokenManager/tokenVerify.js';
 import User from '../User/Mongodb/Schema/user.js';
 import Profile from '../User/Mongodb/Schema/profiles.js';
 import {rewardBalance,formatDollars} from '../Utils/syndicateRewardWallet.js';
-import {VBUCKS_PACKS,packFor,formatVbucks,formatPrice,grantVbucksPack,isLoopback,localAccount} from '../Utils/syndicateVbucksStore.js';
+import {packsWith,packFor,formatVbucks,formatPrice,grantVbucksPack,isLoopback,localAccount} from '../Utils/syndicateVbucksStore.js';
 
 const app=express.Router();
 
@@ -45,8 +45,9 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 // be typed and there are no card fields.
 function page({pack,nonce,from,name,rewards}){
  const who=esc(name||'Player');
- const packs=VBUCKS_PACKS.map(p=>`<label class="pick${pack&&p.appStoreId===pack.appStoreId?' on':''}"><input type="radio" name="pack" value="${p.appStoreId}"${pack&&p.appStoreId===pack.appStoreId?' checked':''}><span class="pn">${esc(formatVbucks(p.quantity-p.bonus))} V-Bucks${p.bonus?` <em>+${esc(formatVbucks(p.bonus))}</em>`:''}</span><span class="pp">${formatPrice(p.cents)}</span></label>`).join('');
- const state=JSON.stringify({pack:pack?.appStoreId||'',nonce,from,rewards,packs:Object.fromEntries(VBUCKS_PACKS.map(p=>[p.appStoreId,{quantity:p.quantity,base:p.quantity-p.bonus,bonus:p.bonus,cents:p.cents}]))}).replace(/</g,'\\u003c');
+ const set=packsWith(pack);
+ const packs=set.map(p=>`<label class="pick${pack&&p.appStoreId===pack.appStoreId?' on':''}"><input type="radio" name="pack" value="${p.appStoreId}"${pack&&p.appStoreId===pack.appStoreId?' checked':''}><span class="pn">${esc(formatVbucks(p.quantity-p.bonus))} V-Bucks${p.bonus?` <em>+${esc(formatVbucks(p.bonus))}</em>`:''}</span><span class="pp">${formatPrice(p.cents)}</span></label>`).join('');
+ const state=JSON.stringify({pack:pack?.appStoreId||'',nonce,from,rewards,packs:Object.fromEntries(set.map(p=>[p.appStoreId,{quantity:p.quantity,base:p.quantity-p.bonus,bonus:p.bonus,cents:p.cents}]))}).replace(/</g,'\\u003c');
  const coin=(size)=>`<svg viewBox="0 0 40 40" width="${size}" height="${size}" aria-hidden="true"><defs><radialGradient id="vg${size}" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#c9f1ff"/><stop offset=".55" stop-color="#4aa3f0"/><stop offset="1" stop-color="#1d5fb8"/></radialGradient></defs><circle cx="20" cy="20" r="18" fill="url(#vg${size})" stroke="#dff6ff" stroke-width="2"/><path d="M12 11h5l3 11 3-11h5l-6 18h-4z" fill="#fff"/></svg>`;
  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Checkout</title><style>
 *{box-sizing:border-box}html,body{margin:0;height:100%}

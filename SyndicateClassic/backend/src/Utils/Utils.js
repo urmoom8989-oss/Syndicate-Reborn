@@ -823,7 +823,7 @@ export default class Utils {
 
       storefronts.push(['1.8.2','1.7.2'].includes(clientBuild(userAgent))?season1Store(Utils.createCatalogEntry):legacy?season2PassCatalog(Utils.createCatalogEntry):tierCatalog(tierSeason(clientBuild(userAgent))));
       // The STORE tab's V-Bucks packs, every season (syndicateVbucksStore.js; bought for free on Syndicate's checkout page).
-      storefronts.push(vbucksStorefront());
+      storefronts.push(vbucksStorefront(clientBuild(userAgent)));
       // EXPERIMENT (dev builds, Season 3 only): a placeholder real-money Starter Pack, to test whether the
       // STORE tab (AthenaStore) renders anything the backend sends. See /catalog/api/shared/bulk/offers.
       if (process.env.TILTED_DEVKIT === "1" && clientBuild(userAgent) === "3.5.1") {
