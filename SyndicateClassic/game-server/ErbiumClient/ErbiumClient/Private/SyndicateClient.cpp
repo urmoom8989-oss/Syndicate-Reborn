@@ -81,6 +81,37 @@ namespace {
         int Num() const { return int(Items.size()); }
         AActor* operator[](int i) const { return Items[size_t(i)]; }
     };
+    // A function library's static UFUNCTION (GameplayStatics, AssetRegistryHelpers), called without the SDK's default
+    // object. This module starts while the game is still loading, before some libraries have a default object; the
+    // SDK's GetDefaultObj() is then null (and UGameplayStatics keeps that null for the whole session). That stopped the
+    // in-game console, the Save the World locker and the Save the World lobby fallback on 4.5 to 9.40: "reading 0x10"
+    // faults and "BeginDeferredActorSpawnFromClass or FinishSpawningActor not found". A static function does not use
+    // its object, so the class object runs it while there is no default object. Looked up again until the class exists.
+    struct LibFunction {
+        const UClass* Class = nullptr; UFunction* Fn = nullptr;
+        explicit operator bool() const { return Fn != nullptr; }
+        void Call(void* Params) const {
+            const UObject* Cdo = Class->GetDefaultObj();
+            (Cdo ? Cdo : (const UObject*)Class)->ProcessEvent(Fn, Params);
+        }
+    };
+    LibFunction FindLibFunction(const char* ClassName, const char* Name) {
+        LibFunction Out; Out.Class = FindClass(ClassName);
+        if (!Out.Class) return Out;
+        const std::wstring Wide(Name, Name + strlen(Name)); const FName Want(Wide.c_str());
+        for (const UStruct* S = (const UStruct*)Out.Class; S && !Out.Fn; S = (const UStruct*)S->GetSuper())
+            for (const UField* F = S->GetChildren(); F; F = F->GetNext())
+                if ((F->Class->GetCastFlags() & 0x80000) && F->GetName() == Want) { Out.Fn = (UFunction*)F; break; }
+        return Out;
+    }
+    // UGameplayStatics::SpawnObject(ObjectClass, Outer) through FindLibFunction.
+    UObject* LibSpawnObject(const UClass* ObjectClass, UObject* Outer) {
+        static LibFunction Fn; if (!Fn) Fn = FindLibFunction("GameplayStatics", "SpawnObject");
+        if (!Fn || !ObjectClass) return nullptr;
+        struct { const UClass* ObjectClass; UObject* Outer; UObject* ReturnValue; } Params{ ObjectClass, Outer, nullptr };
+        Fn.Call(&Params);
+        return Params.ReturnValue;
+    }
     void SyndicateAllActors(UWorld* World, const UClass* Class, ActorList& Out) {
         Out.Items.clear();
         static UObject* Lib = nullptr; static UFunction* Fn = nullptr; static int32 WorldOff = -1, ClassOff = -1, OutOff = -1; static uint32 Size = 0; static bool Tried = false;
@@ -2096,14 +2127,15 @@ namespace {
     // then goes ahead. A state that does arrive from the server replaces it (the property is replicated).
     bool StwLobbyBuild() { const float V = VersionInfo.FortniteVersion; return V > 3.9f && V < 12.f; }
     UObject* StwSpawnLocal(UWorld* World, const UClass* Class) {
-        static UObject* Lib = nullptr; static UFunction* Begin = nullptr; static UFunction* Finish = nullptr;
+        static LibFunction BeginLib, FinishLib; static UFunction* Begin = nullptr; static UFunction* Finish = nullptr;
         static int32 BWorld = -1, BClass = -1, BTransform = -1, BCollision = -1, BReturn = -1, FActor = -1, FTransform = -1, FReturn = -1;
         static uint32 BSize = 0, FSize = 0; static bool Tried = false;
         if (!Tried) {
-            Tried = true;
-            Lib = (UObject*)UGameplayStatics::GetDefaultObj();
-            Begin = Lib ? Lib->GetFunction("BeginDeferredActorSpawnFromClass") : nullptr;
-            Finish = Lib ? Lib->GetFunction("FinishSpawningActor") : nullptr;
+            // Found on the library's class, not its default object (FindLibFunction): looked up again next time when
+            // the class is not loaded yet.
+            BeginLib = FindLibFunction("GameplayStatics", "BeginDeferredActorSpawnFromClass");
+            FinishLib = FindLibFunction("GameplayStatics", "FinishSpawningActor");
+            Begin = BeginLib.Fn; Finish = FinishLib.Fn; Tried = BeginLib.Class != nullptr;
             if (Begin) { auto P = Begin->GetParamsNamed(); BSize = uint32(P.Size);
                 for (auto& M : P.NameOffsetMap) { if (M.Name == "WorldContextObject") BWorld = int32(M.Offset); else if (M.Name == "ActorClass") BClass = int32(M.Offset);
                     else if (M.Name == "SpawnTransform") BTransform = int32(M.Offset); else if (M.Name == "CollisionHandlingOverride") BCollision = int32(M.Offset); else if (M.Name == "ReturnValue") BReturn = int32(M.Offset); } }
@@ -2123,12 +2155,12 @@ namespace {
         alignas(16) uint8_t B[256]{};
         *(UWorld**)(B + BWorld) = World; *(const UClass**)(B + BClass) = Class; memcpy(B + BTransform, Transform, sizeof(Transform));
         if (BCollision >= 0) B[BCollision] = 1; // AlwaysSpawn
-        Lib->ProcessEvent(Begin, B);
+        BeginLib.Call(B);
         auto Actor = *(UObject**)(B + BReturn);
         if (!Actor) { Log("stw lobby: the game did not spawn the lobby state"); return nullptr; }
         alignas(16) uint8_t F[256]{};
         *(UObject**)(F + FActor) = Actor; memcpy(F + FTransform, Transform, sizeof(Transform));
-        Lib->ProcessEvent(Finish, F);
+        FinishLib.Call(F);
         return FReturn >= 0 && *(UObject**)(F + FReturn) ? *(UObject**)(F + FReturn) : Actor;
     }
     // An object of a class that lives for the whole game (the matchmaking objects), found by a scan of the object list
@@ -2308,8 +2340,8 @@ namespace {
         if (!Console) {
             const UClass* Class = Engine->ConsoleClass;
             if (!Class) Class = FindClass("Console");
-            if (!Class || !UGameplayStatics::GetDefaultObj()->GetFunction("SpawnObject")) { State = -1; Log("console: this build has no console class or SpawnObject; console off"); return; }
-            Console = UGameplayStatics::SpawnObject((UClass*)Class, View);
+            if (!Class || !FindLibFunction("GameplayStatics", "SpawnObject")) { State = -1; Log("console: this build has no console class or SpawnObject; console off"); return; }
+            Console = LibSpawnObject(Class, View);
             if (!Console) { State = -1; Log("console: could not create the console; console off"); return; }
             View->ViewportConsole = Console;
         }

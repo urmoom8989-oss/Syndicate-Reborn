@@ -44,8 +44,9 @@
         std::vector<StwAsset> Out;
         auto Helpers = FindClass("AssetRegistryHelpers"); auto Interface = FindClass("AssetRegistry"); auto Data = FindStruct("AssetData");
         if (!Helpers || !Interface || !Data) return Out;
-        auto Obj = Helpers->GetDefaultObj(); auto Get = Obj->GetFunction("GetAssetRegistry"); if (!Get) return Out;
-        uint8 Return[32]{}; Obj->ProcessEvent(Get, Return); auto Registry = *(UObject**)Return; if (!Registry) return Out;
+        // Called through the class, not its default object (FindLibFunction): that default object may not exist yet.
+        auto Get = FindLibFunction("AssetRegistryHelpers", "GetAssetRegistry"); if (!Get) return Out;
+        uint8 Return[32]{}; Get.Call(Return); auto Registry = *(UObject**)Return; if (!Registry) return Out;
         UFunction* Query = nullptr;
         for (auto F = Interface->GetChildren(); F; F = F->GetNext()) if (F->Name.ToString() == "GetAssetsByClass") Query = (UFunction*)F;
         if (!Query) return Out;
@@ -279,7 +280,7 @@
         if (TypeData) TypeData[DynamicOff] = 1;
         int Registered = 0, Refused = 0;
         for (auto& [Look, A] : Best) {
-            auto Item = UGameplayStatics::SpawnObject(ItemClass, Package); if (!Item) continue;
+            auto Item = LibSpawnObject(ItemClass, Package); if (!Item) continue;
             if (Size > 0x28) memcpy((uint8*)Item + 0x28, (const uint8*)Template + 0x28, size_t(Size) - 0x28); // every field after UObject's own
             Item->AddToRoot();
             std::wstring Path = L"/Engine/Transient." + std::wstring(Item->Name.ToWString().c_str());
