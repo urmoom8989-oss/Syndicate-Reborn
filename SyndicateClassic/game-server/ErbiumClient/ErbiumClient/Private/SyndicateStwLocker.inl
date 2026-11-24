@@ -21,7 +21,10 @@
     // Season 4 (4.5) to Chapter 2 Season 1 (11.00), found the same way. The backend only lists the heroes while the
     // launcher's "Save the World skins" switch is on; registering them costs nothing when it is off.
     // Season X 10.40 included: Syndicate's own match server puts the hero on the player (ServerAndConsole/PlayerLocker.h).
-    bool StwBuild() { const float V = VersionInfo.FortniteVersion; return (V > 1.f && V < 2.f) || (V > 3.4f && V < 12.f); }
+    // Only where registering is known to work: 1.72 to 1.11, 3.5 and 5.10. On 4.5 and 6.20 to Season X it always
+    // stopped before registering (a library default object that did not exist yet, see FindLibFunction); once that was
+    // fixed, the first registration on Season X crashed the game, so those seasons stay off until each is checked.
+    bool StwBuild() { const float V = VersionInfo.FortniteVersion; return (V > 1.f && V < 2.f) || (V > 3.4f && V < 3.6f) || (V > 5.0f && V < 5.2f); }
     bool StwWanted() { return StwStage == 0 || StwStage == 1; }
     std::string StwLower(std::string S) { for (auto& C : S) C = (char)tolower((unsigned char)C); return S; }
     bool StwHeroName(const std::string& Name) {
