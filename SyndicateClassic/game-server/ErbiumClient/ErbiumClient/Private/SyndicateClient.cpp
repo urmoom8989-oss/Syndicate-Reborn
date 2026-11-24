@@ -105,10 +105,10 @@ namespace {
         return Out;
     }
     // UGameplayStatics::SpawnObject(ObjectClass, Outer) through FindLibFunction.
-    UObject* LibSpawnObject(const UClass* ObjectClass, UObject* Outer) {
+    UObject* LibSpawnObject(const UClass* ObjectClass, const UObject* Outer) {
         static LibFunction Fn; if (!Fn) Fn = FindLibFunction("GameplayStatics", "SpawnObject");
         if (!Fn || !ObjectClass) return nullptr;
-        struct { const UClass* ObjectClass; UObject* Outer; UObject* ReturnValue; } Params{ ObjectClass, Outer, nullptr };
+        struct { const UClass* ObjectClass; const UObject* Outer; UObject* ReturnValue; } Params{ ObjectClass, Outer, nullptr };
         Fn.Call(&Params);
         return Params.ReturnValue;
     }
